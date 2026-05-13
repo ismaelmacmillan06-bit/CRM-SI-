@@ -1,0 +1,377 @@
+@extends('layouts.app')
+
+@section('title', 'Dashboard')
+
+@section('content')
+
+{{-- Cards principales --}}
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px">
+    <div class="card" style="border-top:3px solid var(--accent)">
+        <div class="card-body" style="padding:20px">
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Colegios</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
+                {{ $totalSchools }}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap">
+                <span class="badge badge-success">{{ $colegiosActivos }} activos</span>
+                <span class="badge badge-warning">{{ $colegiosProspecto }} prospecto</span>
+                <span class="badge badge-gray">{{ $colegiosInactivos }} inactivos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid #8b5cf6">
+        <div class="card-body" style="padding:20px">
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Directores</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
+                {{ $totalStudents }}
+            </div>
+            <div style="margin-top:8px; font-size:13px; color:var(--text-muted)">
+                Registrados en MEE y Servicios 
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="border-top:3px solid #3b82f6">
+        <div class="card-body" style="padding:20px">
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Docentes</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
+                {{ $totalTeachers }}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px">
+                <span class="badge badge-info">{{ $docentesELT }} ELT</span>
+                <span class="badge badge-success">{{ $docentesECA }} ECA</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card" style="border-top:3px solid #8b5cf6">
+        <div class="card-body" style="padding:20px">
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Alumnos</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
+                {{ $totalStudents }}
+            </div>
+            <div style="margin-top:8px; font-size:13px; color:var(--text-muted)">
+                registrados en MEE
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card" style="border-top:3px solid #f59e0b">
+        <div class="card-body" style="padding:20px">
+            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
+                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Tickets</div>
+            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
+                {{ $ticketsAbiertos + $ticketsEnProceso }}
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px">
+                <span class="badge badge-danger">{{ $ticketsAbiertos }} abiertos</span>
+                <span class="badge badge-warning">{{ $ticketsEnProceso }} en proceso</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Visitas pendientes alert --}}
+@if($visitasPendientes > 0)
+<div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;
+            padding:14px 20px; margin-bottom:24px; display:flex; align-items:center; gap:10px">
+    <span style="font-size:18px">📅</span>
+    <span style="font-size:14px; color:#92400e">
+        Tienes <strong>{{ $visitasPendientes }} visita(s) pendiente(s)</strong> por realizar.
+    </span>
+    <a href="{{ route('schools.index') }}" style="margin-left:auto; font-size:13px; color:#92400e; font-weight:600">
+        Ver colegios →
+    </a>
+</div>
+@endif
+
+{{-- Mapa + Panel derecho --}}
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
+
+    {{-- Mapa --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🗺️ Colegios por estado</span>
+            <span style="font-size:12px; color:var(--text-muted)">Clic para filtrar</span>
+        </div>
+        <div class="card-body" style="padding:16px">
+            <div id="mapa-mexico" style="width:100%; height:320px; position:relative"></div>
+        </div>
+    </div>
+
+    {{-- Panel derecho - Zonas --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📍 Colegios por zona</span>
+        </div>
+        <div class="card-body" style="padding:16px">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                @foreach([
+                    ['zona' => 'Norte',     'icon' => '🔵', 'color' => '#3b82f6'],
+                    ['zona' => 'Sur',       'icon' => '🟢', 'color' => '#10b981'],
+                    ['zona' => 'Sureste',   'icon' => '🟡', 'color' => '#f59e0b'],
+                    ['zona' => 'Bajío',     'icon' => '🔴', 'color' => '#e94560'],
+                    ['zona' => 'Centro',    'icon' => '🟣', 'color' => '#8b5cf6'],
+                    ['zona' => 'Occidente', 'icon' => '🟠', 'color' => '#f97316'],
+                ] as $zona)
+                <div style="border:1px solid var(--border); border-radius:10px; padding:14px;
+                            border-left:4px solid {{ $zona['color'] }}">
+                    <div style="font-size:11px; font-weight:600; text-transform:uppercase;
+                                letter-spacing:1px; color:var(--text-muted); margin-bottom:6px">
+                        {{ $zona['icon'] }} {{ $zona['zona'] }}
+                    </div>
+                    <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+                                color:{{ $zona['color'] }}">
+                        0
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px">colegios</div>
+                </div>
+                @endforeach
+            </div>
+            <div style="margin-top:14px; padding:10px 14px; background:var(--surface2);
+                        border-radius:8px; font-size:12px; color:var(--text-muted); text-align:center">
+                💡 Las zonas se configurarán próximamente
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{{-- Buscador de colegios --}}
+<div class="card" style="margin-bottom:20px">
+    <div class="card-body" style="padding:16px 24px">
+        <input type="text" id="buscador-colegios" class="form-control"
+               placeholder="🔍 Buscar colegio por nombre, consultor o estado..."
+               style="max-width:400px">
+    </div>
+</div>
+
+{{-- Cards de colegios --}}
+<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
+    @forelse($schools as $school)
+    <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
+         data-consultor="{{ strtolower($school->consultant->user->name ?? '') }}"
+         data-estado="{{ strtolower($school->city ?? '') }}"
+         style="transition: all 0.2s">
+        <div class="card-header" style="padding:16px 20px">
+            <div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px">
+                    {{ $school->name }}
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                    {{ $school->city ?? 'Sin estado' }}
+                </div>
+            </div>
+            @if($school->status === 'activo')
+                <span class="badge badge-success">Activo</span>
+            @elseif($school->status === 'prospecto')
+                <span class="badge badge-warning">Prospecto</span>
+            @else
+                <span class="badge badge-gray">Inactivo</span>
+            @endif
+        </div>
+        <div class="card-body" style="padding:16px 20px">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px">
+                <span style="color:var(--text-muted)">Consultor Digital</span>
+                <span style="font-weight:500">{{ $school->consultant->user->name ?? '—' }}</span>
+            </div>
+
+            @if($school->meeAdmins->count())
+            <div style="margin-bottom:12px">
+                @foreach($school->meeAdmins as $admin)
+                <div style="display:flex; justify-content:space-between; font-size:12px;
+                            padding:6px 10px; background:var(--surface2); border-radius:6px; margin-bottom:4px">
+                    <span style="color:var(--text-muted)">🔐 {{ $admin->username }}</span>
+                    <span style="font-family:monospace; color:var(--text-muted)">{{ $admin->password_plain }}</span>
+                </div>
+                @endforeach
+            </div>
+            @endif
+
+            @php
+                $totalProcesos = 0;
+                $totalDone = 0;
+                foreach($school->schoolLevels as $sl) {
+                    $totalProcesos += $sl->processes->count();
+                    $totalDone += $sl->processes->where('status', 'done')->count();
+                }
+                $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
+            @endphp
+
+            <div style="margin-bottom:12px">
+                <div style="display:flex; justify-content:space-between; font-size:12px;
+                            color:var(--text-muted); margin-bottom:4px">
+                    <span>Progreso general</span>
+                    <span>{{ $pct }}%</span>
+                </div>
+                <div style="background:var(--surface2); border-radius:20px; height:6px; overflow:hidden">
+                    <div style="height:100%; width:{{ $pct }}%;
+                                background:{{ $pct == 100 ? '#10b981' : 'var(--accent)' }};
+                                border-radius:20px"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px">
+                @foreach($school->schoolLevels as $sl)
+                    <span class="badge badge-info" style="font-size:11px">
+                        {{ $sl->level->name ?? '' }}
+                    </span>
+                @endforeach
+            </div>
+
+            <a href="{{ route('schools.show', $school) }}"
+               style="display:block; text-align:center; padding:8px; background:var(--accent);
+                      color:#fff; border-radius:8px; text-decoration:none; font-size:13px;
+                      font-weight:500; transition:background 0.2s"
+               onmouseover="this.style.background='#d63651'"
+               onmouseout="this.style.background='var(--accent)'">
+                IR →
+            </a>
+        </div>
+    </div>
+    @empty
+    <div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:60px">
+        No hay colegios registrados.
+        <a href="{{ route('schools.create') }}">Registra el primero</a>
+    </div>
+    @endforelse
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const colegiosPorEstado = @json($colegiosPorEstado);
+
+const normalizar = str => str?.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ').trim();
+
+const estadosData = {};
+Object.entries(colegiosPorEstado).forEach(([estado, total]) => {
+    estadosData[normalizar(estado)] = { nombre: estado, total };
+});
+
+fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json')
+    .then(r => r.json())
+    .then(geojson => {
+        const container = document.getElementById('mapa-mexico');
+        const width     = container.offsetWidth;
+        const height    = 320;
+
+        const svg = d3.select('#mapa-mexico')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const projection = d3.geoMercator()
+            .fitSize([width, height], geojson);
+
+        const path = d3.geoPath().projection(projection);
+
+        const tooltip = d3.select('body')
+            .append('div')
+            .style('position', 'fixed')
+            .style('background', '#1a1a2e')
+            .style('color', '#fff')
+            .style('padding', '8px 14px')
+            .style('border-radius', '8px')
+            .style('font-size', '13px')
+            .style('pointer-events', 'none')
+            .style('opacity', 0)
+            .style('z-index', 9999);
+
+        svg.selectAll('path')
+            .data(geojson.features)
+            .enter()
+            .append('path')
+            .attr('d', path)
+            .attr('fill', d => {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                const data   = estadosData[nombre];
+                if (!data) return '#e5e7eb';
+                const intensity = Math.min(data.total / 5, 1);
+                return d3.interpolateRgb('#fecaca', '#e94560')(intensity);
+            })
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 0.8)
+            .style('cursor', d => {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                return estadosData[nombre] ? 'pointer' : 'default';
+            })
+            .on('mouseover', function(event, d) {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                const data   = estadosData[nombre];
+                d3.select(this).attr('stroke-width', 2).attr('stroke', '#e94560');
+                tooltip.style('opacity', 1)
+                    .html(data
+                        ? `<strong>${data.nombre}</strong><br>🏫 ${data.total} colegio(s)`
+                        : `<strong>${d.properties.name || d.properties.NAME}</strong><br>Sin colegios`
+                    );
+            })
+            .on('mousemove', function(event) {
+                tooltip
+                    .style('left', (event.clientX + 12) + 'px')
+                    .style('top',  (event.clientY - 28) + 'px');
+            })
+            .on('mouseout', function() {
+                d3.select(this).attr('stroke-width', 0.8).attr('stroke', '#fff');
+                tooltip.style('opacity', 0);
+            })
+            .on('click', function(event, d) {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                const data   = estadosData[nombre];
+                if (data) {
+                    document.getElementById('buscador-colegios').value = data.nombre;
+                    document.getElementById('buscador-colegios').dispatchEvent(new Event('input'));
+                    document.getElementById('colegios-grid').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+        svg.selectAll('text')
+            .data(geojson.features.filter(d => {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                return estadosData[nombre];
+            }))
+            .enter()
+            .append('text')
+            .attr('transform', d => `translate(${path.centroid(d)})`)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'central')
+            .attr('font-size', '11px')
+            .attr('font-weight', '700')
+            .attr('fill', '#fff')
+            .attr('pointer-events', 'none')
+            .text(d => {
+                const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
+                return estadosData[nombre]?.total;
+            });
+    })
+    .catch(() => {
+        document.getElementById('mapa-mexico').innerHTML =
+            '<p style="text-align:center; color:var(--text-muted); padding:40px">No se pudo cargar el mapa</p>';
+    });
+
+// Buscador
+const buscador = document.getElementById('buscador-colegios');
+buscador.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    document.querySelectorAll('.school-card').forEach(card => {
+        const nombre    = card.dataset.nombre;
+        const consultor = card.dataset.consultor;
+        const estado    = card.dataset.estado;
+        if (!query || nombre.includes(query) || consultor.includes(query) || estado.includes(query)) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+
+@endsection

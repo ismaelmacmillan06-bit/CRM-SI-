@@ -1,0 +1,240 @@
+@extends('layouts.app')
+
+@section('title', 'Bundles — ' . $school->name)
+
+@section('content')
+<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
+    <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    <button onclick="document.getElementById('modal-bundles').style.display='flex'"
+            class="btn btn-primary">+ Agregar Bundles</button>
+</div>
+
+{{-- Modal selección de bundles --}}
+<div id="modal-bundles" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:999; align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:900px; max-width:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
+            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600">
+                📚 Selecciona los materiales
+            </h3>
+            <button onclick="document.getElementById('modal-bundles').style.display='none'"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+
+        {{-- Paso 1: Seleccionar series --}}
+        <div id="step-1">
+            <p style="font-size:14px; color:var(--text-muted); margin-bottom:16px">
+                Selecciona las series que adoptó el colegio:
+            </p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+                {{-- Materiales Castillo --}}
+                <div style="border:1px solid var(--border); border-radius:10px; padding:16px">
+                    <div style="font-weight:600; font-size:13px; text-transform:uppercase;
+                                letter-spacing:1px; color:var(--text-muted); margin-bottom:12px">
+                        📗 Materiales Castillo
+                    </div>
+                    @foreach($series->whereIn('type', ['Imagina', 'Wikids', 'Pienso Contigo', 'Plan Lector']) as $serie)
+                    <label style="display:flex; align-items:center; gap:8px; padding:8px 10px;
+                                  border:1px solid var(--border); border-radius:8px; margin-bottom:6px;
+                                  cursor:pointer; font-size:13px" class="serie-label">
+                        <input type="checkbox" class="serie-check" value="{{ $serie->serie }}"
+                               data-type="{{ $serie->type }}" style="accent-color:var(--accent)">
+                        <span>{{ $serie->serie }}</span>
+                        <small style="color:var(--text-muted); margin-left:auto">{{ $serie->type }}</small>
+                    </label>
+                    @endforeach
+                </div>
+
+                {{-- Materiales Macmillan ELT --}}
+                <div style="border:1px solid var(--border); border-radius:10px; padding:16px">
+                    <div style="font-weight:600; font-size:13px; text-transform:uppercase;
+                                letter-spacing:1px; color:var(--text-muted); margin-bottom:12px">
+                        📘 Materiales Macmillan ELT
+                    </div>
+                    @foreach($series->whereIn('type', ['ELT']) as $serie)
+                    <label style="display:flex; align-items:center; gap:8px; padding:8px 10px;
+                                  border:1px solid var(--border); border-radius:8px; margin-bottom:6px;
+                                  cursor:pointer; font-size:13px" class="serie-label">
+                        <input type="checkbox" class="serie-check" value="{{ $serie->serie }}"
+                               data-type="{{ $serie->type }}" style="accent-color:var(--accent)">
+                        <span>{{ $serie->serie }}</span>
+                        <small style="color:var(--text-muted); margin-left:auto">{{ $serie->type }}</small>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end">
+                <button onclick="document.getElementById('modal-bundles').style.display='none'"
+                        class="btn btn-secondary">Cancelar</button>
+                <button onclick="loadBundles()" class="btn btn-primary">Ver títulos →</button>
+            </div>
+        </div>
+
+        {{-- Paso 2: Seleccionar títulos --}}
+        <div id="step-2" style="display:none">
+            <button onclick="backToStep1()" class="btn btn-secondary btn-sm" style="margin-bottom:16px">
+                ← Cambiar series
+            </button>
+            <form method="POST" action="{{ route('schools.bundles.store', $school) }}">
+                @csrf
+                <div style="display:flex; gap:16px; margin-bottom:16px; align-items:center">
+                    <div class="form-group" style="margin-bottom:0">
+                        <label class="form-label">Fecha de adopción</label>
+                        <input type="date" name="acquired_at" class="form-control" style="width:200px">
+                    </div>
+                </div>
+
+                <div id="bundles-container"></div>
+
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px">
+                    <button type="button"
+                            onclick="document.getElementById('modal-bundles').style.display='none'"
+                            class="btn btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">✅ Agregar seleccionados</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- Tabla de bundles del colegio --}}
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">📚 Bundles — {{ $school->name }}</span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $schoolBundles->count() }} registrados</span>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Serie</th>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Nivel</th>
+                <th>Grado</th>
+                <th>Rol</th>
+                <th>Cantidad</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($schoolBundles as $bundle)
+            <tr>
+                <td style="font-size:13px; color:var(--text-muted)">{{ $bundle->serie }}</td>
+                <td><strong style="font-size:13px">{{ $bundle->name }}</strong></td>
+                <td><span class="badge badge-info">{{ $bundle->type }}</span></td>
+                <td>{{ $bundle->level ?? '—' }}</td>
+                <td>{{ $bundle->grade ?? '—' }}</td>
+                <td>
+                    @if($bundle->role === 'teacher')
+                        <span class="badge badge-warning">Docente</span>
+                    @else
+                        <span class="badge badge-gray">Alumno</span>
+                    @endif
+                </td>
+                <td>{{ $bundle->pivot->quantity }}</td>
+                <td>
+                    <form method="POST"
+                          action="{{ route('schools.bundles.destroy', [$school, $bundle]) }}"
+                          onsubmit="return confirm('¿Eliminar este bundle?')">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-danger btn-sm">Eliminar</button>
+                    </form>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="8" style="text-align:center; color:var(--text-muted); padding:40px">
+                    No hay bundles registrados. Usa el botón <strong>+ Agregar Bundles</strong>.
+                </td>
+            </tr>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadBundles() {
+    const checks = document.querySelectorAll('.serie-check:checked');
+    if (checks.length === 0) {
+        alert('Selecciona al menos una serie');
+        return;
+    }
+
+    const series = Array.from(checks).map(c => c.value);
+
+    fetch('{{ route("api.bundles.by.series") }}?series[]=' + series.join('&series[]='))
+        .then(r => r.json())
+        .then(data => {
+            let html = '';
+            for (const [serie, bundles] of Object.entries(data)) {
+                html += `<div style="margin-bottom:20px">
+                    <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+                                padding:8px 12px; background:var(--surface2); border-radius:8px; margin-bottom:8px;
+                                display:flex; align-items:center; gap:8px">
+                        <input type="checkbox" class="serie-all-check" onclick="toggleSerie(this)"
+                               style="accent-color:var(--accent)" checked>
+                        ${serie}
+                    </div>
+                    <div style="padding-left:12px">`;
+
+                // Agrupar por role
+                const students = bundles.filter(b => b.role === 'student');
+                const teachers = bundles.filter(b => b.role === 'teacher');
+
+                if (students.length) {
+                    html += `<div style="font-size:11px; font-weight:600; text-transform:uppercase;
+                                         letter-spacing:1px; color:var(--text-muted); margin:8px 0 4px">
+                                 👨‍🎓 Alumno</div>`;
+                    students.forEach(b => {
+                        html += bundleRow(b);
+                    });
+                }
+
+                if (teachers.length) {
+                    html += `<div style="font-size:11px; font-weight:600; text-transform:uppercase;
+                                         letter-spacing:1px; color:var(--text-muted); margin:8px 0 4px">
+                                 👨‍🏫 Docente</div>`;
+                    teachers.forEach(b => {
+                        html += bundleRow(b);
+                    });
+                }
+
+                html += `</div></div>`;
+            }
+
+            document.getElementById('bundles-container').innerHTML = html;
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+        });
+}
+
+function bundleRow(b) {
+    return `<label style="display:flex; align-items:center; gap:10px; padding:8px 10px;
+                           border:1px solid var(--border); border-radius:8px; margin-bottom:4px;
+                           cursor:pointer; font-size:13px">
+        <input type="checkbox" name="bundle_ids[]" value="${b.id}"
+               style="accent-color:var(--accent)" checked>
+        <span style="flex:1">${b.name}</span>
+        <span style="color:var(--text-muted); font-size:12px">${b.grade ?? ''} ${b.level ?? ''}</span>
+        <input type="number" name="quantities[${b.id}]" value="1" min="1"
+               style="width:60px; padding:4px 8px; border:1px solid var(--border);
+                      border-radius:6px; font-size:12px" onclick="e => e.stopPropagation()">
+    </label>`;
+}
+
+function toggleSerie(checkbox) {
+    const container = checkbox.closest('div').nextElementSibling;
+    container.querySelectorAll('input[name="bundle_ids[]"]').forEach(c => {
+        c.checked = checkbox.checked;
+    });
+}
+
+function backToStep1() {
+    document.getElementById('step-1').style.display = 'block';
+    document.getElementById('step-2').style.display = 'none';
+}
+</script>
+
+{{-- Agregar botón en show --}}
+@endsection

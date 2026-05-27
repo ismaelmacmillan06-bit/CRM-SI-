@@ -14,10 +14,10 @@ use App\Models\MeeAdmin;
 class SchoolController extends Controller
 {
     public function index()
-    {
-        $schools = School::with('consultant', 'levels')->get();
-        return view('schools.index', compact('schools'));
-    }
+{
+    $schools = School::with('levels', 'schoolConsultants.consultant.user')->get();
+    return view('schools.index', compact('schools'));
+}
 
     public function create()
     {

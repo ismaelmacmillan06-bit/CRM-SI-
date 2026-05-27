@@ -69,90 +69,13 @@
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="form-group">
-                        <label class="form-label">Consultor asignado *</label>
-                        <select name="consultant_id" class="form-control" required>
-                            <option value="">-- Selecciona --</option>
-                            @foreach($consultants as $consultant)
-                                <option value="{{ $consultant->id }}"
-                                    {{ old('consultant_id', $school->consultant_id) == $consultant->id ? 'selected' : '' }}>
-                                    {{ $consultant->user->name }} — {{ $consultant->zone ?? 'Sin zona' }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Responsables del colegio --}}
-<div style="margin-bottom:20px">
-    <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
-                margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border)">
-        👥 Responsables del colegio
-    </div>
-
-    <div class="grid-2">
-        <div class="form-group">
-            <label class="form-label">Consultor Digital</label>
-            <select name="consultor_digital" class="form-control">
-                <option value="">-- Sin asignar --</option>
-                @foreach($digitales as $c)
-                    <option value="{{ $c->id }}"
-                        {{ old('consultor_digital', $responsables['digital']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
-                        {{ $c->user->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Consultor Académico ECA</label>
-            <select name="consultor_eca" class="form-control">
-                <option value="">-- Sin asignar --</option>
-                @foreach($ecas as $c)
-                    <option value="{{ $c->id }}"
-                        {{ old('consultor_eca', $responsables['eca']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
-                        {{ $c->user->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-    </div>
-
-    <div class="grid-2">
-        <div class="form-group">
-            <label class="form-label">Consultor Académico ELT</label>
-            <select name="consultor_elt" class="form-control">
-                <option value="">-- Sin asignar --</option>
-                @foreach($elts as $c)
-                    <option value="{{ $c->id }}"
-                        {{ old('consultor_elt', $responsables['elt']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
-                        {{ $c->user->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Representante de Ventas</label>
-            <select name="representante_ventas" class="form-control">
-                <option value="">-- Sin asignar --</option>
-                @foreach($representantes as $c)
-                    <option value="{{ $c->id }}"
-                        {{ old('representante_ventas', $responsables['ventas']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
-                        {{ $c->user->name }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-    </div>
-</div>
-
-                    <div class="form-group">
-                        <label class="form-label">Status *</label>
-                        <select name="status" class="form-control" required>
-                            <option value="prospecto" {{ old('status', $school->status) == 'prospecto' ? 'selected' : '' }}>Prospecto</option>
-                            <option value="activo"    {{ old('status', $school->status) == 'activo'    ? 'selected' : '' }}>Activo</option>
-                            <option value="inactivo"  {{ old('status', $school->status) == 'inactivo'  ? 'selected' : '' }}>Inactivo</option>
-                        </select>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select name="status" class="form-control" required>
+                        <option value="prospecto" {{ old('status', $school->status) == 'prospecto' ? 'selected' : '' }}>Prospecto</option>
+                        <option value="activo"    {{ old('status', $school->status) == 'activo'    ? 'selected' : '' }}>Activo</option>
+                        <option value="inactivo"  {{ old('status', $school->status) == 'inactivo'  ? 'selected' : '' }}>Inactivo</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -175,6 +98,66 @@
                 <div class="form-group">
                     <label class="form-label">Notas</label>
                     <textarea name="notes" class="form-control" rows="3">{{ old('notes', $school->notes) }}</textarea>
+                </div>
+
+                {{-- Responsables del colegio --}}
+                <div style="margin-bottom:20px">
+                    <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
+                                margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border)">
+                        👥 Responsables del colegio
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Consultor Digital</label>
+                            <select name="consultor_digital" class="form-control">
+                                <option value="">-- Sin asignar --</option>
+                                @foreach($digitales as $c)
+                                    <option value="{{ $c->id }}"
+                                        {{ old('consultor_digital', $responsables['digital']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
+                                        {{ $c->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Consultor Académico ECA</label>
+                            <select name="consultor_eca" class="form-control">
+                                <option value="">-- Sin asignar --</option>
+                                @foreach($ecas as $c)
+                                    <option value="{{ $c->id }}"
+                                        {{ old('consultor_eca', $responsables['eca']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
+                                        {{ $c->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Consultor Académico ELT</label>
+                            <select name="consultor_elt" class="form-control">
+                                <option value="">-- Sin asignar --</option>
+                                @foreach($elts as $c)
+                                    <option value="{{ $c->id }}"
+                                        {{ old('consultor_elt', $responsables['elt']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
+                                        {{ $c->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Representante de Ventas</label>
+                            <select name="representante_ventas" class="form-control">
+                                <option value="">-- Sin asignar --</option>
+                                @foreach($representantes as $c)
+                                    <option value="{{ $c->id }}"
+                                        {{ old('representante_ventas', $responsables['ventas']->consultant_id ?? '') == $c->id ? 'selected' : '' }}>
+                                        {{ $c->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Administradores MEE --}}

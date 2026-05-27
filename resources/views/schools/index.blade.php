@@ -13,7 +13,10 @@
             <tr>
                 <th>Colegio</th>
                 <th>Nexus ID</th>
-                <th>Consultor</th>
+                <th>Consultor Digital</th>
+                <th>ECA</th>
+                <th>ELT</th>
+                <th>Rep. Ventas</th>
                 <th>Niveles</th>
                 <th>Status</th>
                 <th>Registro</th>
@@ -30,7 +33,21 @@
                     @endif
                 </td>
                 <td>{{ $school->nexus_id ?? '—' }}</td>
-                <td>{{ $school->consultant->user->name ?? '—' }}</td>
+                @php
+                    $responsables = $school->schoolConsultants->keyBy('role');
+                @endphp
+                <td style="font-size:13px">
+                    {{ $responsables['digital']->consultant->user->name ?? '—' }}
+                </td>
+                <td style="font-size:13px">
+                    {{ $responsables['eca']->consultant->user->name ?? '—' }}
+                </td>
+                <td style="font-size:13px">
+                    {{ $responsables['elt']->consultant->user->name ?? '—' }}
+                </td>
+                <td style="font-size:13px">
+                    {{ $responsables['ventas']->consultant->user->name ?? '—' }}
+                </td>
                 <td>
                     @foreach($school->levels as $level)
                         <span class="badge badge-info">{{ $level->name }}</span>

@@ -6,7 +6,9 @@
 <div class="card">
     <div class="card-header">
         <span class="card-title">🏫 Colegios registrados</span>
+        @hasanyrole('admin|consultor_digital')
         <a href="{{ route('schools.create') }}" class="btn btn-primary">+ Nuevo Colegio</a>
+        @endhasanyrole
     </div>
     <table class="table">
         <thead>
@@ -68,12 +70,16 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver</a>
+                        @hasanyrole('admin|consultor_digital')
                         <a href="{{ route('schools.edit', $school) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        @endhasanyrole
+                        @role('admin')
                         <form method="POST" action="{{ route('schools.destroy', $school) }}"
                               onsubmit="return confirm('¿Eliminar este colegio?')">
                             @csrf @method('DELETE')
                             <button class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
+                        @endrole
                     </div>
                 </td>
             </tr>
@@ -81,7 +87,9 @@
             <tr>
                 <td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay colegios registrados aún.
+                    @hasanyrole('admin|consultor_digital')
                     <a href="{{ route('schools.create') }}">Registra el primero</a>
+                    @endhasanyrole
                 </td>
             </tr>
             @endforelse

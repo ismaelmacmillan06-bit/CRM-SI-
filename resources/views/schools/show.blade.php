@@ -3,10 +3,12 @@
 @section('title', $school->name)
 
 @section('content')
-<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
+<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.index') }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.edit', $school) }}" class="btn btn-primary btn-sm">✏️ Editar</a>
-    <a href="{{ route('schools.processes.index', $school) }}" class="btn btn-secondary btn-sm">⚙️ Ver Procesos</a>
+    @endhasanyrole
+    <a href="{{ route('schools.processes.index', $school) }}" class="btn btn-secondary btn-sm">⚙️ Acciones de Arranque</a>
     <a href="{{ route('schools.teachers.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🏫 Docentes</a>
     <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm">🎫 Tickets</a>
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Visitas</a>

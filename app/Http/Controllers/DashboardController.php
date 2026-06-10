@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\Teacher;
 use App\Models\Student;
 use App\Models\Consultant;
+use App\Models\SchoolConsultant;
 use App\Models\Ticket;
 use App\Models\Visit;
 
@@ -13,49 +14,69 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Cards principales
-        $totalSchools     = School::count();
-        $totalTeachers    = Teacher::count();
-        $totalStudents    = Student::count();
-        $totalConsultants = Consultant::count();
+        $user = auth()->user();
 
-        // Tickets abiertos
-        $ticketsAbiertos  = Ticket::where('status', 'open')->count();
-        $ticketsEnProceso = Ticket::where('status', 'in_progress')->count();
+        // Para consultor_digital: obtener solo los IDs de sus colegios asignados
+        $schoolIds = null;
+        if ($user->hasRole('consultor_digital')) {
+            $consultant = Consultant::where('user_id', $user->id)->first();
+            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
+                ->where('role', 'digital')
+                ->pluck('school_id');
+        }
+
+        // Scope helper: filtra por schoolIds si aplica
+        $schoolScope   = fn($q) => $schoolIds ? $q->whereIn('school_id', $schoolIds) : $q;
+        $schoolScopeId = fn($q) => $schoolIds ? $q->whereIn('id', $schoolIds) : $q;
+
+        // Cards principales
+        $totalSchools     = $schoolScopeId(School::query())->count();
+        $totalTeachers    = $schoolScope(Teacher::query())->count();
+        $totalStudents    = $schoolScope(Student::query())->count();
+        $totalConsultants = $schoolIds ? null : Consultant::count();
+
+        // Tickets
+        $ticketsAbiertos  = $schoolScope(Ticket::where('status', 'open'))->count();
+        $ticketsEnProceso = $schoolScope(Ticket::where('status', 'in_progress'))->count();
+        $ticketsResueltos = $schoolScope(Ticket::where('status', 'closed'))->count();
 
         // Visitas pendientes
-        $visitasPendientes = Visit::where('status', 'pendiente')->count();
-
-        // Colegios con su info para las cards
-        $schools = School::with([
-            'consultant.user',
-            'meeAdmins',
-            'schoolLevels.processes'
-        ])->get();
+        $visitasPendientes = $schoolScope(Visit::where('status', 'pendiente'))->count();
 
         // Docentes por materia
-        $docentesELT = Teacher::where('subject', 'ELT')->count();
-        $docentesECA = Teacher::where('subject', 'ECA')->count();
+        $docentesELT = $schoolScope(Teacher::where('subject', 'ELT'))->count();
+        $docentesECA = $schoolScope(Teacher::where('subject', 'ECA'))->count();
 
         // Colegios por status
-        $colegiosActivos    = School::where('status', 'activo')->count();
-        $colegiosProspecto  = School::where('status', 'prospecto')->count();
-        $colegiosInactivos  = School::where('status', 'inactivo')->count();
+        $colegiosActivos   = $schoolScopeId(School::where('status', 'activo'))->count();
+        $colegiosProspecto = $schoolScopeId(School::where('status', 'prospecto'))->count();
+        $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
         // Colegios por estado para el mapa
-        $colegiosPorEstado = School::selectRaw('city, count(*) as total')
-        ->whereNotNull('city')
-        ->groupBy('city')
-        ->pluck('total', 'city')
-        ->toArray();
+        $colegiosPorEstado = $schoolScopeId(School::selectRaw('city, count(*) as total'))
+            ->whereNotNull('city')
+            ->groupBy('city')
+            ->pluck('total', 'city')
+            ->toArray();
+
+        // Conteo de alumnos por nivel (filtrado igual que el resto)
+        $conteoNiveles = $schoolScope(
+            Student::selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
+        )->groupBy('lvl')->pluck('total', 'lvl');
+
+        // Colegios con info completa para las cards
+        $schools = $schoolScopeId(School::with([
+            'schoolConsultants.consultant.user',
+            'meeAdmins',
+            'schoolLevels.processes',
+        ]))->get();
 
         return view('dashboard', compact(
-        'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
-        'ticketsAbiertos', 'ticketsEnProceso', 'visitasPendientes',
-        'schools', 'docentesELT', 'docentesECA',
-        'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
-        'colegiosPorEstado'
-));
-       
+            'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
+            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos', 'visitasPendientes',
+            'schools', 'docentesELT', 'docentesECA',
+            'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
+            'colegiosPorEstado', 'conteoNiveles'
+        ));
     }
 }

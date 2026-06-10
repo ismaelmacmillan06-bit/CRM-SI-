@@ -9,7 +9,7 @@ class SchoolLevelProcess extends Model
     protected $table = 'school_level_process';
     protected $fillable = [
         'school_level_id', 'process_id', 'status',
-        'completed_at', 'completed_by', 'notes'
+        'completed_at', 'completed_by', 'notes', 'evidence'
     ];
 
     public function schoolLevel()

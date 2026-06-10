@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\School;
 use App\Models\Consultant;
+use App\Models\SchoolConsultant;
 use App\Models\Level;
 use App\Models\Process;
 use App\Models\SchoolLevel;
@@ -14,10 +15,20 @@ use App\Models\MeeAdmin;
 class SchoolController extends Controller
 {
     public function index()
-{
-    $schools = School::with('levels', 'schoolConsultants.consultant.user')->get();
-    return view('schools.index', compact('schools'));
-}
+    {
+        $query = School::with('levels', 'schoolConsultants.consultant.user');
+
+        if (auth()->user()->hasRole('consultor_digital')) {
+            $consultant = Consultant::where('user_id', auth()->id())->first();
+            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
+                ->where('role', 'digital')
+                ->pluck('school_id');
+            $query->whereIn('id', $schoolIds);
+        }
+
+        $schools = $query->get();
+        return view('schools.index', compact('schools'));
+    }
 
     public function create()
     {
@@ -123,12 +134,14 @@ foreach ($roles as $role => $consultantId) {
     public function update(Request $request, School $school)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'consultant_id' => 'required|exists:consultants,id',
+            'name'   => 'required|string|max:255',
             'status' => 'required|in:prospecto,activo,inactivo',
         ]);
 
-        $school->update($request->except('levels', 'mee_usernames', 'mee_passwords'));
+        $school->update($request->only([
+            'name', 'nexus_id', 'address', 'city',
+            'phone', 'email', 'status', 'notes',
+        ]));
 
         // Actualizar niveles
         $newLevelIds = array_map('intval', $request->levels ?? []);

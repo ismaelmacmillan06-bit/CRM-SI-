@@ -4,78 +4,70 @@
 
 @section('content')
 
-{{-- Cards principales --}}
-<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px">
-    <div class="card" style="border-top:3px solid var(--accent)">
-        <div class="card-body" style="padding:20px">
-            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
-                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Colegios</div>
-            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
-                {{ $totalSchools }}
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap">
-                <span class="badge badge-success">{{ $colegiosActivos }} activos</span>
-                <span class="badge badge-warning">{{ $colegiosProspecto }} prospecto</span>
-                <span class="badge badge-gray">{{ $colegiosInactivos }} inactivos</span>
-            </div>
+{{-- Cards principales (compactas) --}}
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:16px; margin-bottom:24px">
+
+    {{-- Colegios --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid var(--accent); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Colegios</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalSchools }}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
+            <span class="badge badge-success">{{ $colegiosActivos }} activos</span>
+            <span class="badge badge-warning">{{ $colegiosProspecto }} prospecto</span>
+            <span class="badge badge-gray">{{ $colegiosInactivos }} inactivos</span>
         </div>
     </div>
 
-    <div class="card" style="border-top:3px solid #8b5cf6">
-        <div class="card-body" style="padding:20px">
-            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
-                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Directores</div>
-            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
-                {{ $totalStudents }}
-            </div>
-            <div style="margin-top:8px; font-size:13px; color:var(--text-muted)">
-                Registrados en MEE y Servicios 
-            </div>
+    {{-- Directores --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Directores</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalStudents }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Registrados en MEE y Servicios</div>
+    </div>
+
+    {{-- Docentes --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #3b82f6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Docentes</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalTeachers }}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
+            <span class="badge badge-info">{{ $docentesELT }} ELT</span>
+            <span class="badge badge-success">{{ $docentesECA }} ECA</span>
         </div>
     </div>
 
-    <div class="card" style="border-top:3px solid #3b82f6">
-        <div class="card-body" style="padding:20px">
-            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
-                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Docentes</div>
-            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
-                {{ $totalTeachers }}
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px">
-                <span class="badge badge-info">{{ $docentesELT }} ELT</span>
-                <span class="badge badge-success">{{ $docentesECA }} ECA</span>
-            </div>
+    {{-- Alumnos --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Alumnos</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalStudents }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">registrados en MEE</div>
+    </div>
+
+    {{-- Tickets --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #f59e0b; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Tickets</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $ticketsAbiertos + $ticketsEnProceso + $ticketsResueltos }}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
+            <span class="badge badge-danger">{{ $ticketsAbiertos }} abiertos</span>
+            <span class="badge badge-warning">{{ $ticketsEnProceso }} en proceso</span>
+            <span class="badge badge-success">{{ $ticketsResueltos }} resueltos</span>
         </div>
     </div>
 
-
-    <div class="card" style="border-top:3px solid #8b5cf6">
-        <div class="card-body" style="padding:20px">
-            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
-                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Alumnos</div>
-            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
-                {{ $totalStudents }}
-            </div>
-            <div style="margin-top:8px; font-size:13px; color:var(--text-muted)">
-                registrados en MEE
-            </div>
-        </div>
-    </div>
-
-
-    <div class="card" style="border-top:3px solid #f59e0b">
-        <div class="card-body" style="padding:20px">
-            <div style="font-size:12px; font-weight:600; text-transform:uppercase;
-                        letter-spacing:1px; color:var(--text-muted); margin-bottom:8px">Tickets</div>
-            <div style="font-size:32px; font-weight:700; font-family:'Space Grotesk',sans-serif">
-                {{ $ticketsAbiertos + $ticketsEnProceso }}
-            </div>
-            <div style="display:flex; gap:8px; margin-top:8px">
-                <span class="badge badge-danger">{{ $ticketsAbiertos }} abiertos</span>
-                <span class="badge badge-warning">{{ $ticketsEnProceso }} en proceso</span>
-            </div>
-        </div>
-    </div>
 </div>
 
 {{-- Visitas pendientes alert --}}
@@ -91,6 +83,49 @@
     </a>
 </div>
 @endif
+
+
+{{--Cards para alumnos SI --}}
+@php
+    // $conteoNiveles viene del controlador, ya filtrado por rol
+    $nivelesSI = [
+        ['nombre' => 'Maternal',     'icono' => '🍼', 'color' => '#f59e0b', 'alias' => ['maternal']],
+        ['nombre' => 'Preescolar',   'icono' => '🧸', 'color' => '#8b5cf6', 'alias' => ['preescolar','prescolar','kinder','kínder']],
+        ['nombre' => 'Primaria',     'icono' => '✏️', 'color' => '#3b82f6', 'alias' => ['primaria']],
+        ['nombre' => 'Secundaria',   'icono' => '📐', 'color' => '#10b981', 'alias' => ['secundaria','secu']],
+        ['nombre' => 'Preparatoria', 'icono' => '🎓', 'color' => '#e94560', 'alias' => ['preparatoria','bachillerato','prepa','bach']],
+        ['nombre' => 'Licenciatura', 'icono' => '🏛️', 'color' => '#0ea5e9', 'alias' => ['licenciatura','universidad','lic']],
+    ];
+
+    $totalAlumnosSI = $conteoNiveles->sum();
+@endphp
+
+<div style="margin-bottom:24px">
+    <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px">
+        <span style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
+            🎒 Alumnos SI
+        </span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ number_format($totalAlumnosSI) }} en total</span>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px">
+        @foreach($nivelesSI as $n)
+            @php $count = collect($n['alias'])->sum(fn($a) => $conteoNiveles[$a] ?? 0); @endphp
+            <div style="background:var(--surface); border-radius:14px; padding:18px 20px;
+                        border-top:3px solid {{ $n['color'] }}; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+                    <span style="font-size:11px; font-weight:600; letter-spacing:.5px;
+                                 text-transform:uppercase; color:var(--text-muted)">{{ $n['nombre'] }}</span>
+                    <span style="font-size:18px">{{ $n['icono'] }}</span>
+                </div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700;
+                            color:{{ $n['color'] }}; line-height:1">{{ number_format($count) }}</div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:6px">alumnos</div>
+            </div>
+        @endforeach
+    </div>
+</div>
+
 
 {{-- Mapa + Panel derecho --}}
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
@@ -157,7 +192,7 @@
 <div id="colegios-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
     @forelse($schools as $school)
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
-         data-consultor="{{ strtolower($school->consultant->user->name ?? '') }}"
+         data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->city ?? '') }}"
          style="transition: all 0.2s">
         <div class="card-header" style="padding:16px 20px">
@@ -180,7 +215,7 @@
         <div class="card-body" style="padding:16px 20px">
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px">
                 <span style="color:var(--text-muted)">Consultor Digital</span>
-                <span style="font-weight:500">{{ $school->consultant->user->name ?? '—' }}</span>
+                <span style="font-weight:500">{{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}</span>
             </div>
 
             @if($school->meeAdmins->count())

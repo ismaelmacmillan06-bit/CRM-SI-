@@ -33,6 +33,7 @@
                         <label class="form-label">Nivel</label>
                         <select name="level" class="form-control">
                             <option value="">-- Selecciona --</option>
+                            <option value="Maternal"     {{ old('level', $student->level) == 'Maternal'     ? 'selected' : '' }}>Maternal</option>
                             <option value="Preescolar"   {{ old('level', $student->level) == 'Preescolar'   ? 'selected' : '' }}>Preescolar</option>
                             <option value="Primaria"     {{ old('level', $student->level) == 'Primaria'     ? 'selected' : '' }}>Primaria</option>
                             <option value="Secundaria"   {{ old('level', $student->level) == 'Secundaria'   ? 'selected' : '' }}>Secundaria</option>

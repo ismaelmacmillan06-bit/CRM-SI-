@@ -370,6 +370,9 @@
         @if(session('error'))
             <div class="alert alert-danger">❌ {{ session('error') }}</div>
         @endif
+        @if(session('error_acceso'))
+            <div class="alert alert-danger">🔒 {{ session('error_acceso') }}</div>
+        @endif
         @yield('content')
     </div>
 </div>

@@ -1,32 +1,52 @@
 <?php
 
 namespace Database\Seeders;
-use Illuminate\Support\Facades\DB;
 
-
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use App\Models\SchoolLevel;
+use App\Models\SchoolLevelProcess;
 
 class ProcessesSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-       $processes = [
-            ['name' => 'High Bondules',             'slug' => 'high_bondules',          'order' => 1],
-            ['name' => 'Admin Training',             'slug' => 'admin_training',          'order' => 2],
-            ['name' => 'Register Teachers',          'slug' => 'register_teachers',       'order' => 3],
-            ['name' => 'Class Creation',             'slug' => 'class_creation',          'order' => 4],
-            ['name' => 'Teacher Book Assignment',    'slug' => 'teacher_book_assignment', 'order' => 5],
-            ['name' => 'Student Registration',       'slug' => 'student_registration',    'order' => 6],
-            ['name' => 'Student Book Assignment',    'slug' => 'student_book_assignment', 'order' => 7],
-            ['name' => 'Generate Passwords',         'slug' => 'generate_passwords',      'order' => 8],
+        $processes = [
+            ['name' => 'Alta de Bundles',                  'slug' => 'alta_bundles',            'order' => 1],
+            ['name' => 'Capacitación del administrador',   'slug' => 'capacitacion_admin',      'order' => 2],
+            ['name' => 'Registrar profesores',             'slug' => 'registrar_profesores',    'order' => 3],
+            ['name' => 'Creación de clases',               'slug' => 'creacion_clases',         'order' => 4],
+            ['name' => 'Libro del profesor',               'slug' => 'libro_profesor',          'order' => 5],
+            ['name' => 'Alta de alumnos',                  'slug' => 'alta_alumnos',            'order' => 6],
+            ['name' => 'Asignación del libro del alumno',  'slug' => 'asignacion_libro_alumno', 'order' => 7],
+            ['name' => 'Generar contraseñas',              'slug' => 'generar_contrasenas',     'order' => 8],
+            ['name' => 'Alta en servicios alumno',         'slug' => 'alta_servicios_alumno',   'order' => 9],
+            ['name' => 'Entrega del colegio',              'slug' => 'entrega_colegio',         'order' => 10],
         ];
 
+        // 1) Crea o ACTUALIZA el catálogo (identifica por 'order', así renombra sin duplicar
+        //    y sin romper los procesos que ya tienen los colegios)
         foreach ($processes as $process) {
-            DB::table('processes')->insert($process);
+            DB::table('processes')->updateOrInsert(
+                ['order' => $process['order']],
+                ['name' => $process['name'], 'slug' => $process['slug']]
+            );
+        }
+
+        // 2) Rellena los procesos que falten en los colegios YA creados,
+        //    sin tocar el avance que ya tengan guardado
+        $allProcesses = DB::table('processes')->get();
+
+        foreach (SchoolLevel::all() as $schoolLevel) {
+            foreach ($allProcesses as $process) {
+                SchoolLevelProcess::firstOrCreate(
+                    [
+                        'school_level_id' => $schoolLevel->id,
+                        'process_id'      => $process->id,
+                    ],
+                    ['status' => 'pending']
+                );
+            }
         }
     }
 }

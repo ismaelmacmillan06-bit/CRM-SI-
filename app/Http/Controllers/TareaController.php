@@ -13,7 +13,7 @@ class TareaController extends Controller
     {
         $tareas  = TareaSI::with('creator')->latest()->get();
         $tarea   = $request->tarea_id ? TareaSI::find($request->tarea_id) : $tareas->first();
-        $schools = School::orderBy('name')->get();
+        $schools = School::with('schoolConsultants.consultant.user')->orderBy('name')->get();
 
         // Mapa school_id → estado para la tarea activa
         $statusMap = [];

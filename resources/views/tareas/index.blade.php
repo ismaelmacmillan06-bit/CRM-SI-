@@ -14,7 +14,8 @@
 {{-- Header --}}
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap">
     <div>
-        <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--text); margin:0">
+        <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700;
+                   color:var(--text); margin:0">
             ✅ Tareas SI
         </h2>
         <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0">
@@ -22,7 +23,7 @@
         </p>
     </div>
 
-    @can('admin')
+    @if(auth()->user()->hasRole('admin'))
     <button onclick="document.getElementById('modal-nueva-tarea').style.display='flex'"
             style="margin-left:auto; display:inline-flex; align-items:center; gap:6px;
                    padding:10px 20px; background:var(--accent); color:#fff; border:none;
@@ -32,7 +33,7 @@
             onmouseout="this.style.background='var(--accent)'">
         + Tarea SI
     </button>
-    @endcan
+    @endif
 </div>
 
 {{-- Modal Nueva Tarea --}}
@@ -72,29 +73,27 @@
     </div>
 </div>
 
-{{-- Panel de tareas + tabla --}}
+{{-- Layout principal --}}
 <div style="display:grid; grid-template-columns:260px 1fr; gap:20px; align-items:start">
 
-    {{-- Lista de tareas --}}
+    {{-- Panel izquierdo: lista de tareas --}}
     <div class="card" style="position:sticky; top:80px">
         <div class="card-header">
-            <span class="card-title" style="font-size:14px">📋 Tareas creadas</span>
+            <span class="card-title" style="font-size:14px">📋 Tareas</span>
             <span style="font-size:12px; color:var(--text-muted)">{{ $tareas->count() }}</span>
         </div>
         <div style="padding:8px">
             @forelse($tareas as $t)
             @php
-                $p = $t->progreso();
-                $pct = $p['total'] > 0 ? round(($p['realizada'] / $p['total']) * 100) : 0;
+                $p       = $t->progreso();
+                $pct     = $p['total'] > 0 ? round(($p['realizada'] / $p['total']) * 100) : 0;
                 $isActive = $tarea && $tarea->id === $t->id;
             @endphp
             <a href="{{ route('tareas.index', ['tarea_id' => $t->id]) }}"
-               style="display:block; padding:12px; border-radius:8px; text-decoration:none;
-                      margin-bottom:4px; border:1px solid {{ $isActive ? 'var(--accent)' : 'transparent' }};
+               style="display:block; padding:12px; border-radius:8px; text-decoration:none; margin-bottom:4px;
+                      border:1px solid {{ $isActive ? 'var(--accent)' : 'transparent' }};
                       background:{{ $isActive ? '#fff5f5' : 'transparent' }};
-                      transition:background 0.15s"
-               onmouseover="if(!{{ $isActive ? 'true' : 'false' }}) this.style.background='var(--surface2)'"
-               onmouseout="if(!{{ $isActive ? 'true' : 'false' }}) this.style.background='transparent'">
+                      transition:background 0.15s">
                 <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px">
                     {{ $t->titulo }}
                 </div>
@@ -107,111 +106,126 @@
             </a>
             @empty
             <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px">
-                No hay tareas aún.
+                No hay tareas aún.<br>
+                @if(auth()->user()->hasRole('admin'))
+                <span style="font-size:12px">Usa "+ Tarea SI" para crear una.</span>
+                @endif
             </div>
             @endforelse
         </div>
     </div>
 
-    {{-- Tabla de colegios para la tarea activa --}}
-    <div>
-        @if($tarea)
-        <div class="card">
-            <div class="card-header">
-                <div>
+    {{-- Panel derecho: tabla de colegios (siempre visible) --}}
+    <div class="card">
+        <div class="card-header" style="flex-wrap:wrap; gap:8px">
+            <div>
+                @if($tarea)
                     <span class="card-title">{{ $tarea->titulo }}</span>
                     @if($tarea->descripcion)
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px">{{ $tarea->descripcion }}</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                        {{ $tarea->descripcion }}
+                    </div>
                     @endif
-                </div>
-                <div style="display:flex; align-items:center; gap:8px">
-                    @php $p = $tarea->progreso(); @endphp
-                    <span class="badge badge-warning">{{ $p['pendiente'] }} pend.</span>
-                    <span class="badge badge-info">{{ $p['en_proceso'] }} proceso</span>
-                    <span class="badge badge-success">{{ $p['realizada'] }} listas</span>
-                    @can('admin')
-                    <form method="POST" action="{{ route('tareas.destroy', $tarea) }}"
-                          onsubmit="return confirm('¿Eliminar esta tarea?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-danger btn-sm">🗑</button>
-                    </form>
-                    @endcan
-                </div>
+                @else
+                    <span class="card-title">Colegios</span>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                        Selecciona una tarea del panel izquierdo para gestionar estados
+                    </div>
+                @endif
             </div>
 
-            {{-- Buscador rápido --}}
-            <div style="padding:12px 20px; border-bottom:1px solid var(--border)">
-                <input type="text" id="buscador-tareas" class="form-control"
-                       placeholder="🔍 Buscar colegio..."
-                       style="max-width:320px">
+            @if($tarea)
+            @php $p = $tarea->progreso(); @endphp
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap">
+                <span class="badge badge-warning">{{ $p['pendiente'] }} pend.</span>
+                <span class="badge badge-info">{{ $p['en_proceso'] }} proceso</span>
+                <span class="badge badge-success">{{ $p['realizada'] }} listas</span>
+                @if(auth()->user()->hasRole('admin'))
+                <form method="POST" action="{{ route('tareas.destroy', $tarea) }}"
+                      onsubmit="return confirm('¿Eliminar esta tarea?')" style="margin:0">
+                    @csrf @method('DELETE')
+                    <button class="btn btn-danger btn-sm" style="padding:4px 10px">🗑 Eliminar</button>
+                </form>
+                @endif
             </div>
+            @endif
+        </div>
 
-            <table class="table" id="tabla-tareas">
-                <thead>
-                    <tr>
-                        <th>Colegio</th>
-                        <th>Ciudad</th>
-                        <th>Estado actual</th>
-                        <th style="text-align:center; min-width:230px">Cambiar estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($schools as $school)
-                    @php $status = $statusMap[$school->id] ?? 'pendiente'; @endphp
-                    <tr class="tarea-row" data-nombre="{{ strtolower($school->name) }}">
-                        <td><strong>{{ $school->name }}</strong></td>
-                        <td style="font-size:13px; color:var(--text-muted)">{{ $school->city ?? '—' }}</td>
-                        <td>
-                            <span id="badge-{{ $school->id }}"
-                                  class="badge {{ $status === 'realizada' ? 'badge-success' : ($status === 'en_proceso' ? 'badge-info' : 'badge-warning') }}">
-                                {{ $status === 'realizada' ? '✓ Realizada' : ($status === 'en_proceso' ? '⟳ En proceso' : '○ Pendiente') }}
-                            </span>
-                        </td>
-                        <td style="text-align:center">
-                            <div style="display:inline-flex; gap:4px">
-                                <button onclick="cambiarEstado({{ $school->id }}, 'pendiente', this)"
-                                        class="btn-estado {{ $status === 'pendiente' ? 'activo' : '' }}"
-                                        data-valor="pendiente"
-                                        style="padding:5px 10px; font-size:12px; border-radius:6px; border:1px solid #f59e0b;
-                                               background:{{ $status === 'pendiente' ? '#f59e0b' : 'transparent' }};
-                                               color:{{ $status === 'pendiente' ? '#fff' : '#b45309' }};
-                                               cursor:pointer; transition:all 0.15s; font-weight:500">
-                                    ○ Pendiente
-                                </button>
-                                <button onclick="cambiarEstado({{ $school->id }}, 'en_proceso', this)"
-                                        class="btn-estado {{ $status === 'en_proceso' ? 'activo' : '' }}"
-                                        data-valor="en_proceso"
-                                        style="padding:5px 10px; font-size:12px; border-radius:6px; border:1px solid #3b82f6;
-                                               background:{{ $status === 'en_proceso' ? '#3b82f6' : 'transparent' }};
-                                               color:{{ $status === 'en_proceso' ? '#fff' : '#1d4ed8' }};
-                                               cursor:pointer; transition:all 0.15s; font-weight:500">
-                                    ⟳ En proceso
-                                </button>
-                                <button onclick="cambiarEstado({{ $school->id }}, 'realizada', this)"
-                                        class="btn-estado {{ $status === 'realizada' ? 'activo' : '' }}"
-                                        data-valor="realizada"
-                                        style="padding:5px 10px; font-size:12px; border-radius:6px; border:1px solid #10b981;
-                                               background:{{ $status === 'realizada' ? '#10b981' : 'transparent' }};
-                                               color:{{ $status === 'realizada' ? '#fff' : '#065f46' }};
-                                               cursor:pointer; transition:all 0.15s; font-weight:500">
-                                    ✓ Realizada
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        {{-- Buscador rápido --}}
+        <div style="padding:10px 20px; border-bottom:1px solid var(--border)">
+            <input type="text" id="buscador-tareas" class="form-control"
+                   placeholder="🔍 Buscar colegio..." style="max-width:300px">
         </div>
-        @else
-        <div class="card">
-            <div class="card-body" style="text-align:center; padding:60px; color:var(--text-muted)">
-                <div style="font-size:48px; margin-bottom:16px">✅</div>
-                <div style="font-size:16px; font-weight:600; margin-bottom:8px">No hay tareas creadas</div>
-                <div style="font-size:13px">Crea la primera tarea con el botón "+ Tarea SI"</div>
-            </div>
-        </div>
-        @endif
+
+        <table class="table" id="tabla-tareas">
+            <thead>
+                <tr>
+                    <th>Colegio</th>
+                    <th>Consultor Digital</th>
+                    <th>Ciudad</th>
+                    @if($tarea)
+                    <th style="text-align:center">Estado</th>
+                    <th style="text-align:center; min-width:240px">Cambiar estado</th>
+                    @endif
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($schools as $school)
+                @php $status = $statusMap[$school->id] ?? 'pendiente'; @endphp
+                <tr class="tarea-row" data-nombre="{{ strtolower($school->name) }}">
+                    <td><strong>{{ $school->name }}</strong></td>
+                    <td style="font-size:13px; color:var(--text-muted)">
+                        {{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}
+                    </td>
+                    <td style="font-size:13px; color:var(--text-muted)">{{ $school->city ?? '—' }}</td>
+
+                    @if($tarea)
+                    <td style="text-align:center">
+                        <span id="badge-{{ $school->id }}"
+                              class="badge {{ $status === 'realizada' ? 'badge-success' : ($status === 'en_proceso' ? 'badge-info' : 'badge-warning') }}">
+                            {{ $status === 'realizada' ? '✓ Realizada' : ($status === 'en_proceso' ? '⟳ En proceso' : '○ Pendiente') }}
+                        </span>
+                    </td>
+                    <td style="text-align:center">
+                        <div style="display:inline-flex; gap:4px">
+                            <button onclick="cambiarEstado({{ $school->id }}, 'pendiente', this)"
+                                    data-valor="pendiente"
+                                    style="padding:5px 10px; font-size:12px; border-radius:6px;
+                                           border:1px solid #f59e0b; cursor:pointer; transition:all 0.15s; font-weight:500;
+                                           background:{{ $status === 'pendiente' ? '#f59e0b' : 'transparent' }};
+                                           color:{{ $status === 'pendiente' ? '#fff' : '#b45309' }}">
+                                ○ Pendiente
+                            </button>
+                            <button onclick="cambiarEstado({{ $school->id }}, 'en_proceso', this)"
+                                    data-valor="en_proceso"
+                                    style="padding:5px 10px; font-size:12px; border-radius:6px;
+                                           border:1px solid #3b82f6; cursor:pointer; transition:all 0.15s; font-weight:500;
+                                           background:{{ $status === 'en_proceso' ? '#3b82f6' : 'transparent' }};
+                                           color:{{ $status === 'en_proceso' ? '#fff' : '#1d4ed8' }}">
+                                ⟳ En proceso
+                            </button>
+                            <button onclick="cambiarEstado({{ $school->id }}, 'realizada', this)"
+                                    data-valor="realizada"
+                                    style="padding:5px 10px; font-size:12px; border-radius:6px;
+                                           border:1px solid #10b981; cursor:pointer; transition:all 0.15s; font-weight:500;
+                                           background:{{ $status === 'realizada' ? '#10b981' : 'transparent' }};
+                                           color:{{ $status === 'realizada' ? '#fff' : '#065f46' }}">
+                                ✓ Realizada
+                            </button>
+                        </div>
+                    </td>
+                    @endif
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="{{ $tarea ? 5 : 3 }}"
+                        style="text-align:center; color:var(--text-muted); padding:40px">
+                        No hay colegios registrados.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
 </div>
@@ -222,52 +236,45 @@ const TAREA_ID = {{ $tarea?->id ?? 'null' }};
 async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
     if (!TAREA_ID) return;
 
-    const row = btnClicked.closest('tr');
-    const botones = row.querySelectorAll('.btn-estado');
-    const badge = document.getElementById('badge-' + schoolId);
+    const row     = btnClicked.closest('tr');
+    const botones = row.querySelectorAll('button[data-valor]');
+    const badge   = document.getElementById('badge-' + schoolId);
 
-    // Optimistic UI
+    const colores = {
+        pendiente:  { border:'#f59e0b', bg:'#f59e0b', color:'#fff', off:'#b45309' },
+        en_proceso: { border:'#3b82f6', bg:'#3b82f6', color:'#fff', off:'#1d4ed8' },
+        realizada:  { border:'#10b981', bg:'#10b981', color:'#fff', off:'#065f46' },
+    };
+
     botones.forEach(btn => {
         const val = btn.dataset.valor;
-        const colores = {
-            pendiente:  { border:'#f59e0b', bg:'#f59e0b', color:'#fff', off:'#b45309' },
-            en_proceso: { border:'#3b82f6', bg:'#3b82f6', color:'#fff', off:'#1d4ed8' },
-            realizada:  { border:'#10b981', bg:'#10b981', color:'#fff', off:'#065f46' },
-        };
-        const c = colores[val];
-        if (val === nuevoStatus) {
-            btn.style.background = c.bg;
-            btn.style.color = c.color;
-        } else {
-            btn.style.background = 'transparent';
-            btn.style.color = c.off;
-        }
+        const c   = colores[val];
+        btn.style.background = val === nuevoStatus ? c.bg        : 'transparent';
+        btn.style.color      = val === nuevoStatus ? c.color : c.off;
     });
 
     const badgeMap = {
-        pendiente:  { cls: 'badge-warning', txt: '○ Pendiente' },
-        en_proceso: { cls: 'badge-info',    txt: '⟳ En proceso' },
-        realizada:  { cls: 'badge-success', txt: '✓ Realizada' },
+        pendiente:  { cls:'badge-warning', txt:'○ Pendiente' },
+        en_proceso: { cls:'badge-info',    txt:'⟳ En proceso' },
+        realizada:  { cls:'badge-success', txt:'✓ Realizada' },
     };
-    badge.className = 'badge ' + badgeMap[nuevoStatus].cls;
-    badge.textContent = badgeMap[nuevoStatus].txt;
+    if (badge) {
+        badge.className    = 'badge ' + badgeMap[nuevoStatus].cls;
+        badge.textContent  = badgeMap[nuevoStatus].txt;
+    }
 
     try {
-        const resp = await fetch(`/tareas/${TAREA_ID}/colegios/${schoolId}`, {
+        await fetch(`/tareas/${TAREA_ID}/colegios/${schoolId}`, {
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                'Content-Type':  'application/json',
+                'X-CSRF-TOKEN':  document.querySelector('meta[name=csrf-token]').content,
             },
             body: JSON.stringify({ status: nuevoStatus }),
         });
-        if (!resp.ok) console.error('Error al guardar estado');
-    } catch(e) {
-        console.error(e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-// Buscador
 document.getElementById('buscador-tareas')?.addEventListener('input', function() {
     const q = this.value.toLowerCase().trim();
     document.querySelectorAll('.tarea-row').forEach(row => {

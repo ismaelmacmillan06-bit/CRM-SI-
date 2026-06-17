@@ -27,8 +27,8 @@
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Directores</div>
         <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalStudents }}</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Registrados en MEE y Servicios</div>
+                    color:var(--text); line-height:1">{{ $totalDirectores }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Director General + Director de Nivel</div>
     </div>
 
     {{-- Docentes --}}
@@ -66,6 +66,29 @@
             <span class="badge badge-warning">{{ $ticketsEnProceso }} en proceso</span>
             <span class="badge badge-success">{{ $ticketsResueltos }} resueltos</span>
         </div>
+    </div>
+
+    {{-- Visitas --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #0ea5e9; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Visitas</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalVisitas }}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
+            <span class="badge badge-warning">{{ $visitasPendientes }} pendientes</span>
+            <span class="badge badge-success">{{ $totalVisitas - $visitasPendientes }} realizadas</span>
+        </div>
+    </div>
+
+    {{-- Admins MEE --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #10b981; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Admins MEE</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalAdminsMee }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Administradores MEE registrados</div>
     </div>
 
 </div>

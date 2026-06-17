@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\Zonas;
 use App\Models\School;
 use App\Models\Teacher;
+use App\Models\TeacherRole;
 use App\Models\Student;
 use App\Models\Consultant;
 use App\Models\SchoolConsultant;
@@ -41,8 +42,22 @@ class DashboardController extends Controller
         $ticketsEnProceso = $schoolScope(Ticket::where('status', 'in_progress'))->count();
         $ticketsResueltos = $schoolScope(Ticket::where('status', 'closed'))->count();
 
-        // Visitas pendientes
+        // Visitas
         $visitasPendientes = $schoolScope(Visit::where('status', 'pendiente'))->count();
+        $totalVisitas      = $schoolScope(Visit::query())->count();
+
+        // Directores y Admins MEE (via teacher_roles)
+        $teacherScope = fn($q) => $schoolIds
+            ? $q->whereHas('teacher', fn($tq) => $tq->whereIn('school_id', $schoolIds))
+            : $q;
+
+        $totalDirectores = $teacherScope(
+            TeacherRole::whereIn('role', ['director_general', 'director_nivel'])
+        )->count();
+
+        $totalAdminsMee = $teacherScope(
+            TeacherRole::where('role', 'admin_mee')
+        )->count();
 
         // Docentes por materia
         $docentesELT = $schoolScope(Teacher::where('subject', 'ELT'))->count();
@@ -82,7 +97,9 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
-            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos', 'visitasPendientes',
+            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
+            'visitasPendientes', 'totalVisitas',
+            'totalDirectores', 'totalAdminsMee',
             'schools', 'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles'

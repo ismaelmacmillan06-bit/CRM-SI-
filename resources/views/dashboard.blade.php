@@ -145,34 +145,61 @@
     <div class="card">
         <div class="card-header">
             <span class="card-title">📍 Colegios por zona</span>
+            <a href="{{ route('reportes.zonas') }}"
+               style="display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+                      background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
+                      border-radius:8px; font-size:12px; font-weight:600; text-decoration:none;
+                      transition:all 0.2s"
+               onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
+               onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">
+                📊 Reporte Zonas
+            </a>
         </div>
         <div class="card-body" style="padding:16px">
+            @php
+                $zonasConfig = [
+                    'Pacífico' => ['icon' => '🟢', 'color' => '#10b981', 'estados' => 'BC · BCS · Sonora · Sinaloa · Nayarit · Jalisco · Colima'],
+                    'Norte'    => ['icon' => '🔵', 'color' => '#3b82f6', 'estados' => 'Chihuahua · Coahuila · Nuevo León · Tamaulipas · Durango'],
+                    'Centro'   => ['icon' => '🟣', 'color' => '#8b5cf6', 'estados' => 'Hidalgo · Tlaxcala · Edo. Méx. · CDMX · Morelos · Guerrero'],
+                    'Bajío'    => ['icon' => '🟠', 'color' => '#f97316', 'estados' => 'Guanajuato · Querétaro · Ags. · S.L.P. · Michoacán · Zacatecas'],
+                    'Sureste'  => ['icon' => '🔴', 'color' => '#e94560', 'estados' => 'Veracruz · Oaxaca · Puebla · Chiapas · Tabasco · Campeche · Yucatán · Q.Roo'],
+                ];
+            @endphp
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
-                @foreach([
-                    ['zona' => 'Norte',     'icon' => '🔵', 'color' => '#3b82f6'],
-                    ['zona' => 'Sur',       'icon' => '🟢', 'color' => '#10b981'],
-                    ['zona' => 'Sureste',   'icon' => '🟡', 'color' => '#f59e0b'],
-                    ['zona' => 'Bajío',     'icon' => '🔴', 'color' => '#e94560'],
-                    ['zona' => 'Centro',    'icon' => '🟣', 'color' => '#8b5cf6'],
-                    ['zona' => 'Occidente', 'icon' => '🟠', 'color' => '#f97316'],
-                ] as $zona)
+                @foreach($zonasConfig as $nombre => $cfg)
                 <div style="border:1px solid var(--border); border-radius:10px; padding:14px;
-                            border-left:4px solid {{ $zona['color'] }}">
+                            border-left:4px solid {{ $cfg['color'] }}">
                     <div style="font-size:11px; font-weight:600; text-transform:uppercase;
                                 letter-spacing:1px; color:var(--text-muted); margin-bottom:6px">
-                        {{ $zona['icon'] }} {{ $zona['zona'] }}
+                        {{ $cfg['icon'] }} {{ $nombre }}
                     </div>
                     <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif;
-                                color:{{ $zona['color'] }}">
-                        0
+                                color:{{ $cfg['color'] }}">
+                        {{ $colegiosPorZona[$nombre] ?? 0 }}
                     </div>
-                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px">colegios</div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:4px; line-height:1.4">
+                        {{ $cfg['estados'] }}
+                    </div>
                 </div>
                 @endforeach
-            </div>
-            <div style="margin-top:14px; padding:10px 14px; background:var(--surface2);
-                        border-radius:8px; font-size:12px; color:var(--text-muted); text-align:center">
-                💡 Las zonas se configurarán próximamente
+
+                {{-- Sin zona si hay colegios sin clasificar --}}
+                @if(($colegiosPorZona['Sin zona'] ?? 0) > 0)
+                <div style="border:1px solid var(--border); border-radius:10px; padding:14px;
+                            border-left:4px solid #9ca3af; grid-column:1/-1">
+                    <div style="font-size:11px; font-weight:600; text-transform:uppercase;
+                                letter-spacing:1px; color:var(--text-muted); margin-bottom:6px">
+                        ⚪ Sin zona asignada
+                    </div>
+                    <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+                                color:#6b7280">
+                        {{ $colegiosPorZona['Sin zona'] }}
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:4px">
+                        Estado no reconocido en el catálogo de zonas
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
     </div>

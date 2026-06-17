@@ -13,7 +13,7 @@ class ConsultantController extends Controller
 {
     public function index()
     {
-        $consultants = Consultant::with('user')->get();
+        $consultants = Consultant::with('user', 'schoolConsultants')->get();
         return view('consultants.index', compact('consultants'));
     }
 

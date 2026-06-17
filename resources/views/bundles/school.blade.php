@@ -3,10 +3,64 @@
 @section('title', 'Bundles — ' . $school->name)
 
 @section('content')
-<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
+<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     <button onclick="document.getElementById('modal-bundles').style.display='flex'"
             class="btn btn-primary">+ Agregar Bundles</button>
+    <button onclick="document.getElementById('modal-import').style.display='flex'"
+            style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+                   background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
+                   border-radius:8px; font-size:13px; font-weight:500; cursor:pointer;
+                   transition:all 0.2s"
+            onmouseover="this.style.background='#16a34a';this.style.color='#fff'"
+            onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">
+        📥 Importación masiva Excel
+    </button>
+</div>
+
+{{-- Modal importación masiva --}}
+<div id="modal-import" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:999; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:520px; max-width:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600">
+                📥 Importación masiva de Bundles
+            </h3>
+            <button onclick="document.getElementById('modal-import').style.display='none'"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
+                    padding:12px 16px; font-size:13px; color:#166534; margin-bottom:20px; line-height:1.6">
+            Usa el archivo <strong>altaDeBundlesEnInstitucionesMEE</strong> tal como está.<br>
+            Se leen las columnas <strong>B (nombre del bundle)</strong> y <strong>D (cantidad)</strong>.<br>
+            Los bundles ya registrados en este colegio se omiten automáticamente.
+        </div>
+
+        <form method="POST" action="{{ route('schools.bundles.import', $school) }}"
+              enctype="multipart/form-data">
+            @csrf
+            <div class="form-group">
+                <label class="form-label">Archivo Excel (.xlsx / .xlsm)</label>
+                <input type="file" name="archivo" accept=".xlsx,.xlsm,.xls"
+                       class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha de adopción</label>
+                <input type="date" name="acquired_at" class="form-control"
+                       value="{{ now()->toDateString() }}">
+                <small style="color:var(--text-muted); font-size:11px">
+                    Se registrará como la fecha en que el colegio adquirió los materiales.
+                </small>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px">
+                <button type="button"
+                        onclick="document.getElementById('modal-import').style.display='none'"
+                        class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">📥 Importar</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {{-- Modal selección de bundles --}}
@@ -62,6 +116,28 @@
                     </label>
                     @endforeach
                 </div>
+
+                {{-- Complementos --}}
+                @if($series->where('type', 'Complemento')->count())
+                <div style="border:1px solid var(--border); border-radius:10px; padding:16px; grid-column:1/-1">
+                    <div style="font-weight:600; font-size:13px; text-transform:uppercase;
+                                letter-spacing:1px; color:var(--text-muted); margin-bottom:12px">
+                        🧩 Complementos
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+                    @foreach($series->where('type', 'Complemento') as $serie)
+                    <label style="display:flex; align-items:center; gap:8px; padding:8px 10px;
+                                  border:1px solid var(--border); border-radius:8px;
+                                  cursor:pointer; font-size:13px" class="serie-label">
+                        <input type="checkbox" class="serie-check" value="{{ $serie->serie }}"
+                               data-type="{{ $serie->type }}" style="accent-color:var(--accent)">
+                        <span>{{ $serie->serie }}</span>
+                        <small style="color:var(--text-muted); margin-left:auto">{{ $serie->type }}</small>
+                    </label>
+                    @endforeach
+                    </div>
+                </div>
+                @endif
             </div>
 
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end">

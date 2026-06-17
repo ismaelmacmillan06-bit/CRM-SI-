@@ -12,10 +12,13 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SchoolBundleController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReporteController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : redirect()->route('login');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -72,6 +75,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.bundles.index');
     Route::post('schools/{school}/bundles', [SchoolBundleController::class, 'store'])
          ->name('schools.bundles.store');
+    Route::post('schools/{school}/bundles/import', [SchoolBundleController::class, 'importarMasivo'])
+         ->name('schools.bundles.import');
     Route::delete('schools/{school}/bundles/{bundle}', [SchoolBundleController::class, 'destroy'])
          ->name('schools.bundles.destroy');
     Route::get('api/bundles-by-series', [SchoolBundleController::class, 'getBundlesBySeries'])
@@ -79,6 +84,9 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      
      // Bundles catálogo
      Route::resource('bundles', BundleController::class)->only(['index', 'create', 'store', 'destroy']);
+
+     // Reportes
+     Route::get('reportes/zonas', [ReporteController::class, 'reporteZonas'])->name('reportes.zonas');
 });
 
 

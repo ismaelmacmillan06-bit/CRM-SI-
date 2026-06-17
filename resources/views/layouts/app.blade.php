@@ -317,7 +317,7 @@
             <span class="nav-icon">🏫</span> Colegios
         </a>
         <a href="{{ route('consultants.index') }}" class="nav-item {{ request()->routeIs('consultants.*') ? 'active' : '' }}">
-            <span class="nav-icon">👥</span> Consultores
+            <span class="nav-icon">👥</span> Equipo SI
         </a>
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI

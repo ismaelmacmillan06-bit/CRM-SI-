@@ -1,12 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Consultores')
+@section('title', 'Equipo SI')
 
 @section('content')
 <div class="card">
     <div class="card-header">
-        <span class="card-title">👥 Consultores registrados</span>
-        <a href="{{ route('consultants.create') }}" class="btn btn-primary">+ Nuevo Consultor</a>
+        <span class="card-title">👥 Equipo SI</span>
+        @role('admin')
+        <a href="{{ route('consultants.create') }}" class="btn btn-primary">+ Nuevo Miembro</a>
+        @endrole
     </div>
     <table class="table">
         <thead>
@@ -30,7 +32,7 @@
                 <td>
                     <span class="badge badge-info">{{ $consultant->user->getRoleNames()->first() }}</span>
                 </td>
-                <td>{{ $consultant->schools->count() }}</td>
+                <td>{{ $consultant->schoolConsultants->count() }}</td>
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('consultants.show', $consultant) }}" class="btn btn-secondary btn-sm">Ver</a>

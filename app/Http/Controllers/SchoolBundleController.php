@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\School;
 use App\Models\Bundle;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SchoolBundleController extends Controller
 {
@@ -50,6 +51,61 @@ class SchoolBundleController extends Controller
 
         return redirect()->route('schools.bundles.index', $school)
                          ->with('success', 'Bundles agregados correctamente.');
+    }
+
+    public function importarMasivo(Request $request, School $school)
+    {
+        $request->validate([
+            'archivo'     => 'required|file|max:20480',
+            'acquired_at' => 'nullable|date',
+        ]);
+
+        $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        // Índice de bundles por nombre normalizado para búsqueda rápida
+        $bundleMap = Bundle::all()->keyBy(fn($b) => mb_strtolower(trim($b->name)));
+
+        $fecha        = $request->acquired_at ?? now()->toDateString();
+        $importados   = 0;
+        $duplicados   = 0;
+        $noEncontrados = [];
+
+        foreach ($sheet->getRowIterator(2) as $row) {
+            $ri     = $row->getRowIndex();
+            $nombre = trim((string) $sheet->getCell('B' . $ri)->getValue());
+            $cantidad = (int) $sheet->getCell('D' . $ri)->getValue();
+
+            if ($nombre === '') continue;
+
+            $bundle = $bundleMap[mb_strtolower($nombre)] ?? null;
+
+            if (!$bundle) {
+                $noEncontrados[] = $nombre;
+                continue;
+            }
+
+            if ($school->bundles()->where('bundle_id', $bundle->id)->exists()) {
+                $duplicados++;
+                continue;
+            }
+
+            $school->bundles()->attach($bundle->id, [
+                'quantity'    => $cantidad > 0 ? $cantidad : 1,
+                'acquired_at' => $fecha,
+            ]);
+            $importados++;
+        }
+
+        $msg = "{$importados} bundle(s) importados correctamente.";
+        if ($duplicados > 0) {
+            $msg .= " {$duplicados} ya existían y se omitieron.";
+        }
+        if (!empty($noEncontrados)) {
+            $msg .= ' No encontrados en catálogo: ' . implode(', ', array_unique($noEncontrados)) . '.';
+        }
+
+        return redirect()->route('schools.bundles.index', $school)->with('success', $msg);
     }
 
     public function destroy(School $school, Bundle $bundle)

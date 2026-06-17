@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\SchoolConsultant;
 
 class Consultant extends Model
 {
@@ -16,6 +17,11 @@ class Consultant extends Model
     public function schools()
     {
         return $this->hasMany(School::class);
+    }
+
+    public function schoolConsultants()
+    {
+        return $this->hasMany(SchoolConsultant::class);
     }
 
     public function visits()

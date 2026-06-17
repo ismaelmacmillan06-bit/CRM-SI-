@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\Zonas;
 use App\Models\School;
 use App\Models\Teacher;
 use App\Models\Student;
@@ -59,6 +60,14 @@ class DashboardController extends Controller
             ->pluck('total', 'city')
             ->toArray();
 
+        // Colegios por zona (regiones reales de Macmillan SI)
+        $colegiosPorZona = array_fill_keys(array_keys(Zonas::map()), 0);
+        $colegiosPorZona['Sin zona'] = 0;
+        $schoolScopeId(School::select('id', 'city'))->get()->each(function ($school) use (&$colegiosPorZona) {
+            $zona = Zonas::detectZona($school->city ?? '');
+            $colegiosPorZona[$zona]++;
+        });
+
         // Conteo de alumnos por nivel (filtrado igual que el resto)
         $conteoNiveles = $schoolScope(
             Student::selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
@@ -76,7 +85,7 @@ class DashboardController extends Controller
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos', 'visitasPendientes',
             'schools', 'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
-            'colegiosPorEstado', 'conteoNiveles'
+            'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles'
         ));
     }
 }

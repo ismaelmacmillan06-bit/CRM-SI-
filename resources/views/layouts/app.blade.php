@@ -442,6 +442,9 @@
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span> Dashboard
         </a>
+        <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
+            <span class="nav-icon">✅</span> Tareas SI
+        </a>
         <div class="nav-label">Gestión</div>
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios

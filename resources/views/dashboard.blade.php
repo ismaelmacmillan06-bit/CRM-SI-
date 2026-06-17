@@ -229,21 +229,46 @@
 
 </div>
 
-{{-- Buscador de colegios --}}
+{{-- Filtros de colegios --}}
 <div class="card" style="margin-bottom:20px">
-    <div class="card-body" style="padding:16px 24px">
+    <div class="card-body" style="padding:16px 24px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
         <input type="text" id="buscador-colegios" class="form-control"
-               placeholder="🔍 Buscar colegio por nombre, consultor o estado..."
-               style="max-width:400px">
+               placeholder="🔍 Buscar por nombre, consultor o estado..."
+               style="max-width:320px; flex:1; min-width:200px">
+
+        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:200px">
+            <span style="font-size:13px; color:var(--text-muted); white-space:nowrap">📚 Filtrar por serie:</span>
+            <select id="filtro-series" class="form-control" style="max-width:260px">
+                <option value="">Todas las series</option>
+                @foreach($seriesDisponibles as $serie)
+                <option value="{{ strtolower($serie) }}">{{ $serie }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <button onclick="limpiarFiltros()"
+                style="padding:8px 14px; background:var(--surface2); border:1px solid var(--border);
+                       border-radius:8px; font-size:13px; color:var(--text-muted); cursor:pointer;
+                       transition:all 0.15s; white-space:nowrap"
+                onmouseover="this.style.background='var(--border)'"
+                onmouseout="this.style.background='var(--surface2)'">
+            ✕ Limpiar filtros
+        </button>
+
+        <span id="conteo-resultados" style="font-size:13px; color:var(--text-muted); white-space:nowrap"></span>
     </div>
 </div>
 
 {{-- Cards de colegios --}}
 <div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
     @forelse($schools as $school)
+    @php
+        $schoolSeries = $school->bundles->pluck('serie')->filter()->unique()->map(fn($s) => strtolower($s))->values()->toJson();
+    @endphp
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->city ?? '') }}"
+         data-series="{{ htmlspecialchars($schoolSeries, ENT_QUOTES) }}"
          style="transition: all 0.2s">
         <div class="card-header" style="padding:16px 20px">
             <div>
@@ -442,21 +467,47 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
             '<p style="text-align:center; color:var(--text-muted); padding:40px">No se pudo cargar el mapa</p>';
     });
 
-// Buscador
-const buscador = document.getElementById('buscador-colegios');
-buscador.addEventListener('input', function() {
-    const query = this.value.toLowerCase().trim();
-    document.querySelectorAll('.school-card').forEach(card => {
-        const nombre    = card.dataset.nombre;
-        const consultor = card.dataset.consultor;
-        const estado    = card.dataset.estado;
-        if (!query || nombre.includes(query) || consultor.includes(query) || estado.includes(query)) {
+// Filtros de colegios (buscador + series)
+function aplicarFiltros() {
+    const query  = document.getElementById('buscador-colegios').value.toLowerCase().trim();
+    const serie  = document.getElementById('filtro-series').value.toLowerCase().trim();
+    const cards  = document.querySelectorAll('.school-card');
+    let visibles = 0;
+
+    cards.forEach(card => {
+        const nombre    = card.dataset.nombre    || '';
+        const consultor = card.dataset.consultor || '';
+        const estado    = card.dataset.estado    || '';
+        let seriesCard  = [];
+        try { seriesCard = JSON.parse(card.dataset.series || '[]'); } catch(e) {}
+
+        const matchTexto = !query || nombre.includes(query) || consultor.includes(query) || estado.includes(query);
+        const matchSerie = !serie || seriesCard.includes(serie);
+
+        if (matchTexto && matchSerie) {
             card.style.display = '';
+            visibles++;
         } else {
             card.style.display = 'none';
         }
     });
-});
+
+    const conteo = document.getElementById('conteo-resultados');
+    if (conteo) {
+        conteo.textContent = (query || serie)
+            ? `${visibles} colegio(s) encontrado(s)`
+            : '';
+    }
+}
+
+function limpiarFiltros() {
+    document.getElementById('buscador-colegios').value = '';
+    document.getElementById('filtro-series').value = '';
+    aplicarFiltros();
+}
+
+document.getElementById('buscador-colegios').addEventListener('input', aplicarFiltros);
+document.getElementById('filtro-series').addEventListener('change', aplicarFiltros);
 </script>
 
 @endsection

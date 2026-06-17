@@ -13,6 +13,7 @@ use App\Http\Controllers\SchoolBundleController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\TareaController;
 
 
 Route::get('/', function () {
@@ -91,6 +92,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
      // Reportes
      Route::get('reportes/zonas', [ReporteController::class, 'reporteZonas'])->name('reportes.zonas');
+
+     // Tareas SI
+     Route::get('tareas', [TareaController::class, 'index'])->name('tareas.index');
+     Route::post('tareas', [TareaController::class, 'store'])->name('tareas.store');
+     Route::patch('tareas/{tarea}/colegios/{school}', [TareaController::class, 'updateStatus'])->name('tareas.update-status');
+     Route::delete('tareas/{tarea}', [TareaController::class, 'destroy'])->name('tareas.destroy');
 });
 
 

@@ -36,8 +36,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
     // Docentes
     Route::resource('schools.teachers', TeacherController::class)
-     ->except(['show'])
-     ->shallow();
+        ->except(['show'])
+        ->shallow();
+    Route::post('schools/{school}/teachers/import', [TeacherController::class, 'importarMasivo'])
+        ->name('schools.teachers.import');
+    Route::get('teachers/template', [TeacherController::class, 'downloadTemplate'])
+        ->name('teachers.template');
 
     // Consultores
     Route::resource('consultants', ConsultantController::class);

@@ -128,7 +128,7 @@
 
 
 {{-- Mapa + Panel derecho --}}
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-bottom:24px">
 
     {{-- Mapa --}}
     <div class="card">
@@ -216,7 +216,7 @@
 </div>
 
 {{-- Cards de colegios --}}
-<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px">
+<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
     @forelse($schools as $school)
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"

@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MacmillanSI CRM</title>
+    {{-- PWA --}}
+    <meta name="theme-color" content="#e94560">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MacmillanSI">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -43,6 +50,7 @@
             flex-direction: column;
             z-index: 100;
             padding: 0;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .sidebar-brand {
@@ -298,11 +306,133 @@
         /* GRID */
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+        /* ── HAMBURGER ── */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 36px; height: 36px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 5px;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .hamburger span {
+            display: block;
+            width: 20px; height: 2px;
+            background: var(--text);
+            border-radius: 2px;
+            transition: all 0.25s;
+        }
+        .hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.is-open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        /* ── SIDEBAR OVERLAY ── */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 99;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+
+        /* ── TABLE SCROLL WRAPPER ── */
+        .table-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ════════════════════════════════
+           RESPONSIVE — TABLET / MOBILE
+           ════════════════════════════════ */
+        @media (max-width: 900px) {
+            .hamburger { display: flex; }
+
+            .sidebar {
+                transform: translateX(-260px);
+                z-index: 200;
+            }
+            .sidebar.sidebar-open {
+                transform: translateX(0);
+                box-shadow: 6px 0 32px rgba(0,0,0,0.35);
+            }
+            .sidebar-overlay.sidebar-open { display: block; }
+
+            .main { margin-left: 0 !important; }
+
+            .topbar {
+                padding: 12px 16px;
+                position: sticky;
+                top: 0;
+                z-index: 50;
+                background: var(--surface);
+            }
+
+            .content { padding: 16px; }
+
+            /* Grids de 2 columnas → 1 columna */
+            .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+
+            /* Grids inline con 2 columnas fijas */
+            [style*="grid-template-columns:1fr 1fr"],
+            [style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Cards de colegios (3 columnas → 1) */
+            [style*="grid-template-columns:repeat(3,1fr)"],
+            [style*="grid-template-columns: repeat(3, 1fr)"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            /* Card header wrap */
+            .card-header { flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
+            .card-body   { padding: 16px; }
+
+            /* Botones más compactos */
+            .btn    { font-size: 12px; padding: 8px 14px; }
+            .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+            .page-title { font-size: 16px; }
+
+            .table th { font-size: 10px; padding: 10px 10px; }
+            .table td { font-size: 13px; padding: 10px 10px; }
+        }
+
+        /* ─ MÓVIL PEQUEÑO ─ */
+        @media (max-width: 480px) {
+            /* Alumnos SI: de auto-fit → 2 columnas fijas */
+            [style*="minmax(160px, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            /* Stats principales: 2 columnas */
+            [style*="minmax(190px, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .content { padding: 12px; }
+        }
+
+        /* ─ LANDSCAPE MÓVIL ─ */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .sidebar { width: 220px; transform: translateX(-220px); }
+            .sidebar.sidebar-open { transform: translateX(0); }
+            .sidebar-nav { padding: 12px; }
+            .nav-item { padding: 8px 10px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
         <h1>Macmillan<span>SI</span></h1>
         <p>CRM de Colegios</p>
@@ -360,7 +490,12 @@
 
 <div class="main">
     <div class="topbar">
-        <div class="page-title">@yield('title', 'Dashboard')</div>
+        <div style="display:flex; align-items:center; gap:10px">
+            <button class="hamburger" id="hamburger-btn" aria-label="Abrir menú">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="page-title">@yield('title', 'Dashboard')</div>
+        </div>
         <div style="font-size:13px; color: var(--text-muted);">{{ now()->format('d M Y') }}</div>
     </div>
     <div class="content">
@@ -376,6 +511,59 @@
         @yield('content')
     </div>
 </div>
+
+<script>
+(function () {
+    // ── Sidebar toggle ──
+    const btn     = document.getElementById('hamburger-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    function openSidebar() {
+        sidebar.classList.add('sidebar-open');
+        overlay.classList.add('sidebar-open');
+        btn.classList.add('is-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('sidebar-open');
+        overlay.classList.remove('sidebar-open');
+        btn.classList.remove('is-open');
+        document.body.style.overflow = '';
+    }
+
+    btn?.addEventListener('click', () =>
+        sidebar.classList.contains('sidebar-open') ? closeSidebar() : openSidebar()
+    );
+    overlay?.addEventListener('click', closeSidebar);
+
+    // Cerrar al navegar en móvil
+    document.querySelectorAll('.nav-item').forEach(item =>
+        item.addEventListener('click', () => { if (window.innerWidth <= 900) closeSidebar(); })
+    );
+
+    // Cerrar al rotar a landscape si ya está abierto
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) closeSidebar();
+    });
+
+    // ── Tablas scrolleables en móvil ──
+    document.querySelectorAll('.table').forEach(table => {
+        if (!table.parentElement.classList.contains('table-scroll')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-scroll';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+    });
+
+    // ── Service Worker (PWA) ──
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+})();
+</script>
 
 </body>
 </html>

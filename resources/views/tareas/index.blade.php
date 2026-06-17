@@ -4,13 +4,6 @@
 
 @section('content')
 
-@if(session('success'))
-<div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
-            padding:12px 18px; margin-bottom:20px; color:#166534; font-size:14px">
-    ✅ {{ session('success') }}
-</div>
-@endif
-
 {{-- Header --}}
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap">
     <div>
@@ -233,46 +226,83 @@
 <script>
 const TAREA_ID = {{ $tarea?->id ?? 'null' }};
 
+const colores = {
+    pendiente:  { bg:'#f59e0b', color:'#fff', off:'#b45309', border:'#f59e0b' },
+    en_proceso: { bg:'#3b82f6', color:'#fff', off:'#1d4ed8', border:'#3b82f6' },
+    realizada:  { bg:'#10b981', color:'#fff', off:'#065f46', border:'#10b981' },
+};
+const badgeMap = {
+    pendiente:  { cls:'badge-warning', txt:'○ Pendiente' },
+    en_proceso: { cls:'badge-info',    txt:'⟳ En proceso' },
+    realizada:  { cls:'badge-success', txt:'✓ Realizada'  },
+};
+
+function aplicarEstadoUI(row, badge, nuevoStatus) {
+    row.querySelectorAll('button[data-valor]').forEach(btn => {
+        const val = btn.dataset.valor;
+        const c   = colores[val];
+        btn.style.background = val === nuevoStatus ? c.bg : 'transparent';
+        btn.style.color      = val === nuevoStatus ? c.color : c.off;
+        btn.disabled = false;
+    });
+    if (badge) {
+        badge.className   = 'badge ' + badgeMap[nuevoStatus].cls;
+        badge.textContent = badgeMap[nuevoStatus].txt;
+    }
+}
+
+function mostrarToast(msg, ok = true) {
+    const t = document.getElementById('toast-estado');
+    t.textContent  = msg;
+    t.style.background = ok ? '#10b981' : '#ef4444';
+    t.style.opacity = '1';
+    t.style.transform = 'translateY(0)';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+        t.style.opacity   = '0';
+        t.style.transform = 'translateY(20px)';
+    }, 2500);
+}
+
 async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
     if (!TAREA_ID) return;
 
-    const row     = btnClicked.closest('tr');
-    const botones = row.querySelectorAll('button[data-valor]');
-    const badge   = document.getElementById('badge-' + schoolId);
+    const row   = btnClicked.closest('tr');
+    const badge = document.getElementById('badge-' + schoolId);
 
-    const colores = {
-        pendiente:  { border:'#f59e0b', bg:'#f59e0b', color:'#fff', off:'#b45309' },
-        en_proceso: { border:'#3b82f6', bg:'#3b82f6', color:'#fff', off:'#1d4ed8' },
-        realizada:  { border:'#10b981', bg:'#10b981', color:'#fff', off:'#065f46' },
-    };
-
-    botones.forEach(btn => {
-        const val = btn.dataset.valor;
-        const c   = colores[val];
-        btn.style.background = val === nuevoStatus ? c.bg        : 'transparent';
-        btn.style.color      = val === nuevoStatus ? c.color : c.off;
-    });
-
-    const badgeMap = {
-        pendiente:  { cls:'badge-warning', txt:'○ Pendiente' },
-        en_proceso: { cls:'badge-info',    txt:'⟳ En proceso' },
-        realizada:  { cls:'badge-success', txt:'✓ Realizada' },
-    };
-    if (badge) {
-        badge.className    = 'badge ' + badgeMap[nuevoStatus].cls;
-        badge.textContent  = badgeMap[nuevoStatus].txt;
-    }
+    // Deshabilitar mientras guarda
+    row.querySelectorAll('button[data-valor]').forEach(b => b.disabled = true);
+    btnClicked.textContent = '⏳';
 
     try {
-        await fetch(`/tareas/${TAREA_ID}/colegios/${schoolId}`, {
+        const resp = await fetch(`/tareas/${TAREA_ID}/colegios/${schoolId}`, {
             method: 'PATCH',
             headers: {
-                'Content-Type':  'application/json',
-                'X-CSRF-TOKEN':  document.querySelector('meta[name=csrf-token]').content,
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
             },
             body: JSON.stringify({ status: nuevoStatus }),
         });
-    } catch(e) { console.error(e); }
+
+        if (resp.ok) {
+            // Restaurar texto del botón
+            const textos = { pendiente:'○ Pendiente', en_proceso:'⟳ En proceso', realizada:'✓ Realizada' };
+            btnClicked.textContent = textos[nuevoStatus];
+            aplicarEstadoUI(row, badge, nuevoStatus);
+            mostrarToast('✓ Guardado');
+        } else {
+            throw new Error('HTTP ' + resp.status);
+        }
+    } catch(e) {
+        // Restaurar texto original
+        const textos = { pendiente:'○ Pendiente', en_proceso:'⟳ En proceso', realizada:'✓ Realizada' };
+        row.querySelectorAll('button[data-valor]').forEach(b => {
+            b.disabled = false;
+            b.textContent = textos[b.dataset.valor];
+        });
+        mostrarToast('✗ Error al guardar — intenta de nuevo', false);
+        console.error(e);
+    }
 }
 
 document.getElementById('buscador-tareas')?.addEventListener('input', function() {
@@ -282,4 +312,13 @@ document.getElementById('buscador-tareas')?.addEventListener('input', function()
     });
 });
 </script>
+
+{{-- Toast de confirmación --}}
+<div id="toast-estado"
+     style="position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px;
+            color:#fff; font-size:14px; font-weight:600; z-index:9999;
+            opacity:0; transform:translateY(20px);
+            transition:opacity 0.3s ease, transform 0.3s ease;
+            pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.2)">
+</div>
 @endsection

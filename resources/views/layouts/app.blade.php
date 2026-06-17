@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>MacmillanSI CRM</title>
     {{-- PWA --}}
     <meta name="theme-color" content="#e94560">
@@ -299,6 +300,8 @@
             border-radius: 8px;
             font-size: 14px;
             margin-bottom: 20px;
+            transition: opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease, padding 0.5s ease;
+            overflow: hidden;
         }
         .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
         .alert-danger  { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
@@ -565,6 +568,16 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
+
+    // ── Auto-dismiss flash messages ──
+    document.querySelectorAll('.alert').forEach(function(el) {
+        setTimeout(function() {
+            el.style.opacity = '0';
+            el.style.maxHeight = '0';
+            el.style.marginBottom = '0';
+            el.style.padding = '0';
+        }, 4000);
+    });
 })();
 </script>
 

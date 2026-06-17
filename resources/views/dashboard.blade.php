@@ -108,6 +108,19 @@
 @endif
 
 
+{{-- Botón Reporte General --}}
+<div style="display:flex; justify-content:flex-end; margin-bottom:20px; margin-top:-8px">
+    <a href="{{ route('reportes.general') }}"
+       style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
+              background:#1d4ed8; color:#fff; border-radius:9px; text-decoration:none;
+              font-size:13px; font-weight:600; transition:background 0.2s;
+              box-shadow:0 2px 6px rgba(29,78,216,0.3)"
+       onmouseover="this.style.background='#1e40af'"
+       onmouseout="this.style.background='#1d4ed8'">
+        📊 Generar Reporte General
+    </a>
+</div>
+
 {{--Cards para alumnos SI --}}
 @php
     // $conteoNiveles viene del controlador, ya filtrado por rol

@@ -31,7 +31,7 @@ class StudentController extends Controller
             'level'        => 'nullable|string|max:100',
         ]);
 
-        $school->students()->create($request->all());
+        $school->students()->create($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
 
         return redirect()->route('schools.students.index', $school)
                          ->with('success', 'Alumno registrado correctamente.');
@@ -137,7 +137,7 @@ private function extractStudentsFromPdf(string $text): array
             'level'        => 'nullable|string|max:100',
         ]);
 
-        $student->update($request->all());
+        $student->update($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
 
         return redirect()->route('schools.students.index', $student->school)
                          ->with('success', 'Alumno actualizado correctamente.');

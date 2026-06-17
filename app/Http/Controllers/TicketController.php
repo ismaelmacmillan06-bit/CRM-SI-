@@ -31,7 +31,7 @@ class TicketController extends Controller
             'consultant_id' => 'required|exists:consultants,id',
         ]);
 
-        $ticket = $school->tickets()->create($request->all());
+        $ticket = $school->tickets()->create($request->only(['title', 'description', 'priority', 'consultant_id']));
 
         $prioridades = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
         $prio = $prioridades[$request->priority] ?? $request->priority;
@@ -56,7 +56,7 @@ class TicketController extends Controller
             'status'      => 'required|in:open,in_progress,closed',
         ]);
 
-        $data = $request->all();
+        $data = $request->only(['title', 'description', 'priority', 'status', 'consultant_id']);
 
         if ($request->status === 'closed' && $ticket->status !== 'closed') {
             $data['resolved_at'] = now();

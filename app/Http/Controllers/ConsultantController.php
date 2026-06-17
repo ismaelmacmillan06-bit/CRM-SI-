@@ -32,6 +32,7 @@ public function store(Request $request)
         'phone'    => 'nullable|string|max:20',
         'zone'     => 'nullable|string|max:100',
         'role'     => 'required|exists:roles,name',
+        'photo'    => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
     ]);
 
     $user = User::create([
@@ -77,6 +78,7 @@ public function store(Request $request)
             'phone' => 'nullable|string|max:20',
             'zone'  => 'nullable|string|max:100',
             'role'  => 'required|exists:roles,name',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
         ]);
 
         $consultant->user->update(['name' => $request->name]);

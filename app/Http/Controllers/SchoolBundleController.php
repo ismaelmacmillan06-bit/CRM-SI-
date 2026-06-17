@@ -57,7 +57,7 @@ class SchoolBundleController extends Controller
     public function importarMasivo(Request $request, School $school)
     {
         $request->validate([
-            'archivo'     => 'required|file|max:20480',
+            'archivo'     => 'required|file|mimes:xlsx,xls,csv|max:20480',
             'acquired_at' => 'nullable|date',
         ]);
 

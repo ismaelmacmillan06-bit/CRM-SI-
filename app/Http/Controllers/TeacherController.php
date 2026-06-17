@@ -97,7 +97,7 @@ class TeacherController extends Controller
 
     public function importarMasivo(Request $request, School $school)
     {
-        $request->validate(['archivo' => 'required|file|max:20480']);
+        $request->validate(['archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
 
         $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
         $sheet       = $spreadsheet->getActiveSheet();

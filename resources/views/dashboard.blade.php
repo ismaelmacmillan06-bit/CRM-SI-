@@ -281,7 +281,7 @@
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->city ?? '') }}"
-         data-series="{{ htmlspecialchars($schoolSeries, ENT_QUOTES) }}"
+         data-series="{{ $schoolSeries }}"
          style="transition: all 0.2s">
         <div class="card-header" style="padding:16px 20px">
             <div>

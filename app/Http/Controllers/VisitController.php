@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Visit;
 use App\Models\School;
 use App\Models\Consultant;
@@ -41,7 +42,10 @@ class VisitController extends Controller
             $data['evidence'] = $request->file('evidence')->store('evidences', 'public');
         }
 
-        $school->visits()->create($data);
+        $visit = $school->visits()->create($data);
+
+        $fecha = \Carbon\Carbon::parse($request->scheduled_date)->format('d/m/Y');
+        ActivityLog::log('visita', "Visita agendada para el $fecha (estado: {$request->status})", $school->id, '📅');
 
         return redirect()->route('schools.visits.index', $school)
                          ->with('success', 'Visita registrada correctamente.');
@@ -75,7 +79,16 @@ class VisitController extends Controller
             $data['evidence'] = $request->file('evidence')->store('evidences', 'public');
         }
 
+        $oldStatus = $visit->status;
         $visit->update($data);
+
+        if ($oldStatus !== $request->status) {
+            $statusLabel = ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'terminada' => 'Terminada'];
+            $de = $statusLabel[$oldStatus]        ?? $oldStatus;
+            $a  = $statusLabel[$request->status]  ?? $request->status;
+            $ico = $request->status === 'terminada' ? '✅' : '🔄';
+            ActivityLog::log('visita', "Visita cambió de $de → $a", $visit->school_id, $ico);
+        }
 
         return redirect()->route('schools.visits.index', $visit->school)
                          ->with('success', 'Visita actualizada correctamente.');

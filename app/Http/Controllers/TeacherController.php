@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Teacher;
 use App\Models\School;
 use Illuminate\Http\Request;
@@ -139,6 +140,10 @@ class TeacherController extends Controller
         $msg = "{$importados} docente(s) importados correctamente.";
         if (!empty($errores)) {
             $msg .= ' Errores: ' . implode('; ', $errores);
+        }
+
+        if ($importados > 0) {
+            ActivityLog::log('docente', "Importación masiva: $importados docente(s) registrados", $school->id, '👨‍🏫');
         }
 
         return redirect()->route('schools.teachers.index', $school)->with('success', $msg);

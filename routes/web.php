@@ -13,6 +13,7 @@ use App\Http\Controllers\SchoolBundleController;
 use App\Http\Controllers\BundleController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\TareaController;
 
 
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
      // Reportes
      Route::get('reportes/zonas', [ReporteController::class, 'reporteZonas'])->name('reportes.zonas');
+
+     // Bitácora
+     Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index');
 
      // Tareas SI
      Route::get('tareas', [TareaController::class, 'index'])->name('tareas.index');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Ticket;
 use App\Models\School;
 use App\Models\Consultant;
@@ -30,7 +31,11 @@ class TicketController extends Controller
             'consultant_id' => 'required|exists:consultants,id',
         ]);
 
-        $school->tickets()->create($request->all());
+        $ticket = $school->tickets()->create($request->all());
+
+        $prioridades = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
+        $prio = $prioridades[$request->priority] ?? $request->priority;
+        ActivityLog::log('ticket', "Ticket creado: \"{$request->title}\" (prioridad: $prio)", $school->id, '🎫');
 
         return redirect()->route('schools.tickets.index', $school)
                          ->with('success', 'Ticket registrado correctamente.');
@@ -57,7 +62,16 @@ class TicketController extends Controller
             $data['resolved_at'] = now();
         }
 
+        $oldStatus = $ticket->status;
         $ticket->update($data);
+
+        if ($oldStatus !== $request->status) {
+            $statusLabel = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
+            $de  = $statusLabel[$oldStatus]        ?? $oldStatus;
+            $a   = $statusLabel[$request->status]  ?? $request->status;
+            $ico = $request->status === 'closed' ? '✅' : '🔄';
+            ActivityLog::log('ticket', "Ticket \"{$ticket->title}\" cambió de $de → $a", $ticket->school_id, $ico);
+        }
 
         return redirect()->route('schools.tickets.index', $ticket->school)
                          ->with('success', 'Ticket actualizado correctamente.');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\Bundle;
 use Illuminate\Http\Request;
@@ -103,6 +104,10 @@ class SchoolBundleController extends Controller
         }
         if (!empty($noEncontrados)) {
             $msg .= ' No encontrados en catálogo: ' . implode(', ', array_unique($noEncontrados)) . '.';
+        }
+
+        if ($importados > 0) {
+            ActivityLog::log('bundle', "Importación masiva: $importados bundle(s) agregados", $school->id, '📚');
         }
 
         return redirect()->route('schools.bundles.index', $school)->with('success', $msg);

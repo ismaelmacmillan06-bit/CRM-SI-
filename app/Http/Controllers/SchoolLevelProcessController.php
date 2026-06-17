@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\SchoolLevelProcess;
 use App\Models\Consultant;
@@ -51,7 +52,34 @@ class SchoolLevelProcessController extends Controller
             $data['completed_by'] = null;
         }
 
+        $oldStatus = $schoolLevelProcess->status;
         $schoolLevelProcess->update($data);
+        $schoolLevelProcess->load('process');
+
+        // Log del cambio de estado
+        $statusLabels = [
+            'pending'     => 'Pendiente',
+            'in_progress' => 'En proceso',
+            'done'        => 'Completado',
+            'reopened'    => 'Reabierto',
+        ];
+        $processName = $schoolLevelProcess->process->name ?? 'Proceso';
+        $de  = $statusLabels[$oldStatus]           ?? $oldStatus;
+        $a   = $statusLabels[$request->status]     ?? $request->status;
+        $ico = $request->status === 'done' ? '✅' : ($request->status === 'in_progress' ? '🔄' : '↩️');
+
+        ActivityLog::log('proceso', "\"$processName\" cambió de $de → $a", $school->id, $ico);
+
+        // Log especial si llega al 100%
+        $school->load('schoolLevels.processes');
+        $total = 0; $done = 0;
+        foreach ($school->schoolLevels as $sl) {
+            $total += $sl->processes->count();
+            $done  += $sl->processes->where('status', 'done')->count();
+        }
+        if ($total > 0 && $done === $total) {
+            ActivityLog::log('arranque', '100% de acciones de arranque completadas', $school->id, '🎉');
+        }
 
         return back()->with('success', 'Proceso actualizado correctamente.');
     }

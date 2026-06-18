@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\BundleResurtido;
 use App\Models\School;
 use App\Models\Bundle;
 use Illuminate\Http\Request;
@@ -14,7 +15,12 @@ class SchoolBundleController extends Controller
     {
         $schoolBundles = $school->bundles()->orderBy('type')->orderBy('serie')->get();
         $series = Bundle::select('serie', 'type')->distinct()->orderBy('type')->orderBy('serie')->get();
-        return view('bundles.school', compact('school', 'schoolBundles', 'series'));
+        $resurtidosPorBundle = BundleResurtido::where('school_id', $school->id)
+            ->with('user')
+            ->orderBy('fecha', 'desc')
+            ->get()
+            ->groupBy('bundle_id');
+        return view('bundles.school', compact('school', 'schoolBundles', 'series', 'resurtidosPorBundle'));
     }
 
     public function getBundlesBySeries(Request $request)

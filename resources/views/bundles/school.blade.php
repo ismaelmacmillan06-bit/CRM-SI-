@@ -195,6 +195,7 @@
         </thead>
         <tbody>
             @forelse($schoolBundles as $bundle)
+            @php $historial = $resurtidosPorBundle[$bundle->id] ?? collect(); @endphp
             <tr>
                 <td style="font-size:13px; color:var(--text-muted)">{{ $bundle->serie }}</td>
                 <td><strong style="font-size:13px">{{ $bundle->name }}</strong></td>
@@ -208,8 +209,22 @@
                         <span class="badge badge-gray">Alumno</span>
                     @endif
                 </td>
-                <td>{{ $bundle->pivot->quantity }}</td>
                 <td>
+                    {{ $bundle->pivot->quantity }}
+                    @if($historial->count())
+                        <button onclick="verHistorial({{ $bundle->id }}, {{ json_encode($bundle->name) }})"
+                                style="background:none; border:none; cursor:pointer; font-size:11px;
+                                       color:var(--accent); text-decoration:underline; padding:0; margin-left:4px">
+                            ({{ $historial->count() }} resurtido{{ $historial->count() > 1 ? 's' : '' }})
+                        </button>
+                    @endif
+                </td>
+                <td style="display:flex; gap:6px; flex-wrap:wrap">
+                    <button onclick="abrirResurtido({{ $bundle->id }}, {{ json_encode($bundle->name) }}, {{ $bundle->pivot->quantity }})"
+                            style="padding:5px 10px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
+                                   border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap">
+                        🔄 Resurtido
+                    </button>
                     <form method="POST"
                           action="{{ route('schools.bundles.destroy', [$school, $bundle]) }}"
                           onsubmit="return confirm('¿Eliminar este bundle?')">
@@ -312,5 +327,124 @@ function backToStep1() {
 }
 </script>
 
-{{-- Agregar botón en show --}}
+{{-- Modal Resurtido --}}
+<div id="modal-resurtido" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:1000; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:480px; max-width:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600">
+                🔄 Registrar Resurtido
+            </h3>
+            <button onclick="cerrarResurtido()"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+        <p id="resurtido-bundle-nombre" style="font-size:13px; color:var(--text-muted); margin-bottom:20px"></p>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px;
+                    padding:12px 16px; font-size:13px; color:#166534; margin-bottom:20px">
+            Cantidad actual: <strong id="resurtido-cantidad-actual"></strong> unidades.
+            El resurtido se sumará al total existente.
+        </div>
+
+        <form id="form-resurtido" method="POST" action="">
+            @csrf
+            <div class="form-group">
+                <label class="form-label">Cantidad a resuritir <span style="color:red">*</span></label>
+                <input type="number" name="cantidad_resurtido" class="form-control"
+                       min="1" required placeholder="ej. 5">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Autorizado por</label>
+                <input type="text" name="autorizado_por" class="form-control"
+                       placeholder="Nombre del director o responsable">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha <span style="color:red">*</span></label>
+                <input type="date" name="fecha" class="form-control"
+                       value="{{ now()->toDateString() }}" required>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px">
+                <button type="button" onclick="cerrarResurtido()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">✅ Confirmar Resurtido</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Historial de Resurtidos --}}
+<div id="modal-historial" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:1000; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:660px; max-width:100%; max-height:80vh; overflow-y:auto">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600">
+                📋 Historial de Resurtidos
+            </h3>
+            <button onclick="document.getElementById('modal-historial').style.display='none'"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+        <p id="historial-bundle-nombre" style="font-size:13px; color:var(--text-muted); margin-bottom:20px"></p>
+        <table class="table" style="font-size:13px">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Cantidad anterior</th>
+                    <th>Resurtido</th>
+                    <th>Nueva cantidad</th>
+                    <th>Autorizado por</th>
+                    <th>Registrado por</th>
+                </tr>
+            </thead>
+            <tbody id="historial-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+@php
+$resurtidosJson = $resurtidosPorBundle->map(fn($items) => $items->map(fn($r) => [
+    'fecha'             => $r->fecha->format('d/m/Y'),
+    'cantidad_anterior' => $r->cantidad_anterior,
+    'cantidad_resurtido'=> $r->cantidad_resurtido,
+    'cantidad_nueva'    => $r->cantidad_nueva,
+    'autorizado_por'    => $r->autorizado_por ?? '—',
+    'registrado_por'    => $r->user?->name ?? '—',
+]))->toJson();
+@endphp
+
+<script>
+const resurtidosData = @json(json_decode($resurtidosJson));
+
+const baseResurtidoUrl = '{{ url("schools/{$school->id}/bundles") }}';
+
+function abrirResurtido(bundleId, nombre, cantidadActual) {
+    document.getElementById('resurtido-bundle-nombre').textContent = nombre;
+    document.getElementById('resurtido-cantidad-actual').textContent = cantidadActual;
+    document.getElementById('form-resurtido').action = baseResurtidoUrl + '/' + bundleId + '/resurtido';
+    document.getElementById('modal-resurtido').style.display = 'flex';
+}
+
+function cerrarResurtido() {
+    document.getElementById('modal-resurtido').style.display = 'none';
+    document.getElementById('form-resurtido').reset();
+    document.querySelector('[name="fecha"]').value = '{{ now()->toDateString() }}';
+}
+
+function verHistorial(bundleId, nombre) {
+    document.getElementById('historial-bundle-nombre').textContent = nombre;
+    const registros = resurtidosData[bundleId] || [];
+    let html = '';
+    registros.forEach(r => {
+        html += `<tr>
+            <td>${r.fecha}</td>
+            <td>${r.cantidad_anterior}</td>
+            <td style="color:#16a34a; font-weight:600">+${r.cantidad_resurtido}</td>
+            <td><strong>${r.cantidad_nueva}</strong></td>
+            <td>${r.autorizado_por}</td>
+            <td style="color:var(--text-muted)">${r.registrado_por}</td>
+        </tr>`;
+    });
+    document.getElementById('historial-tbody').innerHTML = html;
+    document.getElementById('modal-historial').style.display = 'flex';
+}
+</script>
+
 @endsection

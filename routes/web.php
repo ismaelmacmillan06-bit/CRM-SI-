@@ -11,6 +11,7 @@ use App\Http\Controllers\VisitController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SchoolBundleController;
 use App\Http\Controllers\BundleController;
+use App\Http\Controllers\BundleResurtidoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\BitacoraController;
@@ -85,6 +86,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.bundles.import');
     Route::delete('schools/{school}/bundles/{bundle}', [SchoolBundleController::class, 'destroy'])
          ->name('schools.bundles.destroy');
+    Route::post('schools/{school}/bundles/{bundle}/resurtido', [BundleResurtidoController::class, 'store'])
+         ->name('schools.bundles.resurtido');
     Route::get('api/bundles-by-series', [SchoolBundleController::class, 'getBundlesBySeries'])
         ->name('api.bundles.by.series');
      

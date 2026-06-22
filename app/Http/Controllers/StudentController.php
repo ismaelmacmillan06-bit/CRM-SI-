@@ -97,7 +97,8 @@ private function extractStudentsFromPdf(string $text): array
     preg_match_all('/Your username:\s*(\S+)\s+Go to site[^Y]+Your password:\s*(\S+)/u', $text, $matches, PREG_SET_ORDER);
 
     // Extraer nombres por separado - están justo ANTES de "Your username:"
-    preg_match_all('/([A-ZÁÉÍÓÚÜÑ]{2,}(?:\s+[A-ZÁÉÍÓÚÜÑ]{2,})+)\s+Your username:/u', $text, $nameMatches);
+    // Acepta MAYÚSCULAS ("MINERVA SÁNCHEZ") y título/mixto ("Victoria Quintero")
+    preg_match_all('/([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑa-záéíóúüñ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+){1,5})\s+Your username:/u', $text, $nameMatches);
     $names = $nameMatches[1] ?? [];
 
     foreach ($matches as $index => $match) {

@@ -95,7 +95,6 @@ private function extractStudentsFromPdf(string $text): array
 
     // Soporta inglés ("Your username:" / "Your password:") y
     // español ("Tu nombre de usuario:" / "Tu contraseña:")
-    // El .*? con flag s (DOTALL) evita fallos con nombres que contengan "Y"
     preg_match_all(
         '/(?:Your username:|Tu nombre de usuario:)\s*(\S+)\s+(?:Go to site|Ir al sitio).*?(?:Your password:|Tu contraseña:)\s*(\S+)/su',
         $text,
@@ -103,22 +102,27 @@ private function extractStudentsFromPdf(string $text): array
         PREG_SET_ORDER
     );
 
-    // (?!\S) al final de cada palabra = "no seguido de carácter no-espacio"
-    // Esto fuerza que el match cubra el TOKEN completo, no solo una subcadena.
-    // Ejemplo: en "TmdhGQGXaW" el regex intenta coincidir "Tmdh" pero falla
-    // porque la G siguiente es no-espacio → descarta la contraseña como nombre.
+    // Los nombres se extraen desde ANTES DE "Your password:" (columna derecha del PDF),
+    // NO desde antes de "Your username:" (columna izquierda).
     //
-    // Palabras válidas en un nombre:
-    //   título:    Victoria, Chávez, De  → 1 mayúscula + 1+ minúsculas + fin de token
-    //   mayúsculas: VICTORIA, LUIS       → 2+ mayúsculas + fin de token
-    //   partícula:  de, del, la, los     → solo como palabra no-primera
-    $titleWord = '[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?!\S)';
-    $capsWord  = '[A-ZÁÉÍÓÚÜÑ]{2,}(?!\S)';
-    $lowerWord = '[a-záéíóúüñ]{2,}(?!\S)';
-    $firstWord = "(?:{$titleWord}|{$capsWord})";
-    $nextWord  = "(?:{$titleWord}|{$capsWord}|{$lowerWord})";
-    $trigger   = '(?:Your username:|Tu nombre de usuario:)';
-    $namePattern = "/({$firstWord}(?:\\s+{$nextWord}){1,5})\\s+{$trigger}/u";
+    // Motivo: el PDF tiene 2 columnas. Después de la contraseña del alumno N,
+    // el extractor de texto pone el nombre del alumno N+1 (col. izquierda) mezclado
+    // con caracteres del final de la contraseña anterior → contamina el nombre.
+    // La columna derecha solo tiene "[Nombre] Your password: [pass]", precedida
+    // por la URL (todo minúsculas/puntos) → nunca hay contaminación.
+    //
+    // Cada palabra del nombre debe ser token completo gracias a (?!\S):
+    //   título:    Victoria, Chávez  → mayúscula + minúsculas hasta fin de token
+    //   mayúsculas: VICTORIA, LUIS   → 2+ mayúsculas hasta fin de token
+    //   partícula: de, del, la       → solo como palabra no-primera
+    // (?!\S) = no seguido de carácter no-espacio → rechaza subcadenas de contraseñas
+    $titleWord   = '[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?!\S)';
+    $capsWord    = '[A-ZÁÉÍÓÚÜÑ]{2,}(?!\S)';
+    $lowerWord   = '[a-záéíóúüñ]{2,}(?!\S)';
+    $firstWord   = "(?:{$titleWord}|{$capsWord})";
+    $nextWord    = "(?:{$titleWord}|{$capsWord}|{$lowerWord})";
+    $passLabel   = '(?:Your password:|Tu contraseña:)';
+    $namePattern = "/({$firstWord}(?:\\s+{$nextWord}){1,5})\\s+{$passLabel}/u";
 
     preg_match_all($namePattern, $text, $nameMatches);
     $names = $nameMatches[1] ?? [];

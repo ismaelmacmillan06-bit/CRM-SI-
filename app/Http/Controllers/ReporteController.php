@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Zonas;
+use App\Models\BundleResurtido;
 use App\Models\Consultant;
 use App\Models\MeeAdmin;
 use App\Models\School;
@@ -349,6 +350,107 @@ class ReporteController extends Controller
         $filename = 'reporte-general-' . now()->format('Y-m-d') . '.xlsx';
         $tempFile = tempnam(sys_get_temp_dir(), 'crm_');
 
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Reporte de Resurtidos (agrupado por colegio)
+    // ─────────────────────────────────────────────────────────────────────
+    public function reporteResurtidos()
+    {
+        $user = auth()->user();
+
+        if (!$user->hasAnyRole(['admin', 'consultor_digital'])) {
+            abort(403);
+        }
+
+        $schoolIds = null;
+        if ($user->hasRole('consultor_digital')) {
+            $consultant = Consultant::where('user_id', $user->id)->first();
+            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
+                ->where('role', 'digital')->pluck('school_id');
+        }
+
+        $query = BundleResurtido::with(['school', 'bundle', 'user'])
+            ->orderBy('school_id')
+            ->orderBy('fecha', 'desc');
+
+        if ($schoolIds) {
+            $query->whereIn('school_id', $schoolIds);
+        }
+
+        $allResurtidos = $query->get();
+        $porColegio    = $allResurtidos->groupBy('school_id');
+        $generado      = now()->format('d/m/Y H:i');
+        $ncols         = 9;
+        $lastCol       = chr(64 + $ncols);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Resurtidos');
+
+        $this->sheetTitle(
+            $sheet,
+            'MacmillanSI — Reporte de Resurtidos (' . $allResurtidos->count() . ' registros)',
+            'F97316',
+            $ncols,
+            $generado
+        );
+
+        $headers = ['Colegio', 'Bundle', 'Serie', 'Fecha', 'Cant. Anterior', 'Resurtido', 'Nueva Cant.', 'Autorizado Por', 'Registrado Por'];
+        $row = 4;
+
+        if ($porColegio->isEmpty()) {
+            $sheet->setCellValue("A{$row}", 'No hay resurtidos registrados.');
+            $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+            $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->getColor()->setRGB('999999');
+        } else {
+            foreach ($porColegio as $schoolId => $resurtidos) {
+                $schoolName = $resurtidos->first()->school->name ?? 'Colegio #' . $schoolId;
+
+                // School header
+                $sheet->setCellValue("A{$row}", strtoupper($schoolName) . '   (' . $resurtidos->count() . ' resurtido(s))');
+                $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+                $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
+                    'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F97316']],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+                ]);
+                $sheet->getRowDimension($row)->setRowHeight(20);
+                $row++;
+
+                $this->writeHeaders($sheet, $row, $headers, 'F97316');
+                $row++;
+
+                foreach ($resurtidos as $idx => $r) {
+                    $sheet->fromArray([
+                        $r->school->name ?? '—',
+                        $r->bundle->name ?? '—',
+                        $r->bundle->serie ?? '—',
+                        $r->fecha ? $r->fecha->format('d/m/Y') : '—',
+                        $r->cantidad_anterior,
+                        $r->cantidad_resurtido,
+                        $r->cantidad_nueva,
+                        $r->autorizado_por ?? '—',
+                        $r->user->name ?? '—',
+                    ], null, "A{$row}");
+
+                    if ($idx % 2) $this->stripeRow($sheet, $row, $ncols);
+                    $row++;
+                }
+
+                $row++;
+            }
+        }
+
+        $this->setWidths($sheet, [32, 36, 18, 14, 16, 12, 16, 22, 22]);
+
+        $filename = 'reporte-resurtidos-' . now()->format('Y-m-d') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'crm_');
         (new Xlsx($spreadsheet))->save($tempFile);
 
         return response()->download($tempFile, $filename, [

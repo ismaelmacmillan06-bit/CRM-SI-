@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\Zonas;
 use App\Models\Bundle;
+use App\Models\BundleResurtido;
 use App\Models\School;
 use App\Models\Teacher;
 use App\Models\TeacherRole;
@@ -89,6 +90,11 @@ class DashboardController extends Controller
             Student::selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
         )->groupBy('lvl')->pluck('total', 'lvl');
 
+        // Total de resurtidos
+        $totalResurtidos = $schoolIds
+            ? BundleResurtido::whereIn('school_id', $schoolIds)->count()
+            : BundleResurtido::count();
+
         // Series de bundles adoptadas por colegios (para filtro en dashboard)
         $seriesDisponibles = Bundle::select('serie')
             ->whereHas('schools', fn($q) => $schoolIds ? $q->whereIn('schools.id', $schoolIds) : $q)
@@ -113,7 +119,7 @@ class DashboardController extends Controller
             'schools', 'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
-            'seriesDisponibles'
+            'seriesDisponibles', 'totalResurtidos'
         ));
     }
 }

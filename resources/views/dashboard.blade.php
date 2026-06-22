@@ -91,6 +91,29 @@
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Administradores MEE registrados</div>
     </div>
 
+    {{-- Resurtidos --}}
+    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
+                border-top:3px solid #f97316; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:6px">Resurtidos</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+                    color:var(--text); line-height:1">{{ $totalResurtidos }}</div>
+        <div style="margin-top:12px">
+            @if(auth()->user()->hasAnyRole(['admin', 'consultor_digital']))
+            <a href="{{ route('reportes.resurtidos') }}"
+               style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600;
+                      color:#f97316; text-decoration:none; padding:4px 10px;
+                      border:1px solid #f97316; border-radius:6px; transition:all 0.2s"
+               onmouseover="this.style.background='#f97316';this.style.color='#fff'"
+               onmouseout="this.style.color='#f97316';this.style.background='transparent'">
+                📥 Descargar reporte
+            </a>
+            @else
+            <span style="font-size:11px; color:var(--text-muted)">actualizaciones de bundles</span>
+            @endif
+        </div>
+    </div>
+
 </div>
 
 {{-- Visitas pendientes alert --}}

@@ -95,8 +95,9 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::resource('bundles', BundleController::class)->only(['index', 'create', 'store', 'destroy']);
 
      // Reportes
-     Route::get('reportes/zonas',    [ReporteController::class, 'reporteZonas']   )->name('reportes.zonas');
-     Route::get('reportes/general',  [ReporteController::class, 'reporteGeneral'] )->name('reportes.general');
+     Route::get('reportes/zonas',      [ReporteController::class, 'reporteZonas']      )->name('reportes.zonas');
+     Route::get('reportes/general',    [ReporteController::class, 'reporteGeneral']    )->name('reportes.general');
+     Route::get('reportes/resurtidos', [ReporteController::class, 'reporteResurtidos'] )->name('reportes.resurtidos');
 
      // Bitácora
      Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index');

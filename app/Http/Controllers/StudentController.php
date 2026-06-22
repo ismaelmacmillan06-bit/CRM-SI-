@@ -93,24 +93,34 @@ private function extractStudentsFromPdf(string $text): array
     // Normalizar espacios
     $text = preg_replace('/\s+/', ' ', $text);
 
-    // Extraer usuario y contraseña — usa .*? con flag s (DOTALL) para no fallar
-    // si el nombre del alumno contiene la letra Y (ej. "Yolanda")
+    // Soporta inglés ("Your username:" / "Your password:") y
+    // español ("Tu nombre de usuario:" / "Tu contraseña:")
+    // El .*? con flag s (DOTALL) evita fallos con nombres que contengan "Y"
     preg_match_all(
-        '/Your username:\s*(\S+)\s+Go to site.*?Your password:\s*(\S+)/su',
+        '/(?:Your username:|Tu nombre de usuario:)\s*(\S+)\s+(?:Go to site|Ir al sitio).*?(?:Your password:|Tu contraseña:)\s*(\S+)/su',
         $text,
         $matches,
         PREG_SET_ORDER
     );
 
-    // Extraer nombres justo antes de "Your username:"
-    // Acepta MAYÚSCULAS ("MINERVA SÁNCHEZ") y título/mixto ("Victoria Quintero")
-    // Primera palabra: debe iniciar con mayúscula (descarta texto genérico)
-    // Palabras siguientes: pueden iniciar con cualquier letra (cubre "De león")
-    preg_match_all(
-        '/([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑa-záéíóúüñ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+){1,5})\s+Your username:/u',
-        $text,
-        $nameMatches
-    );
+    // (?!\S) al final de cada palabra = "no seguido de carácter no-espacio"
+    // Esto fuerza que el match cubra el TOKEN completo, no solo una subcadena.
+    // Ejemplo: en "TmdhGQGXaW" el regex intenta coincidir "Tmdh" pero falla
+    // porque la G siguiente es no-espacio → descarta la contraseña como nombre.
+    //
+    // Palabras válidas en un nombre:
+    //   título:    Victoria, Chávez, De  → 1 mayúscula + 1+ minúsculas + fin de token
+    //   mayúsculas: VICTORIA, LUIS       → 2+ mayúsculas + fin de token
+    //   partícula:  de, del, la, los     → solo como palabra no-primera
+    $titleWord = '[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?!\S)';
+    $capsWord  = '[A-ZÁÉÍÓÚÜÑ]{2,}(?!\S)';
+    $lowerWord = '[a-záéíóúüñ]{2,}(?!\S)';
+    $firstWord = "(?:{$titleWord}|{$capsWord})";
+    $nextWord  = "(?:{$titleWord}|{$capsWord}|{$lowerWord})";
+    $trigger   = '(?:Your username:|Tu nombre de usuario:)';
+    $namePattern = "/({$firstWord}(?:\\s+{$nextWord}){1,5})\\s+{$trigger}/u";
+
+    preg_match_all($namePattern, $text, $nameMatches);
     $names = $nameMatches[1] ?? [];
 
     foreach ($matches as $index => $match) {

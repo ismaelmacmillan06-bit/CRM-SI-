@@ -90,47 +90,41 @@ private function extractStudentsFromPdf(string $text): array
 {
     $students = [];
 
-    // Normalizar espacios
     $text = preg_replace('/\s+/', ' ', $text);
 
+    // UN SOLO regex captura usuario + nombre + contraseña juntos.
+    // Elimina por completo el problema de alineación entre dos arrays separados.
+    //
+    // Estructura del PDF de MEE (2 columnas, extracción fila por fila):
+    //   Col. izq: [Nombre] Your username: [user] Go to site [URL]
+    //   Col. der: [Nombre] Your password: [pass]
+    //
+    // El nombre se toma de la columna derecha (justo antes de "Your password:"),
+    // donde nunca hay contaminación de la contraseña del alumno anterior.
+    // El .*? (no-codicioso + DOTALL) salta la URL y cualquier texto intermedio.
+    //
+    // Cada palabra del nombre usa (?!\S) = fin de token completo, para no
+    // hacer match parcial dentro de contraseñas (ej: "Tmdh" en "TmdhGQGXaW").
+    //
     // Soporta inglés ("Your username:" / "Your password:") y
-    // español ("Tu nombre de usuario:" / "Tu contraseña:")
-    preg_match_all(
-        '/(?:Your username:|Tu nombre de usuario:)\s*(\S+)\s+(?:Go to site|Ir al sitio).*?(?:Your password:|Tu contraseña:)\s*(\S+)/su',
-        $text,
-        $matches,
-        PREG_SET_ORDER
-    );
+    // español ("Tu nombre de usuario:" / "Tu contraseña:").
+    $titleWord = '[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?!\S)';
+    $capsWord  = '[A-ZÁÉÍÓÚÜÑ]{2,}(?!\S)';
+    $lowerWord = '[a-záéíóúüñ]{2,}(?!\S)';
+    $firstWord = "(?:{$titleWord}|{$capsWord})";
+    $nextWord  = "(?:{$titleWord}|{$capsWord}|{$lowerWord})";
 
-    // Los nombres se extraen desde ANTES DE "Your password:" (columna derecha del PDF),
-    // NO desde antes de "Your username:" (columna izquierda).
-    //
-    // Motivo: el PDF tiene 2 columnas. Después de la contraseña del alumno N,
-    // el extractor de texto pone el nombre del alumno N+1 (col. izquierda) mezclado
-    // con caracteres del final de la contraseña anterior → contamina el nombre.
-    // La columna derecha solo tiene "[Nombre] Your password: [pass]", precedida
-    // por la URL (todo minúsculas/puntos) → nunca hay contaminación.
-    //
-    // Cada palabra del nombre debe ser token completo gracias a (?!\S):
-    //   título:    Victoria, Chávez  → mayúscula + minúsculas hasta fin de token
-    //   mayúsculas: VICTORIA, LUIS   → 2+ mayúsculas hasta fin de token
-    //   partícula: de, del, la       → solo como palabra no-primera
-    // (?!\S) = no seguido de carácter no-espacio → rechaza subcadenas de contraseñas
-    $titleWord   = '[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+(?!\S)';
-    $capsWord    = '[A-ZÁÉÍÓÚÜÑ]{2,}(?!\S)';
-    $lowerWord   = '[a-záéíóúüñ]{2,}(?!\S)';
-    $firstWord   = "(?:{$titleWord}|{$capsWord})";
-    $nextWord    = "(?:{$titleWord}|{$capsWord}|{$lowerWord})";
-    $passLabel   = '(?:Your password:|Tu contraseña:)';
-    $namePattern = "/({$firstWord}(?:\\s+{$nextWord}){1,5})\\s+{$passLabel}/u";
+    $pattern = '/(?:Your username:|Tu nombre de usuario:)\s*(\S+)'
+             . '\s+(?:Go to site|Ir al sitio).*?'
+             . '(' . $firstWord . '(?:\s+' . $nextWord . '){1,5})'
+             . '\s+(?:Your password:|Tu contraseña:)\s*(\S+)/su';
 
-    preg_match_all($namePattern, $text, $nameMatches);
-    $names = $nameMatches[1] ?? [];
+    preg_match_all($pattern, $text, $matches, PREG_SET_ORDER);
 
-    foreach ($matches as $index => $match) {
-        $username = trim($match[1]);
-        $password = trim($match[2]);
-        $fullName = isset($names[$index]) ? trim($names[$index]) : 'Sin nombre';
+    foreach ($matches as $match) {
+        $username  = trim($match[1]);
+        $fullName  = trim($match[2]);
+        $password  = trim($match[3]);
 
         $nameParts = explode(' ', $fullName);
         $name      = array_shift($nameParts);

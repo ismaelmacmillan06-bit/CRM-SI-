@@ -48,6 +48,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
     // Consultores
     Route::resource('consultants', ConsultantController::class);
+    Route::patch('consultants/{consultant}/password', [ConsultantController::class, 'updatePassword'])
+         ->name('consultants.password');
 
     // Tickets
     Route::resource('schools.tickets', TicketController::class)

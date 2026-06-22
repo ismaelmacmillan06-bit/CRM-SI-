@@ -106,6 +106,26 @@ $consultant->update($data);
                          ->with('success', 'Consultor actualizado correctamente.');
     }
 
+    public function updatePassword(Request $request, Consultant $consultant)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.required'  => 'La nueva contraseña es obligatoria.',
+            'password.min'       => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+        ]);
+
+        $consultant->user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return redirect()->route('consultants.edit', $consultant)
+                         ->with('success_password', 'Contraseña actualizada correctamente.');
+    }
+
     public function destroy(Consultant $consultant)
     {
         $consultant->user->delete();

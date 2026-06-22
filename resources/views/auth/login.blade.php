@@ -202,8 +202,8 @@
             top: 50%;
             transform: translateY(-50%);
             color: #aaa;
-            font-size: 16px;
             pointer-events: none;
+            display: flex;
         }
         .field-input {
             width: 100%;
@@ -347,14 +347,17 @@
             <form method="POST" action="{{ route('login') }}">
                 @csrf
 
-                {{-- Email --}}
+                {{-- Usuario --}}
                 <div class="field-group">
-                    <label class="field-label" for="email">Correo electrónico</label>
+                    <label class="field-label" for="email">Usuario</label>
                     <div class="field-wrap">
-                        <span class="field-icon">✉</span>
-                        <input id="email" name="email" type="email" class="field-input"
-                               value="{{ old('email') }}" required autofocus autocomplete="username"
-                               placeholder="usuario@macmillan.com">
+                        <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <input id="email" name="email" type="text" class="field-input"
+                               value="{{ old('email') }}" required autofocus autocomplete="username">
                     </div>
                     @error('email')
                         <span class="field-error">{{ $message }}</span>
@@ -365,7 +368,11 @@
                 <div class="field-group">
                     <label class="field-label" for="password">Contraseña</label>
                     <div class="field-wrap">
-                        <span class="field-icon">🔒</span>
+                        <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
                         <input id="password" name="password" type="password" class="field-input"
                                required autocomplete="current-password"
                                placeholder="••••••••">

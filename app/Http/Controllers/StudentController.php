@@ -90,15 +90,27 @@ private function extractStudentsFromPdf(string $text): array
 {
     $students = [];
 
-    // Limpiar texto
+    // Normalizar espacios
     $text = preg_replace('/\s+/', ' ', $text);
 
-    // Extraer bloques de username con su nombre
-    preg_match_all('/Your username:\s*(\S+)\s+Go to site[^Y]+Your password:\s*(\S+)/u', $text, $matches, PREG_SET_ORDER);
+    // Extraer usuario y contraseña — usa .*? con flag s (DOTALL) para no fallar
+    // si el nombre del alumno contiene la letra Y (ej. "Yolanda")
+    preg_match_all(
+        '/Your username:\s*(\S+)\s+Go to site.*?Your password:\s*(\S+)/su',
+        $text,
+        $matches,
+        PREG_SET_ORDER
+    );
 
-    // Extraer nombres por separado - están justo ANTES de "Your username:"
+    // Extraer nombres justo antes de "Your username:"
     // Acepta MAYÚSCULAS ("MINERVA SÁNCHEZ") y título/mixto ("Victoria Quintero")
-    preg_match_all('/([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑa-záéíóúüñ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+){1,5})\s+Your username:/u', $text, $nameMatches);
+    // Primera palabra: debe iniciar con mayúscula (descarta texto genérico)
+    // Palabras siguientes: pueden iniciar con cualquier letra (cubre "De león")
+    preg_match_all(
+        '/([A-ZÁÉÍÓÚÜÑ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+(?:\s+[A-ZÁÉÍÓÚÜÑa-záéíóúüñ][A-ZÁÉÍÓÚÜÑa-záéíóúüñ]+){1,5})\s+Your username:/u',
+        $text,
+        $nameMatches
+    );
     $names = $nameMatches[1] ?? [];
 
     foreach ($matches as $index => $match) {
@@ -106,7 +118,6 @@ private function extractStudentsFromPdf(string $text): array
         $password = trim($match[2]);
         $fullName = isset($names[$index]) ? trim($names[$index]) : 'Sin nombre';
 
-        // Separar nombre y apellidos
         $nameParts = explode(' ', $fullName);
         $name      = array_shift($nameParts);
         $lastName  = implode(' ', $nameParts);

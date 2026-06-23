@@ -1,401 +1,401 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>MacmillanSI — Iniciar sesión</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Acceso · MacmillanSI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --rojo:        #E2231A;
+    --rojo-osc:    #B31810;
+    --tinta:       #181311;
+    --tinta-2:     #221A17;
+    --papel:       #FBFAF7;
+    --papel-2:     #F2EFE9;
+    --linea:       #E4E0D8;
+    --gris:        #6F6A64;
+    --gris-osc:    #3A3531;
+    --radio:       14px;
+    --sombra:      0 18px 50px -18px rgba(24,19,17,.28);
+    --ease:        cubic-bezier(.22,.61,.36,1);
+  }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
-            display: flex;
-            background: #f5f5f5;
-            overflow: hidden;
-        }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
 
-        /* ── LEFT PANEL ──────────────────────────────── */
-        .left-panel {
-            width: 55%;
-            background: linear-gradient(145deg, #a50e20 0%, #c81a30 40%, #e94560 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 64px 72px;
-            position: relative;
-            overflow: hidden;
-        }
+  body{
+    font-family:"Inter", system-ui, sans-serif;
+    color:var(--tinta);
+    background:var(--papel);
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
 
-        /* Decorative blobs */
-        .left-panel::before {
-            content: '';
-            position: absolute;
-            width: 400px; height: 400px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-            top: -100px; right: -80px;
-        }
-        .left-panel::after {
-            content: '';
-            position: absolute;
-            width: 280px; height: 280px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            bottom: -60px; left: 40px;
-        }
+  .shell{
+    display:grid;
+    grid-template-columns: 1.05fr 1fr;
+    min-height:100dvh;
+  }
 
-        /* Logo */
-        .logo-wrap {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 60px;
-            position: relative; z-index: 1;
-        }
+  /* ----------  PANEL DE MARCA  ---------- */
+  .marca{
+    position:relative;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 120% at 18% 12%, var(--tinta-2) 0%, var(--tinta) 55%, #100C0A 100%);
+    color:var(--papel);
+    padding:48px 56px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
 
-        .logo-circle {
-            width: 72px; height: 72px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            position: relative;
-            overflow: hidden;
-        }
-        .logo-waves {
-            position: absolute;
-            top: 10px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-        }
-        .logo-si {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 30px;
-            font-weight: 700;
-            color: #c81a30;
-            line-height: 1;
-            margin-top: 12px;
-        }
-        .logo-text-wrap {
-            display: flex;
-            flex-direction: column;
-        }
-        .logo-brand {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 22px;
-            font-weight: 400;
-            color: white;
-            letter-spacing: -0.3px;
-            line-height: 1.2;
-        }
-        .logo-brand strong {
-            font-weight: 700;
-        }
-        .logo-sub {
-            font-size: 11px;
-            color: rgba(255,255,255,0.65);
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            margin-top: 3px;
-        }
+  .logo{ display:flex; align-items:center; gap:14px; position:relative; z-index:3; }
+  .logo .wordmark{ line-height:1; }
+  .logo .wordmark span{ display:block; font-family:"Bricolage Grotesque"; font-weight:700; font-size:24px; letter-spacing:1.5px; }
+  .logo .wordmark small{
+    display:block; margin-top:5px; color:var(--rojo);
+    font-family:"Bricolage Grotesque"; font-weight:700; font-size:12px; letter-spacing:2px;
+  }
+  .logo .si{
+    width:46px; height:46px; border-radius:50%;
+    background:var(--rojo);
+    display:grid; place-items:center;
+    font-family:"Bricolage Grotesque"; font-weight:700; font-size:20px; color:#fff;
+    box-shadow:0 0 0 6px rgba(226,35,26,.16);
+  }
 
-        /* Welcome copy */
-        .welcome-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 44px;
-            font-weight: 700;
-            color: white;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            position: relative; z-index: 1;
-        }
-        .welcome-subtitle {
-            font-size: 16px;
-            color: rgba(255,255,255,0.75);
-            line-height: 1.7;
-            max-width: 420px;
-            position: relative; z-index: 1;
-        }
+  /* molinete animado */
+  .molinete{
+    position:absolute;
+    right:-160px; top:50%;
+    transform:translateY(-50%);
+    width:620px; height:620px;
+    z-index:1;
+    opacity:.9;
+    animation:girar 48s linear infinite;
+  }
+  @keyframes girar{ to{ transform:translateY(-50%) rotate(360deg); } }
+  .molinete .petalo{ transform-origin:300px 300px; }
 
-        /* Decorative dots grid */
-        .dots-grid {
-            position: absolute;
-            bottom: 48px; right: 48px;
-            display: grid;
-            grid-template-columns: repeat(6, 10px);
-            gap: 8px;
-            opacity: 0.18;
-        }
-        .dots-grid span {
-            width: 4px; height: 4px;
-            border-radius: 50%;
-            background: white;
-            display: block;
-        }
+  .marca .glow{
+    position:absolute; inset:0; z-index:0;
+    background:radial-gradient(60% 60% at 78% 50%, rgba(226,35,26,.20), transparent 70%);
+    pointer-events:none;
+  }
 
-        /* ── RIGHT PANEL ─────────────────────────────── */
-        .right-panel {
-            width: 45%;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 64px 56px;
-        }
+  .mensaje{ position:relative; z-index:3; max-width:26ch; }
+  .mensaje .brand{
+    font-family:"Bricolage Grotesque"; font-weight:700;
+    font-size:clamp(48px, 6vw, 78px); line-height:.98; letter-spacing:-1.5px;
+  }
+  .mensaje .brand .si{ color:var(--rojo); }
+  .mensaje p{ margin-top:20px; color:#C9C2BC; font-size:17px; line-height:1.6; max-width:32ch; }
 
-        .form-box {
-            width: 100%;
-            max-width: 380px;
-        }
+  .pie-marca{ position:absolute; left:56px; bottom:40px; z-index:3; display:flex; gap:28px; color:#8C857F; font-size:13px; }
+  .pie-marca b{ color:var(--papel); font-weight:600; }
 
-        .form-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 30px;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin-bottom: 8px;
-        }
-        .form-caption {
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 36px;
-        }
+  /* ----------  PANEL DE FORMULARIO  ---------- */
+  .acceso{
+    display:flex; align-items:center; justify-content:center;
+    padding:48px 40px;
+  }
+  .card{ width:100%; max-width:400px; }
 
-        /* Session error */
-        .alert-error {
-            background: #fff0f2;
-            border: 1px solid #f8c4cb;
-            color: #c81a30;
-            font-size: 13px;
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-        }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:600; letter-spacing:.8px; text-transform:uppercase;
+    color:var(--rojo);
+  }
+  .eyebrow::before{ content:""; width:18px; height:2px; background:var(--rojo); border-radius:2px; }
 
-        /* Form fields */
-        .field-group {
-            margin-bottom: 20px;
-        }
-        .field-label {
-            display: block;
-            font-size: 13px;
-            font-weight: 500;
-            color: #444;
-            margin-bottom: 8px;
-        }
-        .field-wrap {
-            position: relative;
-        }
-        .field-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #aaa;
-            pointer-events: none;
-            display: flex;
-        }
-        .field-input {
-            width: 100%;
-            padding: 13px 14px 13px 42px;
-            border: 1.5px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            color: #1a1a2e;
-            background: #fafafa;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
-        }
-        .field-input:focus {
-            border-color: #c81a30;
-            background: white;
-            box-shadow: 0 0 0 3px rgba(200,26,48,0.1);
-        }
-        .field-error {
-            font-size: 12px;
-            color: #c81a30;
-            margin-top: 5px;
-            display: block;
-        }
+  .card h2{
+    font-family:"Bricolage Grotesque"; font-weight:600;
+    font-size:30px; letter-spacing:-.4px; margin-top:14px;
+  }
+  .card .sub{ color:var(--gris); margin-top:8px; font-size:15px; }
 
-        /* Remember me */
-        .remember-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 28px;
-        }
-        .remember-row input[type="checkbox"] {
-            width: 16px; height: 16px;
-            accent-color: #c81a30;
-            cursor: pointer;
-        }
-        .remember-row label {
-            font-size: 13px;
-            color: #666;
-            cursor: pointer;
-        }
+  .nota{
+    display:flex; align-items:center; gap:9px;
+    margin-top:18px; padding:11px 14px;
+    background:var(--papel-2); border:1px solid var(--linea); border-radius:11px;
+    font-size:13px; color:var(--gris-osc);
+  }
+  .nota svg{ width:16px; height:16px; flex-shrink:0; color:var(--rojo); }
 
-        /* Submit button */
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #c81a30, #e94560);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-        .btn-submit:hover  { opacity: 0.92; }
-        .btn-submit:active { transform: scale(0.99); }
+  .nota-success{
+    display:flex; align-items:center; gap:9px;
+    margin-top:18px; padding:11px 14px;
+    background:#f0fff4; border:1px solid #bbf7d0; border-radius:11px;
+    font-size:13px; color:#166534;
+  }
 
-        /* Footer */
-        .form-footer {
-            text-align: center;
-            margin-top: 24px;
-            font-size: 12px;
-            color: #bbb;
-        }
+  form{ margin-top:30px; display:flex; flex-direction:column; gap:18px; }
 
-        /* Responsive: stack on small screens */
-        @media (max-width: 768px) {
-            body { flex-direction: column; overflow: auto; }
-            .left-panel { width: 100%; padding: 48px 32px 40px; }
-            .welcome-title { font-size: 32px; }
-            .right-panel { width: 100%; padding: 48px 32px; }
-        }
-    </style>
+  .campo label{
+    display:block; font-size:13px; font-weight:600; color:var(--gris-osc); margin-bottom:7px;
+  }
+  .control{ position:relative; }
+  .control input{
+    width:100%;
+    font:inherit; font-size:15px; color:var(--tinta);
+    padding:14px 16px;
+    background:#fff;
+    border:1.5px solid var(--linea);
+    border-radius:var(--radio);
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .control input::placeholder{ color:#B4AEA6; }
+  .control input:hover{ border-color:#CFC9C0; }
+  .control input:focus{
+    outline:none;
+    border-color:var(--rojo);
+    box-shadow:0 0 0 4px rgba(226,35,26,.12);
+  }
+  .control input[type="password"], .control input.pwd{ padding-right:48px; }
+
+  .toggle-pwd{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:36px; height:36px; border:none; background:transparent; cursor:pointer;
+    border-radius:9px; display:grid; place-items:center; color:var(--gris);
+    transition:background .15s, color .15s;
+  }
+  .toggle-pwd:hover{ background:var(--papel-2); color:var(--tinta); }
+  .toggle-pwd svg{ width:20px; height:20px; }
+
+  .opciones{ display:flex; align-items:center; justify-content:space-between; margin-top:-2px; }
+
+  /* switch "mantener sesión" */
+  .switch{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; font-size:14px; color:var(--gris-osc); }
+  .switch input{ position:absolute; opacity:0; pointer-events:none; }
+  .switch .track{
+    width:40px; height:23px; border-radius:99px; background:#D9D4CC; position:relative; transition:background .2s;
+  }
+  .switch .track::after{
+    content:""; position:absolute; top:3px; left:3px; width:17px; height:17px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s var(--ease);
+  }
+  .switch input:checked + .track{ background:var(--rojo); }
+  .switch input:checked + .track::after{ transform:translateX(17px); }
+  .switch input:focus-visible + .track{ box-shadow:0 0 0 4px rgba(226,35,26,.18); }
+
+  .link{ font-size:14px; font-weight:500; color:var(--rojo); text-decoration:none; }
+  .link:hover{ color:var(--rojo-osc); text-decoration:underline; text-underline-offset:3px; }
+
+  .btn{
+    margin-top:6px;
+    display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    width:100%;
+    font:inherit; font-weight:600; font-size:15px; color:#fff;
+    padding:15px 20px;
+    background:var(--rojo);
+    border:none; border-radius:var(--radio); cursor:pointer;
+    transition:background .18s, transform .08s, box-shadow .18s;
+    box-shadow:0 10px 24px -10px rgba(226,35,26,.6);
+  }
+  .btn:hover{ background:var(--rojo-osc); }
+  .btn:active{ transform:translateY(1px); }
+  .btn svg{ width:18px; height:18px; transition:transform .2s var(--ease); }
+  .btn:hover svg{ transform:translate(2px,-2px); }
+  .btn[aria-busy="true"]{ pointer-events:none; opacity:.85; }
+  .btn[aria-busy="true"] .arrow{ display:none; }
+  .btn .spinner{ display:none; width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+  .btn[aria-busy="true"] .spinner{ display:block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .error-msg{
+    display:none; align-items:center; gap:8px;
+    font-size:13px; color:var(--rojo-osc); margin-top:6px;
+  }
+  .campo.invalido .control input{ border-color:var(--rojo); }
+  .campo.invalido .error-msg{ display:flex; }
+
+  .pie-form{
+    margin-top:34px; padding-top:22px; border-top:1px solid var(--linea);
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; color:var(--gris);
+  }
+
+  /* ----------  RESPONSIVE  ---------- */
+  @media (max-width: 880px){
+    .shell{ grid-template-columns:1fr; }
+    .marca{
+      padding:34px 28px 96px;
+      min-height:auto;
+      justify-content:flex-start;
+    }
+    .molinete{ width:380px; height:380px; right:-130px; top:auto; bottom:-110px; transform:none; animation:girar-m 48s linear infinite; }
+    @keyframes girar-m{ to{ transform:rotate(360deg); } }
+    .mensaje{ margin-top:10px; }
+    .mensaje .brand{ font-size:46px; }
+    .pie-marca{ display:none; }
+    .acceso{ padding:38px 24px 56px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .molinete{ animation:none; }
+    *{ transition:none !important; }
+  }
+</style>
 </head>
 <body>
+<main class="shell">
 
-    {{-- ── LEFT PANEL ── --}}
-    <div class="left-panel">
+  {{-- ====== PANEL DE MARCA ====== --}}
+  <section class="marca">
+    <div class="glow"></div>
 
-        {{-- Logo --}}
-        <div class="logo-wrap">
-            <div class="logo-circle">
-                <div class="logo-waves">
-                    <svg width="44" height="14" viewBox="0 0 44 14" fill="none">
-                        <path d="M2 10 Q7 2 12 10 Q17 2 22 10 Q27 2 32 10 Q37 2 42 10"
-                              stroke="#c81a30" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div class="logo-si">Sí</div>
-            </div>
-            <div class="logo-text-wrap">
-                <div class="logo-brand">macmillan <strong>castillo</strong></div>
-                <div class="logo-sub">Solución Integral</div>
-            </div>
-        </div>
+    {{-- molinete de pétalos --}}
+    <svg class="molinete" viewBox="0 0 600 600" aria-hidden="true">
+      <g>
+        <path class="petalo" d="M300 300 C300 220 340 150 420 130 C400 210 360 270 300 300 Z" fill="#E2231A"/>
+        <path class="petalo" d="M300 300 C380 300 450 340 470 420 C390 400 330 360 300 300 Z" fill="none" stroke="#3A302C" stroke-width="2"/>
+        <path class="petalo" d="M300 300 C300 380 260 450 180 470 C200 390 240 330 300 300 Z" fill="#B31810"/>
+        <path class="petalo" d="M300 300 C220 300 150 260 130 180 C210 200 270 240 300 300 Z" fill="none" stroke="#4A3E39" stroke-width="2"/>
+        <path class="petalo" d="M300 300 C356 244 432 232 492 268 C436 324 360 336 300 300 Z" fill="#E2231A" opacity=".92"/>
+        <path class="petalo" d="M300 300 C356 356 368 432 332 492 C276 436 264 360 300 300 Z" fill="none" stroke="#3A302C" stroke-width="2"/>
+        <path class="petalo" d="M300 300 C244 356 168 368 108 332 C164 276 240 264 300 300 Z" fill="#B31810" opacity=".9"/>
+        <path class="petalo" d="M300 300 C244 244 232 168 268 108 C324 164 336 240 300 300 Z" fill="none" stroke="#4A3E39" stroke-width="2"/>
+        <circle cx="300" cy="300" r="16" fill="#E2231A"/>
+      </g>
+    </svg>
 
-        {{-- Welcome copy --}}
-        <div class="welcome-title">
-            Bienvenido<br>de vuelta
-        </div>
-        <div class="welcome-subtitle">
-            Sistema para la administración y control de los Colegios Solución Integral
-        </div>
-
-        {{-- Decorative dots --}}
-        <div class="dots-grid">
-            @for($r = 0; $r < 5; $r++)
-                @for($c = 0; $c < 6; $c++)
-                    <span></span>
-                @endfor
-            @endfor
-        </div>
-
+    <div class="mensaje">
+      <div class="brand"><span class="si">SI</span>Central</div>
+      <p>Plataforma para la gestión de colegios Solución Integral.</p>
     </div>
 
-    {{-- ── RIGHT PANEL ── --}}
-    <div class="right-panel">
-        <div class="form-box">
-
-            <div class="form-title">Iniciar sesión</div>
-            <div class="form-caption">Ingresa tus credenciales para continuar</div>
-
-            {{-- Session status --}}
-            @if(session('status'))
-                <div class="alert-error" style="background:#f0fff4; border-color:#bbf7d0; color:#166534">
-                    {{ session('status') }}
-                </div>
-            @endif
-
-            {{-- Auth errors --}}
-            @if($errors->any())
-                <div class="alert-error">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            <form method="POST" action="{{ route('login') }}">
-                @csrf
-
-                {{-- Usuario --}}
-                <div class="field-group">
-                    <label class="field-label" for="email">Usuario</label>
-                    <div class="field-wrap">
-                        <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        <input id="email" name="email" type="text" class="field-input"
-                               value="{{ old('email') }}" required autofocus autocomplete="username">
-                    </div>
-                    @error('email')
-                        <span class="field-error">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- Password --}}
-                <div class="field-group">
-                    <label class="field-label" for="password">Contraseña</label>
-                    <div class="field-wrap">
-                        <svg class="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
-                        <input id="password" name="password" type="password" class="field-input"
-                               required autocomplete="current-password"
-                               placeholder="••••••••">
-                    </div>
-                    @error('password')
-                        <span class="field-error">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                {{-- Remember me --}}
-                <div class="remember-row">
-                    <input id="remember_me" name="remember" type="checkbox">
-                    <label for="remember_me">Recordarme</label>
-                </div>
-
-                <button type="submit" class="btn-submit">Entrar</button>
-            </form>
-
-            <div class="form-footer">
-                Solo el administrador puede crear cuentas nuevas
-            </div>
-        </div>
+    <div class="pie-marca">
+      <span>Soporte <b>L–V · 9 a 18 h</b></span>
+      <span>si@macmillaneducation.com</span>
     </div>
+  </section>
 
+  {{-- ====== PANEL DE FORMULARIO ====== --}}
+  <section class="acceso">
+    <div class="card">
+      <span class="eyebrow">Acceso Equipo SI</span>
+      <h2>Bienvenido de nuevo</h2>
+      <p class="sub">Ingresa con tu usuario y contraseña.</p>
+
+      @if(session('status'))
+        <div class="nota-success">{{ session('status') }}</div>
+      @endif
+
+      <div class="nota">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Solo el administrador puede generar acceso al sistema.
+      </div>
+
+      <form method="POST" action="{{ route('login') }}" novalidate>
+        @csrf
+
+        <div class="campo @error('email') invalido @enderror" id="campoEmail">
+          <label for="email">Usuario</label>
+          <div class="control">
+            <input type="text" id="email" name="email"
+                   value="{{ old('email') }}"
+                   autocomplete="username" autofocus required />
+          </div>
+          <p class="error-msg">
+            @error('email'){{ $message }}@else Introduce un usuario válido. @enderror
+          </p>
+        </div>
+
+        <div class="campo @error('password') invalido @enderror" id="campoPwd">
+          <label for="password">Contraseña</label>
+          <div class="control">
+            <input type="password" id="password" name="password" class="pwd"
+                   autocomplete="current-password" placeholder="••••••••" required />
+            <button type="button" class="toggle-pwd" id="togglePwd"
+                    aria-label="Mostrar contraseña" aria-pressed="false">
+              <svg id="iconOjo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <p class="error-msg">
+            @error('password'){{ $message }}@else Introduce tu contraseña. @enderror
+          </p>
+        </div>
+
+        <div class="opciones">
+          <label class="switch">
+            <input type="checkbox" name="remember" id="remember" />
+            <span class="track"></span>
+            Mantener sesión activa
+          </label>
+          <a class="link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn" id="btnAcceder">
+          <span class="label">Acceder</span>
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 17 17 7M9 7h8v8"/>
+          </svg>
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="pie-form">
+        <span>© Macmillan Castillo SI</span>
+        <span>Solo el administrador puede crear cuentas</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // --- Mostrar / ocultar contraseña ---
+  const togglePwd = document.getElementById('togglePwd');
+  const pwd       = document.getElementById('password');
+  const iconOjo   = document.getElementById('iconOjo');
+
+  togglePwd.addEventListener('click', () => {
+    const visible = pwd.type === 'text';
+    pwd.type = visible ? 'password' : 'text';
+    togglePwd.setAttribute('aria-pressed', String(!visible));
+    togglePwd.setAttribute('aria-label', visible ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    iconOjo.innerHTML = visible
+      ? '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>'
+      : '<path d="M9.9 4.2A10.9 10.9 0 0 1 12 4c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3 3.7M6.6 6.6A17.6 17.6 0 0 0 2 11s3.5 7 10 7a10.9 10.9 0 0 0 3.6-.6"/><path d="m2 2 20 20"/><path d="M9.5 9.5a3 3 0 0 0 4.2 4.2"/>';
+  });
+
+  // --- Validación cliente + spinner ---
+  const form       = document.querySelector('form');
+  const campoEmail = document.getElementById('campoEmail');
+  const campoPwd   = document.getElementById('campoPwd');
+  const email      = document.getElementById('email');
+  const btn        = document.getElementById('btnAcceder');
+
+  const esEmailValido = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+
+  function limpiar(campo){ campo.classList.remove('invalido'); }
+  email.addEventListener('input', () => limpiar(campoEmail));
+  pwd.addEventListener('input',   () => limpiar(campoPwd));
+
+  form.addEventListener('submit', (e) => {
+    let ok = true;
+
+    if (!esEmailValido(email.value))         { campoEmail.classList.add('invalido'); ok = false; }
+    if (pwd.value.trim().length === 0)       { campoPwd.classList.add('invalido');   ok = false; }
+
+    if (!ok) {
+      e.preventDefault();
+      (campoEmail.classList.contains('invalido') ? email : pwd).focus();
+      return;
+    }
+
+    // Muestra spinner mientras el POST viaja al servidor
+    btn.setAttribute('aria-busy', 'true');
+  });
+</script>
 </body>
 </html>

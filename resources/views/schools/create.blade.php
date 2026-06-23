@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Nuevo Colegio')
 
@@ -102,7 +102,7 @@
 
                 {{-- Responsables del colegio --}}
                 <div style="margin-bottom:20px">
-                    <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:15px; font-weight:600;
                                 margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border)">
                         👥 Responsables del colegio
                     </div>
@@ -158,7 +158,7 @@
 
                 {{-- Administrador MEE --}}
                 <div style="margin-bottom:20px">
-                    <div style="font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:600;
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:15px; font-weight:600;
                                 margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid var(--border)">
                         🔐 Administrador MEE
                     </div>

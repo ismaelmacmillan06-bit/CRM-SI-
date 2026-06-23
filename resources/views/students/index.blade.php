@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Alumnos — ' . $school->name)
 
@@ -23,7 +23,7 @@
 <div id="modal-pdf" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
      z-index:999; align-items:center; justify-content:center;">
     <div style="background:#fff; border-radius:12px; padding:32px; width:500px; max-width:90%">
-        <h3 style="font-family:'Space Grotesk',sans-serif; margin-bottom:20px">📄 Carga masiva desde PDF</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif; margin-bottom:20px">📄 Carga masiva desde PDF</h3>
         <form method="POST" action="{{ route('schools.students.upload-pdf', $school) }}"
               enctype="multipart/form-data">
             @csrf

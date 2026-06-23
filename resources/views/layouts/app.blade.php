@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>MacmillanSI CRM</title>
     {{-- PWA --}}
-    <meta name="theme-color" content="#e94560">
+    <meta name="theme-color" content="#E2231A">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MacmillanSI">
@@ -14,27 +14,27 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap');
 
         :root {
-            --primary: #1a1a2e;
-            --secondary: #16213e;
-            --accent: #e94560;
-            --accent2: #0f3460;
-            --surface: #ffffff;
-            --surface2: #f4f6f9;
-            --text: #1a1a2e;
-            --text-muted: #6b7280;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --primary:    #181311;
+            --secondary:  #221A17;
+            --accent:     #E2231A;
+            --accent2:    #B31810;
+            --surface:    #FBFAF7;
+            --surface2:   #F2EFE9;
+            --text:       #181311;
+            --text-muted: #6F6A64;
+            --border:     #E4E0D8;
+            --success:    #10b981;
+            --warning:    #f59e0b;
+            --danger:     #ef4444;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: var(--surface2);
             color: var(--text);
             min-height: 100vh;
@@ -60,7 +60,7 @@
         }
 
         .sidebar-brand h1 {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Bricolage Grotesque', sans-serif;
             font-size: 18px;
             font-weight: 700;
             color: #fff;
@@ -156,7 +156,7 @@
             transition: all 0.2s;
         }
 
-        .logout-btn:hover { color: var(--accent); background: rgba(233,69,96,0.1); }
+        .logout-btn:hover { color: var(--accent); background: rgba(226,35,26,0.1); }
 
         /* MAIN */
         .main {
@@ -176,7 +176,7 @@
         }
 
         .page-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Bricolage Grotesque', sans-serif;
             font-size: 20px;
             font-weight: 600;
             color: var(--text);
@@ -204,7 +204,7 @@
         }
 
         .card-title {
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Bricolage Grotesque', sans-serif;
             font-size: 16px;
             font-weight: 600;
         }
@@ -227,7 +227,7 @@
         }
 
         .btn-primary { background: var(--accent); color: #fff; }
-        .btn-primary:hover { background: #d63651; color: #fff; }
+        .btn-primary:hover { background: var(--accent2); color: #fff; }
         .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
         .btn-secondary:hover { background: var(--border); }
         .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
@@ -254,7 +254,7 @@
             vertical-align: middle;
         }
         .table tr:last-child td { border-bottom: none; }
-        .table tr:hover td { background: #fafafa; }
+        .table tr:hover td { background: var(--surface2); }
 
         /* BADGES */
         .badge {
@@ -286,7 +286,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 14px;
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             color: var(--text);
             background: var(--surface);
             transition: border-color 0.2s;

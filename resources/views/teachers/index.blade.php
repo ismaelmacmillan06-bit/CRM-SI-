@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Docentes — ' . $school->name)
 
@@ -29,7 +29,7 @@
      z-index:999; align-items:center; justify-content:center; padding:20px">
     <div style="background:#fff; border-radius:12px; padding:32px; width:540px; max-width:100%">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600">
                 📥 Importación masiva de Docentes
             </h3>
             <button onclick="document.getElementById('modal-import-teachers').style.display='none'"

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Bitácora de Acciones')
 
@@ -18,7 +18,7 @@ $tiposConfig = [
 {{-- Header --}}
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px">
     <div>
-        <h2 style="font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--text); margin:0">
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:22px; font-weight:700; color:var(--text); margin:0">
             📋 Bitácora de Acciones
         </h2>
         <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0">

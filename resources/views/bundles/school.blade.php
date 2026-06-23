@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Bundles — ' . $school->name)
 
@@ -23,7 +23,7 @@
      z-index:999; align-items:center; justify-content:center; padding:20px">
     <div style="background:#fff; border-radius:12px; padding:32px; width:520px; max-width:100%">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
-            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600">
                 📥 Importación masiva de Bundles
             </h3>
             <button onclick="document.getElementById('modal-import').style.display='none'"
@@ -68,7 +68,7 @@
      z-index:999; align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto">
     <div style="background:#fff; border-radius:12px; padding:32px; width:900px; max-width:100%">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px">
-            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600">
                 📚 Selecciona los materiales
             </h3>
             <button onclick="document.getElementById('modal-bundles').style.display='none'"
@@ -260,7 +260,7 @@ function loadBundles() {
             let html = '';
             for (const [serie, bundles] of Object.entries(data)) {
                 html += `<div style="margin-bottom:20px">
-                    <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:14px;
                                 padding:8px 12px; background:var(--surface2); border-radius:8px; margin-bottom:8px;
                                 display:flex; align-items:center; gap:8px">
                         <input type="checkbox" class="serie-all-check" onclick="toggleSerie(this)"
@@ -332,7 +332,7 @@ function backToStep1() {
      z-index:1000; align-items:center; justify-content:center; padding:20px">
     <div style="background:#fff; border-radius:12px; padding:32px; width:480px; max-width:100%">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
-            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600">
                 🔄 Registrar Resurtido
             </h3>
             <button onclick="cerrarResurtido()"
@@ -376,7 +376,7 @@ function backToStep1() {
      z-index:1000; align-items:center; justify-content:center; padding:20px">
     <div style="background:#fff; border-radius:12px; padding:32px; width:660px; max-width:100%; max-height:80vh; overflow-y:auto">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
-            <h3 style="font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600">
                 📋 Historial de Resurtidos
             </h3>
             <button onclick="document.getElementById('modal-historial').style.display='none'"

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Dashboard')
 
@@ -12,7 +12,7 @@
                 border-top:3px solid var(--accent); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Colegios</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalSchools }}</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
             <span class="badge badge-success">{{ $colegiosActivos }} activos</span>
@@ -26,7 +26,7 @@
                 border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Directores</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalDirectores }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Director General + Director de Nivel</div>
     </div>
@@ -36,7 +36,7 @@
                 border-top:3px solid #3b82f6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Docentes</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalTeachers }}</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
             <span class="badge badge-info">{{ $docentesELT }} ELT</span>
@@ -49,7 +49,7 @@
                 border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Alumnos</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalStudents }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">registrados en MEE</div>
     </div>
@@ -59,7 +59,7 @@
                 border-top:3px solid #f59e0b; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Tickets</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $ticketsAbiertos + $ticketsEnProceso + $ticketsResueltos }}</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
             <span class="badge badge-danger">{{ $ticketsAbiertos }} abiertos</span>
@@ -73,7 +73,7 @@
                 border-top:3px solid #0ea5e9; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Visitas</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalVisitas }}</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
             <span class="badge badge-warning">{{ $visitasPendientes }} pendientes</span>
@@ -86,7 +86,7 @@
                 border-top:3px solid #10b981; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Admins MEE</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalAdminsMee }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Administradores MEE registrados</div>
     </div>
@@ -96,7 +96,7 @@
                 border-top:3px solid #f97316; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:6px">Resurtidos</div>
-        <div style="font-family:'Space Grotesk',sans-serif; font-size:28px; font-weight:700;
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
                     color:var(--text); line-height:1">{{ $totalResurtidos }}</div>
         <div style="margin-top:12px">
             @if(auth()->user()->hasAnyRole(['admin', 'consultor_digital']))
@@ -152,7 +152,7 @@
         ['nombre' => 'Preescolar',   'icono' => '🧸', 'color' => '#8b5cf6', 'alias' => ['preescolar','prescolar','kinder','kínder']],
         ['nombre' => 'Primaria',     'icono' => '✏️', 'color' => '#3b82f6', 'alias' => ['primaria']],
         ['nombre' => 'Secundaria',   'icono' => '📐', 'color' => '#10b981', 'alias' => ['secundaria','secu']],
-        ['nombre' => 'Preparatoria', 'icono' => '🎓', 'color' => '#e94560', 'alias' => ['preparatoria','bachillerato','prepa','bach']],
+        ['nombre' => 'Preparatoria', 'icono' => '🎓', 'color' => '#E2231A', 'alias' => ['preparatoria','bachillerato','prepa','bach']],
         ['nombre' => 'Licenciatura', 'icono' => '🏛️', 'color' => '#0ea5e9', 'alias' => ['licenciatura','universidad','lic']],
     ];
 
@@ -161,7 +161,7 @@
 
 <div style="margin-bottom:24px">
     <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px">
-        <span style="font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
             🎒 Alumnos SI
         </span>
         <span style="font-size:13px; color:var(--text-muted)">{{ number_format($totalAlumnosSI) }} en total</span>
@@ -177,7 +177,7 @@
                                  text-transform:uppercase; color:var(--text-muted)">{{ $n['nombre'] }}</span>
                     <span style="font-size:18px">{{ $n['icono'] }}</span>
                 </div>
-                <div style="font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700;
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:30px; font-weight:700;
                             color:{{ $n['color'] }}; line-height:1">{{ number_format($count) }}</div>
                 <div style="font-size:11px; color:var(--text-muted); margin-top:6px">alumnos</div>
             </div>
@@ -221,7 +221,7 @@
                     'Norte'    => ['icon' => '🔵', 'color' => '#3b82f6', 'estados' => 'Chihuahua · Coahuila · Nuevo León · Tamaulipas · Durango'],
                     'Centro'   => ['icon' => '🟣', 'color' => '#8b5cf6', 'estados' => 'Hidalgo · Tlaxcala · Edo. Méx. · CDMX · Morelos · Guerrero'],
                     'Bajío'    => ['icon' => '🟠', 'color' => '#f97316', 'estados' => 'Guanajuato · Querétaro · Ags. · S.L.P. · Michoacán · Zacatecas'],
-                    'Sureste'  => ['icon' => '🔴', 'color' => '#e94560', 'estados' => 'Veracruz · Oaxaca · Puebla · Chiapas · Tabasco · Campeche · Yucatán · Q.Roo'],
+                    'Sureste'  => ['icon' => '🔴', 'color' => '#E2231A', 'estados' => 'Veracruz · Oaxaca · Puebla · Chiapas · Tabasco · Campeche · Yucatán · Q.Roo'],
                 ];
             @endphp
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
@@ -232,7 +232,7 @@
                                 letter-spacing:1px; color:var(--text-muted); margin-bottom:6px">
                         {{ $cfg['icon'] }} {{ $nombre }}
                     </div>
-                    <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+                    <div style="font-size:28px; font-weight:700; font-family:'Bricolage Grotesque',sans-serif;
                                 color:{{ $cfg['color'] }}">
                         {{ $colegiosPorZona[$nombre] ?? 0 }}
                     </div>
@@ -250,7 +250,7 @@
                                 letter-spacing:1px; color:var(--text-muted); margin-bottom:6px">
                         ⚪ Sin zona asignada
                     </div>
-                    <div style="font-size:28px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+                    <div style="font-size:28px; font-weight:700; font-family:'Bricolage Grotesque',sans-serif;
                                 color:#6b7280">
                         {{ $colegiosPorZona['Sin zona'] }}
                     </div>
@@ -308,7 +308,7 @@
          style="transition: all 0.2s">
         <div class="card-header" style="padding:16px 20px">
             <div>
-                <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px">
                     {{ $school->name }}
                 </div>
                 <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
@@ -423,7 +423,7 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
         const tooltip = d3.select('body')
             .append('div')
             .style('position', 'fixed')
-            .style('background', '#1a1a2e')
+            .style('background', '#181311')
             .style('color', '#fff')
             .style('padding', '8px 14px')
             .style('border-radius', '8px')
@@ -442,7 +442,7 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
                 const data   = estadosData[nombre];
                 if (!data) return '#e5e7eb';
                 const intensity = Math.min(data.total / 5, 1);
-                return d3.interpolateRgb('#fecaca', '#e94560')(intensity);
+                return d3.interpolateRgb('#fecaca', '#E2231A')(intensity);
             })
             .attr('stroke', '#fff')
             .attr('stroke-width', 0.8)
@@ -453,7 +453,7 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
             .on('mouseover', function(event, d) {
                 const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
                 const data   = estadosData[nombre];
-                d3.select(this).attr('stroke-width', 2).attr('stroke', '#e94560');
+                d3.select(this).attr('stroke-width', 2).attr('stroke', '#E2231A');
                 tooltip.style('opacity', 1)
                     .html(data
                         ? `<strong>${data.nombre}</strong><br>🏫 ${data.total} colegio(s)`

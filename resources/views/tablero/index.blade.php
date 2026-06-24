@@ -102,7 +102,7 @@
     .empty-state {
         text-align:center; padding:60px 20px; color:var(--text-muted);
     }
-    .empty-state svg { opacity:.3; margin-bottom:14px; }
+    .empty-state svg { opacity:.3; margin:0 auto 14px; display:block; }
     .empty-state p { font-size:15px; }
 
     /* ── Modal ── */

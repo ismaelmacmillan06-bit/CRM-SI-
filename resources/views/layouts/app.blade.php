@@ -57,6 +57,7 @@
         .sidebar-brand {
             padding: 24px 28px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
+            text-align: center;
         }
 
         .sidebar-brand h1 {
@@ -440,7 +441,7 @@
 
 <div class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <h1>Macmillan<span>SI</span></h1>
+        <h1><span>SI</span>Central</h1>
         <p>CRM de Colegios</p>
     </div>
     <nav class="sidebar-nav">

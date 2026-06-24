@@ -126,23 +126,26 @@
 
         .user-info {
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 10px;
-            padding: 10px 12px;
+            padding: 16px 12px 12px;
             border-radius: 8px;
             background: rgba(255,255,255,0.05);
+            text-align: center;
         }
 
         .user-avatar {
-            width: 32px; height: 32px;
+            width: 76px; height: 76px;
             border-radius: 50%;
             background: var(--accent);
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 600; color: #fff;
+            font-size: 28px; font-weight: 600; color: #fff;
+            flex-shrink: 0;
         }
 
         .user-name { font-size: 13px; color: #fff; font-weight: 500; }
-        .user-role { font-size: 11px; color: rgba(255,255,255,0.4); }
+        .user-role { font-size: 11px; color: rgba(255,255,255,0.4); margin-top:2px; }
 
         .logout-btn {
             display: block;
@@ -480,7 +483,7 @@
 
 @if($consultantPhoto)
     <img src="{{ $consultantPhoto }}"
-         style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.2)">
+         style="width:76px; height:76px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.2); flex-shrink:0">
 @else
     <div class="user-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
 @endif

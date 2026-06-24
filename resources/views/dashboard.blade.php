@@ -140,7 +140,7 @@
               box-shadow:0 2px 6px rgba(29,78,216,0.3)"
        onmouseover="this.style.background='#1e40af'"
        onmouseout="this.style.background='#1d4ed8'">
-        📊 Generar Reporte General
+        📊 Exportar Reporte
     </a>
 </div>
 

@@ -16,6 +16,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\TareaController;
+use App\Http\Controllers\ComunicadoController;
 
 
 Route::get('/', function () {
@@ -103,6 +104,11 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
      // Bitácora
      Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index');
+
+     // Tablero SI
+     Route::get('tablero',                    [ComunicadoController::class, 'index'])  ->name('tablero.index');
+     Route::post('tablero',                   [ComunicadoController::class, 'store'])  ->name('tablero.store');
+     Route::delete('tablero/{comunicado}',    [ComunicadoController::class, 'destroy'])->name('tablero.destroy');
 
      // Tareas SI
      Route::get('tareas', [TareaController::class, 'index'])->name('tareas.index');

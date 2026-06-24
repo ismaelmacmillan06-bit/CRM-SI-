@@ -452,6 +452,9 @@
         <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
             <span class="nav-icon">✅</span> Tareas SI
         </a>
+        <a href="{{ route('tablero.index') }}" class="nav-item {{ request()->routeIs('tablero.*') ? 'active' : '' }}">
+            <span class="nav-icon">📌</span> Tablero SI
+        </a>
         <a href="{{ route('bitacora.index') }}" class="nav-item {{ request()->routeIs('bitacora.*') ? 'active' : '' }}">
             <span class="nav-icon">📋</span> Bitácora
         </a>

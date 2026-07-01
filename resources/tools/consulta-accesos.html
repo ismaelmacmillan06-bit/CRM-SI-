@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Consulta de Accesos · MEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-R4dc6Ze/MQJAyLxiCQZVlhMnCPMkNnoTEJnlEK64dJNJY3hQrdj+nFVN3mKeMnHiLQ0kBpCjBxqbTnlOFqGA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root{
+    --paper:#f5ece0; --ink:#2b211b; --card:#fffdf9;
+    --line:#e7dcc9; --line-2:#dac9b1; --muted:#8c7c69;
+    --brick:#b23a2c; --brick-d:#8e2c20; --brick-soft:#f6e3dc;
+    --orange:#c0612b; --amber:#c79234; --olive:#7c6a39; --ok:#5c7d3a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Spline Sans',sans-serif;color:var(--ink);line-height:1.5;
+    background:radial-gradient(900px 380px at 88% -6%,#f0dcc8 0,transparent 60%),radial-gradient(760px 360px at 4% 2%,#f3e5d2 0,transparent 55%),var(--paper);}
+  .display{font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;}
+  .app{max-width:1000px;margin:0 auto;padding:38px 24px 90px;}
+  header.hero{margin-bottom:24px;}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:var(--brick-soft);color:var(--brick);font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:16px;}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(28px,5vw,44px);line-height:1.03;letter-spacing:-.03em;}
+  h1 em{font-style:normal;color:var(--brick);}
+  .sub{color:var(--muted);max-width:64ch;margin-top:12px;font-size:16px;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px;}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;position:relative;box-shadow:0 1px 2px rgba(43,33,27,.05),0 10px 26px rgba(43,33,27,.05);overflow:hidden;}
+  .panel::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;}
+  .panel.p1::before{background:linear-gradient(90deg,var(--brick),var(--orange));}
+  .panel.p2::before{background:linear-gradient(90deg,var(--orange),var(--amber));}
+  .panel h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+  .step{width:26px;height:26px;border-radius:8px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none;}
+
+  .drop{border:2px dashed var(--line-2);border-radius:12px;padding:24px 18px;text-align:center;cursor:pointer;transition:.15s;background:#fffefb;}
+  .drop:hover,.drop.over{border-color:var(--brick);background:var(--brick-soft);}
+  .drop svg{opacity:.75;margin-bottom:8px;color:var(--brick);}
+  .drop .big{font-weight:600;}
+  .drop .small{font-size:13px;color:var(--muted);margin-top:4px;}
+
+  label.field{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px;}
+  input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:15px;background:#fffefb;color:var(--ink);}
+  input[type=text]:focus{outline:none;border-color:var(--brick);}
+
+  .pending{display:none;margin-top:14px;border:1px solid var(--line-2);border-radius:12px;padding:14px;background:#fbf6ee;}
+  .pending.show{display:block;}
+  .pending .pf{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .pending .auto{font-size:12.5px;color:var(--ok);font-weight:600;margin-top:6px;}
+  .pending .warn{font-size:12.5px;color:var(--brick);font-weight:600;margin-top:6px;}
+
+  .logo-row{display:flex;align-items:center;gap:14px;margin-top:4px;}
+  .logo-prev{width:56px;height:56px;border:1px solid var(--line-2);border-radius:10px;background:#fff center/contain no-repeat;flex:none;display:grid;place-items:center;color:var(--muted);font-size:11px;text-align:center;}
+  .btn-sm{font-family:inherit;font-size:13px;font-weight:600;padding:9px 13px;border-radius:9px;border:1px solid var(--line-2);background:#fff;color:var(--ink);cursor:pointer;}
+  .btn-sm:hover{border-color:var(--brick);color:var(--brick);}
+  .btn-sm.solid{background:var(--brick);color:#fff;border-color:var(--brick);}
+  .btn-sm.solid:hover{background:var(--brick-d);color:#fff;}
+
+  /* listado actual */
+  .listado{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-top:18px;position:relative;box-shadow:0 1px 2px rgba(43,33,27,.05),0 10px 26px rgba(43,33,27,.05);overflow:hidden;}
+  .listado::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--amber),var(--olive));}
+  .listado h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+  .listado .ico{width:26px;height:26px;border-radius:8px;background:var(--amber);color:#fff;display:grid;place-items:center;font-size:14px;flex:none;}
+  .listado .lead{font-size:13.5px;color:var(--muted);margin-bottom:14px;}
+  .glist{display:flex;flex-direction:column;gap:8px;}
+  .grow{display:flex;align-items:center;gap:12px;border:1px solid var(--line-2);border-radius:11px;padding:11px 14px;background:#fffefb;}
+  .grow .gn{font-weight:600;font-size:14px;flex:1;}
+  .grow .gc{font-size:13px;color:var(--muted);font-weight:600;font-family:'Bricolage Grotesque',sans-serif;}
+  .grow .grm{border:none;background:#fdecec;color:var(--brick);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:15px;}
+  .grow .grm:hover{background:#f9d6d6;}
+  .glist-empty{text-align:center;color:var(--muted);padding:24px 0;font-size:14px;}
+  .totals{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+  .tbox{background:#fbf6ee;border:1px solid var(--line-2);border-radius:11px;padding:9px 16px;}
+  .tbox .n{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;line-height:1;}
+  .tbox .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-top:3px;}
+
+  .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px;}
+  .btn{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;padding:14px 26px;border-radius:12px;border:none;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:9px;}
+  .btn-primary{background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;box-shadow:0 6px 16px rgba(178,58,44,.3);}
+  .btn-primary:hover{box-shadow:0 9px 22px rgba(178,58,44,.4);}
+  .btn-primary:disabled{background:#cbb8aa;box-shadow:none;cursor:not-allowed;}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line-2);}
+  .btn-ghost:hover{border-color:var(--brick);color:var(--brick);}
+  .status{font-size:14px;color:var(--muted);}
+  .status.err{color:var(--brick);font-weight:600;}
+  .status.ok{color:var(--ok);font-weight:600;}
+
+  .preview-wrap{margin-top:34px;display:none;}
+  .preview-wrap.show{display:block;}
+  .preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+  .preview-head h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;}
+  .phone{margin:0 auto;width:390px;max-width:100%;height:680px;border:10px solid #2b211b;border-radius:30px;overflow:hidden;box-shadow:0 24px 50px rgba(43,33,27,.25);background:#000;}
+  .phone iframe{width:100%;height:100%;border:none;background:#fff;}
+  .hint{font-size:13px;color:var(--muted);}
+
+  footer.foot{text-align:center;margin-top:50px;font-size:12.5px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="hero">
+    <span class="badge">● Herramienta interna · Solución Integral</span>
+    <h1 class="display">Generador de <em>consulta</em><br>de accesos</h1>
+    <p class="sub">Sube el mismo Excel de alumnos (todo de golpe o clase por clase) y descarga <b>un solo archivo</b> que la escuela abre desde el celular para consultar usuario, contraseña y liga de cada alumno. Sin Excel, sin internet, sin buscar PDFs.</p>
+  </header>
+
+  <div class="grid">
+    <!-- PANEL 1: subir -->
+    <div class="panel p1">
+      <h2><span class="step">1</span> Sube el Excel de alumnos</h2>
+      <div class="drop" id="drop">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <div class="big">Arrastra tu archivo aquí</div>
+        <div class="small">o haz clic para seleccionar · .xlsx, .xls o .csv</div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+
+      <div class="pending" id="pending">
+        <div class="pf">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span id="pfName">archivo.xlsx</span>
+        </div>
+        <div id="pfInfo" class="auto"></div>
+        <div id="pfLabelWrap">
+          <label class="field" style="margin-top:12px;">Nombre de la clase / grupo para este archivo</label>
+          <input type="text" id="pfLabel" placeholder="Ej. 1ro Primaria">
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;">
+          <button class="btn-sm solid" id="addBtn">＋ Agregar al listado</button>
+          <button class="btn-sm" id="cancelBtn">Cancelar</button>
+        </div>
+      </div>
+      <p class="small" style="margin-top:14px;color:var(--muted);font-size:12.5px;">
+        Encabezados flexibles: <i>Nombre/Nombre Completo</i>, <i>Usuario/Username</i>, <i>Contraseña/Password</i>. Si el Excel trae una columna de <i>Clase/Grado/Grupo</i>, se agrupa solo.
+      </p>
+    </div>
+
+    <!-- PANEL 2: datos -->
+    <div class="panel p2">
+      <h2><span class="step">2</span> Datos de la escuela</h2>
+      <label class="field">Nombre de la escuela (aparece como título)</label>
+      <input type="text" id="schoolName" placeholder="Ej. Colegio Isma">
+      <label class="field">Logo (opcional)</label>
+      <div class="logo-row">
+        <div class="logo-prev" id="logoPrev">Sin logo</div>
+        <div>
+          <button class="btn-sm" id="logoBtn">Subir logo…</button>
+          <button class="btn-sm" id="logoClear" style="display:none;margin-top:6px;">Quitar</button>
+        </div>
+      </div>
+      <input type="file" id="logoInput" accept="image/*" hidden>
+      <p class="small" style="margin-top:16px;color:var(--muted);font-size:12.5px;">
+        El archivo que se descarga funciona <b>sin internet</b>. La escuela lo guarda en el celular y lo abre cuando quiera.
+      </p>
+    </div>
+  </div>
+
+  <!-- LISTADO ACTUAL -->
+  <div class="listado">
+    <h2><span class="ico">📋</span> Listado actual</h2>
+    <p class="lead">Aquí se acumulan los alumnos que vas agregando. Puedes subir varios archivos (uno por clase).</p>
+    <div class="glist" id="glist"></div>
+    <div class="totals" id="totals" style="display:none;">
+      <div class="tbox"><div class="n" id="tAl">0</div><div class="l">Alumnos</div></div>
+      <div class="tbox"><div class="n" id="tCl">0</div><div class="l">Clases</div></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" id="genBtn" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4M12 16l-4-4M12 16l4-4"/><path d="M4 20h16"/></svg>
+      Descargar consulta (.html)
+    </button>
+    <button class="btn btn-ghost" id="prevBtn" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      Vista previa
+    </button>
+    <button class="btn btn-ghost" id="clearAll" style="display:none;">Vaciar todo</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="preview-wrap" id="previewWrap">
+    <div class="preview-head">
+      <h2 class="display">Así lo verá la escuela</h2>
+      <span class="hint">Vista de celular · es exactamente el archivo que se descarga.</span>
+    </div>
+    <div class="phone"><iframe id="previewFrame" title="preview"></iframe></div>
+  </div>
+
+  <footer class="foot">Herramienta interna · Todo el procesamiento ocurre en tu navegador. Ningún dato se envía a internet.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var PLATFORM_URL = "https://mee.macmillaneducation.com/?lang=en";
+
+  var students = [];     // {name, username, password, group}
+  var pending = null;    // {fileName, rows, hasClass}
+  var logoDataURL = null;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var drop=$("drop"), fileInput=$("fileInput"),
+      pendingBox=$("pending"), pfName=$("pfName"), pfInfo=$("pfInfo"),
+      pfLabelWrap=$("pfLabelWrap"), pfLabel=$("pfLabel"),
+      addBtn=$("addBtn"), cancelBtn=$("cancelBtn"),
+      schoolName=$("schoolName"), genBtn=$("genBtn"), prevBtn=$("prevBtn"),
+      clearAll=$("clearAll"), status=$("status"),
+      glist=$("glist"), totals=$("totals"), tAl=$("tAl"), tCl=$("tCl"),
+      previewWrap=$("previewWrap"), previewFrame=$("previewFrame"),
+      logoInput=$("logoInput"), logoBtn=$("logoBtn"), logoClear=$("logoClear"), logoPrev=$("logoPrev");
+
+  function norm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"").trim(); }
+  var NAME_KEYS=["nombrecompleto","nombre","name","fullname","alumno","estudiante"];
+  var USER_KEYS=["usuario","username","user","login"];
+  var PASS_KEYS=["contrasena","contrasenia","password","clave","pass"];
+  var CLASS_KEYS=["clase","grupo","grado","nivel","salon","seccion","aula","class","grade","group","gradogrupo"];
+  function matchKey(h,keys){ return keys.indexOf(norm(h))>=0; }
+  function esc(s){ return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];}); }
+  function setStatus(msg,kind){ status.textContent=msg; status.className="status"+(kind?(" "+kind):""); }
+
+  function readWorkbook(file){
+    setStatus("Leyendo archivo…","");
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var wb=XLSX.read(e.target.result,{type:"array"});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        var data=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
+        parseRows(data,file.name);
+      }catch(err){ console.error(err); setStatus("No pude leer el archivo. Revisa que sea un Excel/CSV válido.","err"); }
+    };
+    reader.onerror=function(){ setStatus("Error al abrir el archivo.","err"); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function parseRows(matrix,fname){
+    if(!matrix||!matrix.length){ setStatus("El archivo está vacío.","err"); return; }
+    var headerIdx=-1, cols={};
+    for(var i=0;i<Math.min(matrix.length,5);i++){
+      var r=matrix[i], tmp={};
+      r.forEach(function(cell,ci){
+        if(matchKey(cell,NAME_KEYS)&&tmp.name===undefined) tmp.name=ci;
+        if(matchKey(cell,USER_KEYS)&&tmp.username===undefined) tmp.username=ci;
+        if(matchKey(cell,PASS_KEYS)&&tmp.password===undefined) tmp.password=ci;
+        if(matchKey(cell,CLASS_KEYS)&&tmp.group===undefined) tmp.group=ci;
+      });
+      if(tmp.username!==undefined||tmp.name!==undefined){ headerIdx=i; cols=tmp; break; }
+    }
+    if(headerIdx===-1){ setStatus("No encontré las columnas. Necesito al menos Nombre y Usuario.","err"); return; }
+    var out=[];
+    for(var j=headerIdx+1;j<matrix.length;j++){
+      var row=matrix[j]; if(!row) continue;
+      var name=cols.name!==undefined?String(row[cols.name]||"").trim():"";
+      var username=cols.username!==undefined?String(row[cols.username]||"").trim():"";
+      var password=cols.password!==undefined?String(row[cols.password]||"").trim():"";
+      var group=cols.group!==undefined?String(row[cols.group]||"").trim():"";
+      if(!name&&!username&&!password) continue;
+      out.push({name:name,username:username,password:password,group:group});
+    }
+    if(!out.length){ setStatus("No encontré filas de alumnos con datos.","err"); return; }
+    var hasClass = cols.group!==undefined && out.some(function(o){return o.group;});
+    pending={ fileName:fname, rows:out, hasClass:hasClass };
+    showPending();
+  }
+
+  function showPending(){
+    pfName.textContent=pending.fileName;
+    if(pending.hasClass){
+      pfInfo.className="auto";
+      pfInfo.textContent="✓ Detecté la columna de clase. Se agruparán automáticamente ("+pending.rows.length+" alumnos).";
+      pfLabelWrap.style.display="none";
+    }else{
+      pfInfo.className="warn";
+      pfInfo.textContent="Este archivo no trae columna de clase. Ponle un nombre de grupo (o déjalo vacío para 'Sin clase').";
+      pfLabelWrap.style.display="block";
+      pfLabel.value="";
+    }
+    pendingBox.classList.add("show");
+    setStatus("","");
+    if(!pending.hasClass) setTimeout(function(){ pfLabel.focus(); },50);
+  }
+  function hidePending(){ pendingBox.classList.remove("show"); pending=null; fileInput.value=""; }
+
+  function addPending(){
+    if(!pending) return;
+    var label = pending.hasClass ? null : (pfLabel.value.trim()||"Sin clase");
+    var existing={};
+    students.forEach(function(s){ existing[s.username.toLowerCase()]=true; });
+    var added=0, dup=0;
+    pending.rows.forEach(function(o){
+      var key=o.username.toLowerCase();
+      if(o.username && existing[key]){ dup++; return; }
+      if(o.username) existing[key]=true;
+      students.push({ name:o.name, username:o.username, password:o.password, group: pending.hasClass?(o.group||"Sin clase"):label });
+      added++;
+    });
+    hidePending();
+    renderListado();
+    var msg="Se agregaron "+added+" alumno"+(added!==1?"s":"")+".";
+    if(dup) msg+=" ("+dup+" repetido"+(dup!==1?"s":"")+" omitido"+(dup!==1?"s":"")+")";
+    setStatus(msg,"ok");
+  }
+
+  function groupOrder(){
+    var seen={}, order=[];
+    students.forEach(function(s){ if(!seen[s.group]){ seen[s.group]=true; order.push(s.group); } });
+    return order;
+  }
+  function renderListado(){
+    var order=groupOrder();
+    if(!students.length){
+      glist.innerHTML='<div class="glist-empty">Aún no agregas alumnos. Sube un archivo arriba.</div>';
+      totals.style.display="none"; genBtn.disabled=true; prevBtn.disabled=true; clearAll.style.display="none";
+      previewWrap.classList.remove("show");
+      return;
+    }
+    var counts={};
+    students.forEach(function(s){ counts[s.group]=(counts[s.group]||0)+1; });
+    glist.innerHTML=order.map(function(g){
+      return '<div class="grow"><span class="gn">'+esc(g)+'</span><span class="gc">'+counts[g]+' alumno'+(counts[g]!==1?'s':'')+'</span>'+
+             '<button class="grm" data-g="'+esc(g)+'" title="Quitar clase">✕</button></div>';
+    }).join("");
+    Array.prototype.forEach.call(glist.querySelectorAll(".grm"),function(btn){
+      btn.addEventListener("click",function(){
+        var g=btn.getAttribute("data-g");
+        students=students.filter(function(s){ return s.group!==g; });
+        renderListado();
+        setStatus("Clase eliminada.","");
+      });
+    });
+    tAl.textContent=students.length;
+    tCl.textContent=order.length;
+    totals.style.display="flex";
+    genBtn.disabled=false; prevBtn.disabled=false; clearAll.style.display="inline-flex";
+  }
+
+  // ---------- OUTPUT APP TEMPLATE (self-contained, offline) ----------
+  /*__TEMPLATE_START__*/
+  var OUTPUT_TEMPLATE = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>__TITLE__ · Accesos</title>
+<style>
+  :root{--paper:#f5ece0;--ink:#2b211b;--card:#fffdf9;--line:#e7dcc9;--line2:#dac9b1;--muted:#8c7c69;--brick:#b23a2c;--brick-d:#8e2c20;--brick-soft:#f6e3dc;--orange:#c0612b;--ok:#5c7d3a;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.45;padding-bottom:30px;}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;padding:16px 16px 14px;box-shadow:0 4px 16px rgba(178,58,44,.25);}
+  .hwrap{display:flex;align-items:center;gap:12px;}
+  .hlogo{width:40px;height:40px;border-radius:10px;background:#fff;object-fit:contain;flex:none;padding:3px;}
+  .htxt h1{font-size:18px;font-weight:800;line-height:1.1;letter-spacing:-.01em;}
+  .htxt .hs{font-size:12px;opacity:.9;margin-top:2px;}
+  .hcount{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.18);padding:5px 10px;border-radius:999px;text-align:right;flex:none;}
+  .tools{position:sticky;top:70px;z-index:9;background:var(--paper);padding:12px 16px 8px;border-bottom:1px solid var(--line);}
+  .search{position:relative;}
+  .search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line2);border-radius:12px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;}
+  .search input:focus{outline:2px solid var(--brick);border-color:var(--brick);}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);}
+  .chips{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none;}
+  .chips::-webkit-scrollbar{display:none;}
+  .chip{flex:none;border:1px solid var(--line2);background:#fff;color:var(--ink);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;font-family:inherit;}
+  .chip.on{background:var(--brick);color:#fff;border-color:var(--brick);}
+  .priv{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-top:8px;cursor:pointer;user-select:none;}
+  .priv input{width:16px;height:16px;accent-color:var(--brick);}
+  .list{padding:12px 16px 0;}
+  .gh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 2px 9px;display:flex;align-items:center;gap:8px;}
+  .gh:first-child{margin-top:4px;}
+  .gh::after{content:"";flex:1;height:1px;background:var(--line);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:10px;box-shadow:0 1px 2px rgba(43,33,27,.05);}
+  .cname{font-size:16px;font-weight:700;line-height:1.15;margin-bottom:11px;}
+  .crow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;}
+  .crow .ci{flex:1;min-width:0;}
+  .crow .cl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;}
+  .crow .cv{font-size:16px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;margin-top:1px;}
+  .crow .cv.mask{letter-spacing:2px;}
+  .copy{flex:none;border:none;background:var(--brick-soft);color:var(--brick);width:38px;height:38px;border-radius:9px;cursor:pointer;display:grid;place-items:center;}
+  .copy:active{background:#eecbc2;}
+  .clink{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;font-weight:700;font-size:14.5px;padding:11px;border-radius:11px;margin-top:3px;}
+  .empty{text-align:center;color:var(--muted);padding:50px 20px;}
+  .empty .e{font-size:40px;margin-bottom:8px;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:50;transition:.25s;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.3);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .foot{text-align:center;font-size:11.5px;color:var(--muted);padding:24px 16px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div class="hwrap">
+    __LOGO__
+    <div class="htxt"><h1>__TITLE__</h1><div class="hs">Consulta de accesos</div></div>
+    <div class="hcount" id="hcount"></div>
+  </div>
+</header>
+<div class="tools">
+  <div class="search">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="q" type="text" placeholder="Buscar alumno por nombre…" autocomplete="off">
+  </div>
+  <div class="chips" id="chips"></div>
+  <label class="priv"><input type="checkbox" id="hp"> Ocultar contraseñas en pantalla</label>
+</div>
+<div class="list" id="list"></div>
+<div class="foot">Generado con la Herramienta de Accesos · Solución Integral</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  var DATA=__DATA__;
+  var URL="__URL__";
+  var state={q:"",group:"all",hide:false};
+  var $=function(id){return document.getElementById(id);};
+  function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"");}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];});}
+
+  var groups=[];var seen={};
+  DATA.forEach(function(d){if(!seen[d.group]){seen[d.group]=true;groups.push(d.group);}});
+  var multi = groups.length>1 || (groups.length===1 && groups[0]!=="Sin clase");
+
+  $("hcount").innerHTML = DATA.length+" alumno"+(DATA.length!==1?"s":"")+(multi?("<br>"+groups.length+" clase"+(groups.length!==1?"s":"")):"");
+
+  // chips
+  if(multi){
+    var chipsHtml='<button class="chip on" data-g="all">Todas</button>';
+    groups.forEach(function(g){chipsHtml+='<button class="chip" data-g="'+esc(g)+'">'+esc(g)+'</button>';});
+    $("chips").innerHTML=chipsHtml;
+    Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(c){
+      c.addEventListener("click",function(){
+        state.group=c.getAttribute("data-g");
+        Array.prototype.forEach.call($("chips").querySelectorAll(".chip"),function(x){x.classList.remove("on");});
+        c.classList.add("on");
+        render();
+      });
+    });
+  }else{ $("chips").style.display="none"; }
+
+  $("q").addEventListener("input",function(e){state.q=e.target.value;render();});
+  $("hp").addEventListener("change",function(e){state.hide=e.target.checked;render();});
+
+  function matchRow(d){
+    if(state.group!=="all" && d.group!==state.group) return false;
+    if(state.q && norm(d.name).indexOf(norm(state.q))<0 && norm(d.username).indexOf(norm(state.q))<0) return false;
+    return true;
+  }
+  function cardHtml(d){
+    var pv = state.hide ? '<span class="cv mask">••••••••</span>' : '<span class="cv">'+esc(d.password||"—")+'</span>';
+    var h='<div class="card"><div class="cname">'+esc(d.name||"—")+'</div>';
+    h+='<div class="crow"><div class="ci"><div class="cl">Usuario</div><div class="cv">'+esc(d.username||"—")+'</div></div>'+
+       '<button class="copy" data-c="'+esc(d.username||"")+'" aria-label="Copiar usuario"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
+    h+='<div class="crow"><div class="ci"><div class="cl">Contraseña</div>'+pv+'</div>'+
+       '<button class="copy" data-c="'+esc(d.password||"")+'" aria-label="Copiar contraseña"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
+    h+='<a class="clink" href="'+URL+'" target="_blank" rel="noopener">Entrar a MEE ↗</a>';
+    h+='</div>';
+    return h;
+  }
+  function render(){
+    var rows=DATA.filter(matchRow);
+    var box=$("list");
+    if(!rows.length){ box.innerHTML='<div class="empty"><div class="e">🔍</div>No se encontraron alumnos.</div>'; return; }
+    var html="";
+    if(multi && state.group==="all" && !state.q){
+      groups.forEach(function(g){
+        var gr=rows.filter(function(d){return d.group===g;});
+        if(!gr.length) return;
+        html+='<div class="gh">'+esc(g)+'</div>';
+        gr.forEach(function(d){html+=cardHtml(d);});
+      });
+    }else{
+      rows.forEach(function(d){html+=cardHtml(d);});
+    }
+    box.innerHTML=html;
+    Array.prototype.forEach.call(box.querySelectorAll(".copy"),function(b){
+      b.addEventListener("click",function(){copyText(b.getAttribute("data-c"));});
+    });
+  }
+  function copyText(t){
+    if(!t){return;}
+    var ok=function(){toast("Copiado");};
+    if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(ok)["catch"](legacy);}else{legacy();}
+    function legacy(){var ta=document.createElement("textarea");ta.value=t;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand("copy");ok();}catch(e){toast("No se pudo copiar");}document.body.removeChild(ta);}
+  }
+  var tt;
+  function toast(m){var t=$("toast");t.textContent=m;t.className="toast show";clearTimeout(tt);tt=setTimeout(function(){t.className="toast";},1600);}
+  render();
+})();
+<\/script>
+</body>
+</html>`;
+  /*__TEMPLATE_END__*/
+
+  function buildAppHTML(){
+    var title = (schoolName.value.trim() || "Accesos de alumnos");
+    var dataJson = JSON.stringify(students.map(function(s){return {name:s.name,username:s.username,password:s.password,group:s.group};})).replace(/</g,"\\u003c");
+    var logoHtml = logoDataURL ? ('<img class="hlogo" src="'+logoDataURL+'" alt="logo">') : "";
+    return OUTPUT_TEMPLATE
+      .split("__TITLE__").join(esc(title))
+      .split("__LOGO__").join(logoHtml)
+      .split("__URL__").join(PLATFORM_URL)
+      .split("__DATA__").join(dataJson);
+  }
+
+  function safeName(){
+    var base=(schoolName.value.trim()||"accesos").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+    return "consulta-accesos-"+(base||"escuela")+".html";
+  }
+  function download(){
+    if(!students.length) return;
+    var html=buildAppHTML();
+    var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download=safeName();
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); },2000);
+    setStatus("Archivo descargado. Pásalo al celular de la escuela y ábrelo.","ok");
+  }
+  function preview(){
+    if(!students.length) return;
+    previewFrame.srcdoc=buildAppHTML();
+    previewWrap.classList.add("show");
+    previewWrap.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  // ---- events ----
+  drop.addEventListener("click",function(){ fileInput.click(); });
+  ["dragenter","dragover"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add("over"); }); });
+  ["dragleave","drop"].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove("over"); }); });
+  drop.addEventListener("drop",function(e){ var f=e.dataTransfer.files[0]; if(f) readWorkbook(f); });
+  fileInput.addEventListener("change",function(e){ var f=e.target.files[0]; if(f) readWorkbook(f); });
+  addBtn.addEventListener("click",addPending);
+  cancelBtn.addEventListener("click",hidePending);
+  pfLabel.addEventListener("keydown",function(e){ if(e.key==="Enter") addPending(); });
+
+  logoBtn.addEventListener("click",function(){ logoInput.click(); });
+  logoInput.addEventListener("change",function(e){
+    var f=e.target.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){ logoDataURL=r.result; logoPrev.style.backgroundImage="url("+logoDataURL+")"; logoPrev.textContent=""; logoClear.style.display="block"; };
+    r.readAsDataURL(f);
+  });
+  logoClear.addEventListener("click",function(){ logoDataURL=null; logoPrev.style.backgroundImage=""; logoPrev.textContent="Sin logo"; logoClear.style.display="none"; logoInput.value=""; });
+
+  clearAll.addEventListener("click",function(){ if(!students.length) return; if(!confirm("¿Vaciar todo el listado?")) return; students=[]; renderListado(); setStatus("",""); });
+  genBtn.addEventListener("click",download);
+  prevBtn.addEventListener("click",preview);
+
+  renderListado();
+})();
+</script>
+</body>
+</html>

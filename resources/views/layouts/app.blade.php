@@ -468,7 +468,9 @@
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI
         </a>
-        
+        <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
+            <span class="nav-icon">🛠️</span> Herramientas SI
+        </a>
     </nav>
     <div class="sidebar-footer">
         <div class="user-info">

@@ -17,6 +17,7 @@ use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\BitacoraController;
 use App\Http\Controllers\TareaController;
 use App\Http\Controllers\ComunicadoController;
+use App\Http\Controllers\HerramientasController;
 
 
 Route::get('/', function () {
@@ -109,6 +110,15 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('tablero',                    [ComunicadoController::class, 'index'])  ->name('tablero.index');
      Route::post('tablero',                   [ComunicadoController::class, 'store'])  ->name('tablero.store');
      Route::delete('tablero/{comunicado}',    [ComunicadoController::class, 'destroy'])->name('tablero.destroy');
+
+     // Herramientas SI
+     Route::get('herramientas-si',                        [HerramientasController::class, 'index'])          ->name('herramientas.index');
+     Route::get('herramientas-si/altas-bundles',          [HerramientasController::class, 'altasBundles'])   ->name('herramientas.altas-bundles');
+     Route::get('herramientas-si/accesos',                [HerramientasController::class, 'accesos'])        ->name('herramientas.accesos');
+     Route::get('herramientas-si/consulta-accesos',       [HerramientasController::class, 'consultaAccesos'])->name('herramientas.consulta-accesos');
+     Route::post('herramientas-si/archivos',              [HerramientasController::class, 'store'])          ->name('herramientas.archivos.store');
+     Route::post('herramientas-si/archivos/{archivoSI}',  [HerramientasController::class, 'update'])         ->name('herramientas.archivos.update');
+     Route::delete('herramientas-si/archivos/{archivoSI}',[HerramientasController::class, 'destroy'])        ->name('herramientas.archivos.destroy');
 
      // Tareas SI
      Route::get('tareas', [TareaController::class, 'index'])->name('tareas.index');

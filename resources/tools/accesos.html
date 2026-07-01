@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Accesos · Macmillan Education Everywhere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-R4dc6Ze/MQJAyLxiCQZVlhMnCPMkNnoTEJnlEK64dJNJY3hQrdj+nFVN3mKeMnHiLQ0kBpCjBxqbTnlOFqGA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+  :root{
+    --paper:#f5ece0; --paper-2:#efe3d2;
+    --ink:#2b211b; --card:#fffdf9;
+    --line:#e7dcc9; --line-2:#dac9b1;
+    --muted:#8c7c69;
+    --brick:#b23a2c; --brick-d:#8e2c20; --brick-soft:#f6e3dc;
+    --orange:#c0612b; --amber:#c79234; --olive:#7c6a39; --maroon:#7c2b25;
+    --ok:#5c7d3a;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Spline Sans',sans-serif;color:var(--ink);line-height:1.5;
+    background:
+      radial-gradient(900px 380px at 88% -6%, #f0dcc8 0%, transparent 60%),
+      radial-gradient(760px 360px at 4% 2%, #f3e5d2 0%, transparent 55%),
+      var(--paper);
+  }
+  .display{font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-0.02em;}
+
+  .app{max-width:1000px;margin:0 auto;padding:38px 24px 90px;}
+
+  /* ---------- HERO ---------- */
+  header.hero{margin-bottom:26px;}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:var(--brick-soft);color:var(--brick);
+    font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:16px;}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1.02;letter-spacing:-0.03em;}
+  h1 em{font-style:normal;color:var(--brick);}
+  .sub{color:var(--muted);max-width:62ch;margin-top:12px;font-size:16px;}
+
+  /* ---------- PANELS (dashboard style w/ colored top accent) ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px;}
+  @media (max-width:760px){.grid{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;
+    position:relative;box-shadow:0 1px 2px rgba(43,33,27,.05),0 10px 26px rgba(43,33,27,.05);overflow:hidden;}
+  .panel::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;}
+  .panel.p1::before{background:linear-gradient(90deg,var(--brick),var(--orange));}
+  .panel.p2::before{background:linear-gradient(90deg,var(--orange),var(--amber));}
+  .panel h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+  .step{width:26px;height:26px;border-radius:8px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none;}
+
+  .drop{border:2px dashed var(--line-2);border-radius:12px;padding:26px 18px;text-align:center;cursor:pointer;transition:.15s;background:#fffefb;}
+  .drop:hover,.drop.over{border-color:var(--brick);background:var(--brick-soft);}
+  .drop svg{opacity:.7;margin-bottom:8px;color:var(--brick);}
+  .drop .big{font-weight:600;}
+  .drop .small{font-size:13px;color:var(--muted);margin-top:4px;}
+  .filechip{display:none;align-items:center;gap:10px;margin-top:12px;background:var(--brick-soft);border:1px solid #e8cfc7;
+    padding:9px 12px;border-radius:10px;font-size:14px;}
+  .filechip.show{display:flex;}
+  .filechip b{font-weight:600;}
+  .filechip .x{margin-left:auto;cursor:pointer;color:var(--brick);font-weight:700;border:none;background:none;font-size:16px;}
+
+  label.field{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px;}
+  input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--line-2);border-radius:10px;font-family:inherit;font-size:15px;background:#fffefb;color:var(--ink);}
+  input[type=text]:focus{outline:none;border-color:var(--brick);}
+
+  .logo-row{display:flex;align-items:center;gap:14px;margin-top:4px;}
+  .logo-prev{width:60px;height:60px;border:1px solid var(--line-2);border-radius:10px;background:#fff center/contain no-repeat;flex:none;display:grid;place-items:center;color:var(--muted);font-size:11px;text-align:center;}
+  .btn-sm{font-family:inherit;font-size:13px;font-weight:600;padding:8px 12px;border-radius:9px;border:1px solid var(--line-2);background:#fff;color:var(--ink);cursor:pointer;}
+  .btn-sm:hover{border-color:var(--brick);color:var(--brick);}
+
+  .toggle{display:flex;align-items:flex-start;gap:11px;margin-top:18px;cursor:pointer;user-select:none;}
+  .toggle input{margin-top:3px;width:17px;height:17px;accent-color:var(--brick);}
+  .toggle .t{font-size:14px;}
+  .toggle .t small{display:block;color:var(--muted);font-size:12.5px;}
+
+  /* ---------- EXAMPLE / TEMPLATE card ---------- */
+  .example{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-top:18px;
+    position:relative;box-shadow:0 1px 2px rgba(43,33,27,.05),0 10px 26px rgba(43,33,27,.05);overflow:hidden;}
+  .example::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--amber),var(--olive));}
+  .example h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:17px;display:flex;align-items:center;gap:9px;margin-bottom:6px;}
+  .example .ico{width:26px;height:26px;border-radius:8px;background:var(--amber);color:#fff;display:grid;place-items:center;font-size:14px;flex:none;}
+  .example .lead{font-size:14px;color:var(--muted);margin-bottom:16px;}
+  .xl-wrap{overflow-x:auto;border:1px solid var(--line-2);border-radius:11px;}
+  table.xl{border-collapse:collapse;width:100%;min-width:560px;font-size:13px;}
+  table.xl th{background:#2b211b;color:#f5ece0;text-align:left;padding:10px 13px;font-weight:600;font-size:12.5px;letter-spacing:.02em;}
+  table.xl th:nth-child(1){background:var(--brick);}
+  table.xl th:nth-child(2){background:var(--orange);}
+  table.xl th:nth-child(3){background:var(--amber);}
+  table.xl td{padding:10px 13px;border-top:1px solid var(--line);font-family:'Spline Sans',monospace;font-variant-ligatures:none;color:var(--ink);}
+  table.xl tr:nth-child(even) td{background:#fbf6ee;}
+  .xl-note{font-size:12.5px;color:var(--muted);margin-top:13px;display:flex;gap:8px;align-items:flex-start;}
+  .xl-note b{color:var(--ink);font-weight:600;}
+  .ex-actions{margin-top:16px;}
+
+  .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px;}
+  .btn{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;padding:14px 26px;border-radius:12px;border:none;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:9px;}
+  .btn-primary{background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;box-shadow:0 6px 16px rgba(178,58,44,.3);}
+  .btn-primary:hover{box-shadow:0 9px 22px rgba(178,58,44,.4);}
+  .btn-primary:disabled{background:#cbb8aa;box-shadow:none;cursor:not-allowed;}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line-2);}
+  .btn-ghost:hover{border-color:var(--brick);color:var(--brick);}
+  .status{font-size:14px;color:var(--muted);}
+  .status.err{color:var(--brick);font-weight:600;}
+  .status.ok{color:var(--ok);font-weight:600;}
+  .count-pill{margin-left:auto;background:var(--ink);color:var(--paper);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;}
+  @media(max-width:760px){.count-pill{margin-left:0;}}
+
+  /* ---------- PREVIEW ---------- */
+  .preview-wrap{margin-top:34px;}
+  .preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .preview-head h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:19px;}
+  .hint{font-size:13px;color:var(--muted);}
+
+  #sheet{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .sheet-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;text-align:center;margin:2px 0 4px;}
+  .sheet-sub{font-size:13px;color:var(--muted);text-align:center;margin:0 0 20px;}
+  .section-label{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 4px 14px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:"";flex:1;height:1px;background:var(--line);}
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+
+  .card{border:1.5px dashed #b9ad9a;border-radius:11px;padding:13px 15px 14px;background:#fff;position:relative;display:flex;flex-direction:column;}
+  .card .scissors{position:absolute;top:-9px;left:14px;background:#fff;padding:0 5px;color:#b9ad9a;font-size:13px;}
+  .card .chead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid #f0e8da;}
+  .card .clogo{height:20px;max-width:120px;object-fit:contain;display:block;}
+  .card .clogo-ph{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:12.5px;color:var(--ink);letter-spacing:-.01em;line-height:1;}
+  .card .clogo-ph span{color:var(--brick);}
+  .card .tag{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:var(--brick);padding:3px 8px;border-radius:999px;flex:none;}
+  .card .cname{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15.5px;line-height:1.12;margin-bottom:11px;}
+  .card .ccreds{display:grid;grid-template-columns:1fr;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;margin-bottom:11px;}
+  .card .ccreds.two{grid-template-columns:1fr 1fr;}
+  .card .ccreds.two .cfield + .cfield{border-left:1px solid var(--line-2);}
+  .card .cfield{padding:8px 11px;min-width:0;}
+  .card .crow{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .card .cval{display:block;font-family:'Spline Sans',monospace;font-weight:700;font-size:15px;color:var(--ink);word-break:break-all;letter-spacing:.01em;margin-top:2px;line-height:1.15;font-variant-ligatures:none;}
+  .card .clink{margin-top:auto;display:block;text-decoration:none;background:var(--brick-soft);border:1px solid #ecd5cd;border-radius:9px;padding:8px 11px;line-height:1.35;}
+  .card .clink .l{font-size:11px;font-weight:600;color:var(--muted);}
+  .card .clink .u{font-size:14px;font-weight:700;color:var(--brick);word-break:break-all;}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);}
+  footer.foot{text-align:center;margin-top:50px;font-size:12.5px;color:var(--muted);}
+
+  /* ---------- PRINT ---------- */
+  @media print{
+    @page{size:auto;margin:15mm 17mm;}
+    body{background:#fff;background-image:none;}
+    .app{padding:0;max-width:none;}
+    .no-print{display:none !important;}
+    #sheet{border:none;border-radius:0;padding:0;}
+    .preview-wrap{margin-top:0;}
+    .sheet-title{text-align:center;font-size:21px;}
+    .sheet-sub{text-align:center;}
+    .cards{gap:9px;}
+    .card{break-inside:avoid;border-color:#a99f8e;}
+    .section-break{break-before:page;}
+    .section-label{margin-top:0;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ CONTROLS (not printed) ============ -->
+  <div class="no-print">
+    <header class="hero">
+      <span class="badge">● Herramienta interna · Solución Integral</span>
+      <h1 class="display">Generador de <em>accesos</em><br>para alumnos</h1>
+      <p class="sub">Carga un Excel con las columnas <b>Nombre Completo</b>, <b>Usuario</b> y <b>Contraseña</b>. La herramienta arma las tarjetas recortables, listas para imprimir o guardar como PDF.</p>
+    </header>
+
+    <div class="grid">
+      <!-- PANEL 1 -->
+      <div class="panel p1">
+        <h2><span class="step">1</span> Carga tu archivo Excel</h2>
+        <div class="drop" id="drop">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+          <div class="big">Arrastra tu archivo aquí</div>
+          <div class="small">o haz clic para seleccionar · .xlsx, .xls o .csv</div>
+        </div>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+        <div class="filechip" id="fileChip">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+          <b id="fileName">archivo.xlsx</b>
+          <button class="x" id="clearFile" title="Quitar">✕</button>
+        </div>
+      </div>
+
+      <!-- PANEL 2 -->
+      <div class="panel p2">
+        <h2><span class="step">2</span> Personaliza</h2>
+        <label class="field">Nombre del grupo / clase (opcional)</label>
+        <input type="text" id="groupName" placeholder="Ej. 1ro Primaria 2026">
+        <label class="field">Logo de la plataforma (opcional)</label>
+        <div class="logo-row">
+          <div class="logo-prev" id="logoPrev">Sin logo</div>
+          <div>
+            <button class="btn-sm" id="logoBtn">Subir logo…</button>
+            <button class="btn-sm" id="logoClear" style="display:none;margin-top:6px;">Quitar</button>
+          </div>
+        </div>
+        <input type="file" id="logoInput" accept="image/*" hidden>
+        <label class="toggle">
+          <input type="checkbox" id="splitPages">
+          <span class="t">Separar usuario y contraseña en tarjetas distintas
+            <small>Más seguro (no quedan juntos), pero usa más hojas. Desactivado: una sola tarjeta por alumno.</small></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- EXAMPLE / TEMPLATE (área marcada) -->
+    <div class="example">
+      <h2><span class="ico">📄</span> Así debe verse tu Excel</h2>
+      <p class="lead">La primera fila son los encabezados y cada fila siguiente es un alumno. Con estas 3 columnas es suficiente:</p>
+      <div class="xl-wrap">
+        <table class="xl">
+          <thead><tr><th>Nombre Completo</th><th>Usuario</th><th>Contraseña</th></tr></thead>
+          <tbody>
+            <tr><td>CATALINA BUSTAMANTE PALMA</td><td>BUSTAMANTECATALINA2026</td><td>Macmillan.2026</td></tr>
+            <tr><td>AAILLYH TOLEDO RODRIGUEZ</td><td>TOLEDOAAILLYH2026</td><td>Macmillan.2026</td></tr>
+            <tr><td>CHLOE CASTAÑEDA USCUVILCA</td><td>CASTAÑEDACHLOE2026</td><td>Macmillan.2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="xl-note">
+        <span>💡</span>
+        <span>Los encabezados son <b>flexibles</b>: acepta <i>Nombre</i> o <i>Nombre Completo</i>, <i>Usuario</i> o <i>Username</i>, <i>Contraseña</i> o <i>Password</i>. El orden de las columnas no importa.</span>
+      </div>
+      <div class="ex-actions">
+        <button class="btn-sm" id="tplBtn">⬇ Descargar plantilla de ejemplo (.xlsx)</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="genBtn" disabled>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Generar tarjetas
+      </button>
+      <button class="btn btn-ghost" id="printBtn" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"/></svg>
+        Imprimir / Guardar PDF
+      </button>
+      <span class="status" id="status"></span>
+      <span class="count-pill" id="countPill" style="display:none;"></span>
+    </div>
+  </div>
+
+  <!-- ============ PREVIEW / PRINTABLE ============ -->
+  <div class="preview-wrap" id="previewWrap" style="display:none;">
+    <div class="preview-head no-print">
+      <h2 class="display">Vista previa</h2>
+      <span class="hint">✂ Las líneas punteadas indican dónde recortar. Imprime para obtener el PDF.</span>
+    </div>
+    <div id="sheet"></div>
+  </div>
+
+  <footer class="foot no-print">
+    Herramienta interna · Todo el procesamiento ocurre en tu navegador. Ningún dato se envía a internet.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const PLATFORM_URL = "https://mee.macmillaneducation.com/?lang=en";
+
+  let rows = [];
+  let logoDataURL = null;
+
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), fileInput = $("fileInput"), fileChip = $("fileChip"),
+        fileName = $("fileName"), clearFile = $("clearFile"),
+        groupName = $("groupName"), genBtn = $("genBtn"), printBtn = $("printBtn"),
+        status = $("status"), countPill = $("countPill"),
+        previewWrap = $("previewWrap"), sheet = $("sheet"),
+        splitPages = $("splitPages"), tplBtn = $("tplBtn"),
+        logoInput = $("logoInput"), logoBtn = $("logoBtn"), logoClear = $("logoClear"), logoPrev = $("logoPrev");
+
+  function norm(s){
+    return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"").trim();
+  }
+  const NAME_KEYS = ["nombrecompleto","nombre","name","fullname","alumno","estudiante"];
+  const USER_KEYS = ["usuario","username","user","login"];
+  const PASS_KEYS = ["contrasena","contrasenia","password","clave","pass"];
+  function matchKey(header, keys){ return keys.includes(norm(header)); }
+
+  function readWorkbook(file){
+    setStatus("Leyendo archivo…","");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try{
+        const wb = XLSX.read(e.target.result, {type:"array"});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:"", raw:false});
+        parseRows(data);
+      }catch(err){
+        console.error(err);
+        setStatus("No pude leer el archivo. Revisa que sea un Excel/CSV válido.","err");
+      }
+    };
+    reader.onerror = () => setStatus("Error al abrir el archivo.","err");
+    reader.readAsArrayBuffer(file);
+  }
+
+  function parseRows(matrix){
+    if(!matrix || !matrix.length){ setStatus("El archivo está vacío.","err"); return; }
+    let headerIdx = -1, cols = {};
+    for(let i=0;i<Math.min(matrix.length,5);i++){
+      const r = matrix[i]; const tmp = {};
+      r.forEach((cell,ci)=>{
+        if(matchKey(cell,NAME_KEYS) && tmp.name===undefined) tmp.name=ci;
+        if(matchKey(cell,USER_KEYS) && tmp.username===undefined) tmp.username=ci;
+        if(matchKey(cell,PASS_KEYS) && tmp.password===undefined) tmp.password=ci;
+      });
+      if(tmp.username!==undefined || tmp.name!==undefined){ headerIdx=i; cols=tmp; break; }
+    }
+    if(headerIdx===-1){
+      setStatus("No encontré las columnas. Asegúrate de tener encabezados: Nombre Completo, Usuario, Contraseña.","err");
+      return;
+    }
+    const out=[];
+    for(let i=headerIdx+1;i<matrix.length;i++){
+      const r = matrix[i]; if(!r) continue;
+      const name = cols.name!==undefined ? String(r[cols.name]||"").trim() : "";
+      const username = cols.username!==undefined ? String(r[cols.username]||"").trim() : "";
+      const password = cols.password!==undefined ? String(r[cols.password]||"").trim() : "";
+      if(!name && !username && !password) continue;
+      out.push({name, username, password});
+    }
+    if(!out.length){ setStatus("No encontré filas de alumnos con datos.","err"); return; }
+    rows = out;
+    const missing = [];
+    if(cols.name===undefined) missing.push("Nombre");
+    if(cols.username===undefined) missing.push("Usuario");
+    if(cols.password===undefined) missing.push("Contraseña");
+    genBtn.disabled = false;
+    countPill.style.display = "inline-block";
+    countPill.textContent = out.length + (out.length===1?" alumno":" alumnos");
+    if(missing.length){
+      setStatus("Listo, pero faltó la columna: "+missing.join(", ")+". Se omitirá en las tarjetas.","err");
+    }else{
+      setStatus("Archivo cargado correctamente. Ya puedes generar.","ok");
+    }
+  }
+
+  function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+
+  function logoMarkup(){
+    if(logoDataURL) return `<img class="clogo" src="${logoDataURL}" alt="logo">`;
+    return `<div class="clogo-ph">Macmillan<span>Education</span></div>`;
+  }
+  function fieldCell(label,val){
+    return `<div class="cfield"><span class="crow">${label}</span><span class="cval">${esc(val||"—")}</span></div>`;
+  }
+  function linkBand(){
+    return `<a class="clink" href="${PLATFORM_URL}"><span class="l">Liga de MEE: </span><span class="u">${PLATFORM_URL}</span></a>`;
+  }
+
+  function userCard(p){
+    return `<div class="card">
+      <span class="scissors">✂</span>
+      <div class="chead">${logoMarkup()}<span class="tag">Usuario</span></div>
+      <div class="cname">${esc(p.name||"—")}</div>
+      <div class="ccreds">${fieldCell("Usuario",p.username)}</div>
+      ${linkBand()}
+    </div>`;
+  }
+  function passCard(p){
+    return `<div class="card">
+      <span class="scissors">✂</span>
+      <div class="chead">${logoMarkup()}<span class="tag">Contraseña</span></div>
+      <div class="cname">${esc(p.name||"—")}</div>
+      <div class="ccreds">${fieldCell("Contraseña",p.password)}</div>
+    </div>`;
+  }
+  function combinedCard(p){
+    return `<div class="card">
+      <span class="scissors">✂</span>
+      <div class="chead">${logoMarkup()}<span class="tag">Acceso</span></div>
+      <div class="cname">${esc(p.name||"—")}</div>
+      <div class="ccreds two">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
+      ${linkBand()}
+    </div>`;
+  }
+
+  function build(){
+    const title = groupName.value.trim();
+    const split = splitPages.checked;
+    let html = "";
+    if(title){
+      const note = split ? " · no mantengas usuario y contraseña juntos." : ".";
+      html += `<div class="sheet-title">${esc(title)}</div>`;
+      html += `<div class="sheet-sub">Datos de acceso · recorta y entrega a cada alumno${note}</div>`;
+    }
+    if(split){
+      html += `<div class="section-label">Usuarios</div>`;
+      html += `<div class="cards">` + rows.map(userCard).join("") + `</div>`;
+      html += `<div class="section-label section-break">Contraseñas</div>`;
+      html += `<div class="cards">` + rows.map(passCard).join("") + `</div>`;
+    }else{
+      html += `<div class="cards">` + rows.map(combinedCard).join("") + `</div>`;
+    }
+    sheet.innerHTML = html;
+    previewWrap.style.display = "block";
+    printBtn.style.display = "inline-flex";
+    setStatus("Tarjetas generadas. Revisa la vista previa abajo.","ok");
+    previewWrap.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function downloadTemplate(){
+    const data=[
+      ["Nombre Completo","Usuario","Contraseña"],
+      ["CATALINA BUSTAMANTE PALMA","BUSTAMANTECATALINA2026","Macmillan.2026"],
+      ["AAILLYH TOLEDO RODRIGUEZ","TOLEDOAAILLYH2026","Macmillan.2026"],
+      ["CHLOE CASTAÑEDA USCUVILCA","CASTAÑEDACHLOE2026","Macmillan.2026"]
+    ];
+    const ws=XLSX.utils.aoa_to_sheet(data);
+    ws['!cols']=[{wch:30},{wch:26},{wch:16}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,"Alumnos");
+    XLSX.writeFile(wb,"plantilla_accesos_alumnos.xlsx");
+  }
+
+  function setStatus(msg,kind){ status.textContent = msg; status.className = "status" + (kind?(" "+kind):""); }
+
+  drop.addEventListener("click", ()=>fileInput.click());
+  ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.remove("over");}));
+  drop.addEventListener("drop",(e)=>{ const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
+  fileInput.addEventListener("change",(e)=>{ const f=e.target.files[0]; if(f) handleFile(f); });
+
+  function handleFile(f){ fileName.textContent = f.name; fileChip.classList.add("show"); readWorkbook(f); }
+  clearFile.addEventListener("click",()=>{
+    rows=[]; fileInput.value=""; fileChip.classList.remove("show");
+    genBtn.disabled=true; printBtn.style.display="none"; previewWrap.style.display="none";
+    countPill.style.display="none"; setStatus("","");
+  });
+
+  logoBtn.addEventListener("click",()=>logoInput.click());
+  logoInput.addEventListener("change",(e)=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ logoDataURL=r.result; logoPrev.style.backgroundImage=`url(${logoDataURL})`; logoPrev.textContent=""; logoClear.style.display="block"; };
+    r.readAsDataURL(f);
+  });
+  logoClear.addEventListener("click",()=>{
+    logoDataURL=null; logoPrev.style.backgroundImage=""; logoPrev.textContent="Sin logo"; logoClear.style.display="none"; logoInput.value="";
+  });
+
+  genBtn.addEventListener("click", build);
+  printBtn.addEventListener("click", ()=>window.print());
+  tplBtn.addEventListener("click", downloadTemplate);
+
+})();
+</script>
+</body>
+</html>

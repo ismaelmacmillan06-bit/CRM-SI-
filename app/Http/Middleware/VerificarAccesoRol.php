@@ -23,6 +23,12 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Herramientas SI: solo admin y consultor_digital
+        if ($request->routeIs('herramientas.*') && !$user->hasRole('consultor_digital')) {
+            return redirect()->route('dashboard')
+                ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
+        }
+
         // Roles de solo lectura: bloquear cualquier petición que modifique datos
         if ($user->hasAnyRole(['consultor_eca', 'consultor_elt', 'representante_ventas'])) {
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {

@@ -81,14 +81,15 @@ class HerramientasController extends Controller
             $archivoPath = $file->store('archivos-si', 'public');
         }
 
-        ArchivoSI::create([
+        $registro = new ArchivoSI([
             'titulo'        => $data['titulo'],
             'descripcion'   => $data['descripcion'] ?? null,
             'archivo'       => $archivoPath,
             'archivo_nombre'=> $archivoNombre,
             'archivo_tipo'  => $archivoTipo,
-            'user_id'       => auth()->id(),
         ]);
+        $registro->user_id = auth()->id();
+        $registro->save();
 
         return redirect()->route('herramientas.index')
             ->with('success', 'Archivo publicado correctamente.');

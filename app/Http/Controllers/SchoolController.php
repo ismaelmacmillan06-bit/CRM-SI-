@@ -11,6 +11,11 @@ use App\Models\SchoolLevel;
 use App\Models\SchoolLevelProcess;
 use Illuminate\Http\Request;
 use App\Models\MeeAdmin;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class SchoolController extends Controller
 {
@@ -215,5 +220,128 @@ foreach ($roles as $role => $consultantId) {
         $school->delete();
         return redirect()->route('schools.index')
             ->with('success', 'Colegio eliminado correctamente.');
+    }
+
+    // ── Importación masiva ────────────────────────────────────────────────
+
+    public function importarMasivo(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $request->validate(
+            ['archivo' => 'required|file|mimes:xlsx,xls|max:10240'],
+            ['archivo.required' => 'Selecciona un archivo Excel.',
+             'archivo.mimes'    => 'Solo se permiten archivos .xlsx o .xls.',
+             'archivo.max'      => 'El archivo no puede superar 10 MB.']
+        );
+
+        $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
+        $sheet       = $spreadsheet->getActiveSheet();
+
+        $importados     = 0;
+        $omitidos       = [];
+        $nexusEnArchivo = [];
+
+        foreach ($sheet->getRowIterator(2) as $row) {
+            $ri        = $row->getRowIndex();
+            $nombre    = trim((string) $sheet->getCell("A{$ri}")->getValue());
+            $nexusId   = trim((string) $sheet->getCell("B{$ri}")->getValue());
+            $statusRaw = trim((string) $sheet->getCell("C{$ri}")->getValue());
+
+            if ($nombre === '' && $nexusId === '' && $statusRaw === '') continue;
+
+            if ($nombre === '') {
+                $omitidos[] = "Fila {$ri}: nombre vacío.";
+                continue;
+            }
+
+            $statusKey = mb_strtolower($statusRaw);
+            $statusKey = str_replace(['á','é','í','ó','ú'], ['a','e','i','o','u'], $statusKey);
+
+            if ($statusKey === '' || $statusKey === 'activo') {
+                $status = 'activo';
+            } elseif ($statusKey === 'inactivo') {
+                $status = 'inactivo';
+            } else {
+                $omitidos[] = "Fila {$ri}: status '{$statusRaw}' no válido (usa Activo o Inactivo).";
+                continue;
+            }
+
+            if ($nexusId !== '') {
+                if (in_array($nexusId, $nexusEnArchivo)) {
+                    $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' duplicado en el archivo.";
+                    continue;
+                }
+                if (School::where('nexus_id', $nexusId)->exists()) {
+                    $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' ya existe en el sistema.";
+                    continue;
+                }
+                $nexusEnArchivo[] = $nexusId;
+            }
+
+            School::create([
+                'name'     => $nombre,
+                'nexus_id' => $nexusId ?: null,
+                'status'   => $status,
+            ]);
+
+            $importados++;
+        }
+
+        $msg = "{$importados} colegio(s) importados correctamente.";
+        if (!empty($omitidos)) {
+            $msg .= ' Filas omitidas: ' . implode(' | ', $omitidos);
+        }
+
+        return redirect()->route('schools.index')->with('success', $msg);
+    }
+
+    public function descargarPlantilla()
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Colegios');
+
+        foreach (['A' => 'Nombre del Colegio', 'B' => 'Nexus ID', 'C' => 'Status'] as $col => $header) {
+            $sheet->setCellValue("{$col}1", $header);
+        }
+
+        $sheet->getStyle('A1:C1')->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        $ejemplos = [
+            ['Colegio Lomas Verdes',         'NX-001', 'Activo'],
+            ['Instituto Cultural del Sur',    'NX-002', 'Activo'],
+            ['Colegio San Felipe Neri',       'NX-003', 'Inactivo'],
+            ['Centro Educativo Benito Juárez','',       'Activo'],
+        ];
+
+        foreach ($ejemplos as $ri => $fila) {
+            $sheet->setCellValue('A' . ($ri + 2), $fila[0]);
+            $sheet->setCellValue('B' . ($ri + 2), $fila[1]);
+            $sheet->setCellValue('C' . ($ri + 2), $fila[2]);
+        }
+
+        $sheet->setCellValue('A7', '* Status válidos: Activo, Inactivo  |  Nexus ID es opcional  |  No modifiques la fila de encabezados');
+        $sheet->mergeCells('A7:C7');
+        $sheet->getStyle('A7')->applyFromArray([
+            'font' => ['italic' => true, 'color' => ['rgb' => '888888']],
+        ]);
+
+        $sheet->getColumnDimension('A')->setWidth(38);
+        $sheet->getColumnDimension('B')->setWidth(16);
+        $sheet->getColumnDimension('C')->setWidth(14);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'plantilla_colegios_');
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, 'plantilla-colegios.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 }

@@ -37,6 +37,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
     // Colegios
+    Route::get('schools/plantilla',  [SchoolController::class, 'descargarPlantilla'])->name('schools.plantilla');
+    Route::post('schools/importar',  [SchoolController::class, 'importarMasivo'])->name('schools.importar');
     Route::resource('schools', SchoolController::class);
 
     // Docentes

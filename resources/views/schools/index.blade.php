@@ -111,10 +111,22 @@
                 style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888">✕</button>
 
         <h3 style="margin:0 0 6px">⬆ Importar colegios desde Excel</h3>
-        <p style="margin:0 0 20px; color:var(--text-muted); font-size:14px">
-            El archivo debe tener tres columnas: <strong>Nombre del Colegio</strong>, <strong>Nexus ID</strong> y <strong>Status</strong>.
-            Descarga la plantilla para ver el formato exacto.
+        <p style="margin:0 0 12px; color:var(--text-muted); font-size:14px">
+            El archivo debe tener cuatro columnas: <strong>Nombre del Colegio</strong>, <strong>Nexus ID</strong>, <strong>Status</strong> y <strong>Estado</strong> (estado de la república). Nexus ID y Estado son opcionales.
         </p>
+
+        <details style="margin-bottom:16px; font-size:13px">
+            <summary style="cursor:pointer; color:#C0392B; font-weight:600; user-select:none">
+                📋 Ver estados válidos para la columna Estado
+            </summary>
+            <div style="margin-top:10px; padding:12px; background:#f9f9f9; border-radius:8px; line-height:1.8; color:#444">
+                Aguascalientes · Baja California · Baja California Sur · Campeche · Chiapas · Chihuahua ·
+                Ciudad de México <em>(o CDMX)</em> · Coahuila · Colima · Durango · Guanajuato · Guerrero ·
+                Hidalgo · Jalisco · Estado de México <em>(o Edomex)</em> · Michoacán · Morelos · Nayarit ·
+                Nuevo León · Oaxaca · Puebla · Querétaro · Quintana Roo · San Luis Potosí · Sinaloa ·
+                Sonora · Tabasco · Tamaulipas · Tlaxcala · Veracruz · Yucatán · Zacatecas
+            </div>
+        </details>
 
         <a href="{{ route('schools.plantilla') }}"
            style="display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#C0392B; text-decoration:none; margin-bottom:20px; font-weight:600">

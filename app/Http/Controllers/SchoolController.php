@@ -247,8 +247,9 @@ foreach ($roles as $role => $consultantId) {
             $nombre    = trim((string) $sheet->getCell("A{$ri}")->getValue());
             $nexusId   = trim((string) $sheet->getCell("B{$ri}")->getValue());
             $statusRaw = trim((string) $sheet->getCell("C{$ri}")->getValue());
+            $estadoRaw = trim((string) $sheet->getCell("D{$ri}")->getValue());
 
-            if ($nombre === '' && $nexusId === '' && $statusRaw === '') continue;
+            if ($nombre === '' && $nexusId === '' && $statusRaw === '' && $estadoRaw === '') continue;
 
             if ($nombre === '') {
                 $omitidos[] = "Fila {$ri}: nombre vacío.";
@@ -279,10 +280,17 @@ foreach ($roles as $role => $consultantId) {
                 $nexusEnArchivo[] = $nexusId;
             }
 
+            $state = $this->normalizarEstado($estadoRaw);
+            if ($estadoRaw !== '' && $state === null) {
+                $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (se ignoró, colegio importado sin estado).";
+                $state = null;
+            }
+
             School::create([
                 'name'     => $nombre,
                 'nexus_id' => $nexusId ?: null,
                 'status'   => $status,
+                'state'    => $state,
             ]);
 
             $importados++;
@@ -290,10 +298,65 @@ foreach ($roles as $role => $consultantId) {
 
         $msg = "{$importados} colegio(s) importados correctamente.";
         if (!empty($omitidos)) {
-            $msg .= ' Filas omitidas: ' . implode(' | ', $omitidos);
+            $msg .= ' Avisos: ' . implode(' | ', $omitidos);
         }
 
         return redirect()->route('schools.index')->with('success', $msg);
+    }
+
+    private function normalizarEstado(string $raw): ?string
+    {
+        if ($raw === '') return null;
+
+        $estados = [
+            'aguascalientes'     => 'Aguascalientes',
+            'baja california'    => 'Baja California',
+            'baja california sur'=> 'Baja California Sur',
+            'campeche'           => 'Campeche',
+            'chiapas'            => 'Chiapas',
+            'chihuahua'          => 'Chihuahua',
+            'ciudad de mexico'   => 'Ciudad de México',
+            'cdmx'               => 'Ciudad de México',
+            'df'                 => 'Ciudad de México',
+            'distrito federal'   => 'Ciudad de México',
+            'coahuila'           => 'Coahuila',
+            'colima'             => 'Colima',
+            'durango'            => 'Durango',
+            'guanajuato'         => 'Guanajuato',
+            'guerrero'           => 'Guerrero',
+            'hidalgo'            => 'Hidalgo',
+            'jalisco'            => 'Jalisco',
+            'estado de mexico'   => 'Estado de México',
+            'mexico'             => 'Estado de México',
+            'edomex'             => 'Estado de México',
+            'michoacan'          => 'Michoacán',
+            'michoacán'          => 'Michoacán',
+            'morelos'            => 'Morelos',
+            'nayarit'            => 'Nayarit',
+            'nuevo leon'         => 'Nuevo León',
+            'nuevo león'         => 'Nuevo León',
+            'oaxaca'             => 'Oaxaca',
+            'puebla'             => 'Puebla',
+            'queretaro'          => 'Querétaro',
+            'querétaro'          => 'Querétaro',
+            'quintana roo'       => 'Quintana Roo',
+            'san luis potosi'    => 'San Luis Potosí',
+            'san luis potosí'    => 'San Luis Potosí',
+            'sinaloa'            => 'Sinaloa',
+            'sonora'             => 'Sonora',
+            'tabasco'            => 'Tabasco',
+            'tamaulipas'         => 'Tamaulipas',
+            'tlaxcala'           => 'Tlaxcala',
+            'veracruz'           => 'Veracruz',
+            'yucatan'            => 'Yucatán',
+            'yucatán'            => 'Yucatán',
+            'zacatecas'          => 'Zacatecas',
+        ];
+
+        $key = mb_strtolower(trim($raw));
+        $key = str_replace(['á','é','í','ó','ú','ñ'], ['a','e','i','o','u','n'], $key);
+
+        return $estados[$key] ?? $estados[mb_strtolower(trim($raw))] ?? null;
     }
 
     public function descargarPlantilla()
@@ -304,38 +367,51 @@ foreach ($roles as $role => $consultantId) {
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Colegios');
 
-        foreach (['A' => 'Nombre del Colegio', 'B' => 'Nexus ID', 'C' => 'Status'] as $col => $header) {
+        foreach (['A' => 'Nombre del Colegio', 'B' => 'Nexus ID', 'C' => 'Status', 'D' => 'Estado'] as $col => $header) {
             $sheet->setCellValue("{$col}1", $header);
         }
 
-        $sheet->getStyle('A1:C1')->applyFromArray([
+        $sheet->getStyle('A1:D1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
         $ejemplos = [
-            ['Colegio Lomas Verdes',         'NX-001', 'Activo'],
-            ['Instituto Cultural del Sur',    'NX-002', 'Activo'],
-            ['Colegio San Felipe Neri',       'NX-003', 'Inactivo'],
-            ['Centro Educativo Benito Juárez','',       'Activo'],
+            ['Colegio Lomas Verdes',          'NX-001', 'Activo',   'Jalisco'],
+            ['Instituto Cultural del Sur',     'NX-002', 'Activo',   'Ciudad de México'],
+            ['Colegio San Felipe Neri',        'NX-003', 'Inactivo', 'Nuevo León'],
+            ['Centro Educativo Benito Juárez', '',       'Activo',   ''],
         ];
 
         foreach ($ejemplos as $ri => $fila) {
             $sheet->setCellValue('A' . ($ri + 2), $fila[0]);
             $sheet->setCellValue('B' . ($ri + 2), $fila[1]);
             $sheet->setCellValue('C' . ($ri + 2), $fila[2]);
+            $sheet->setCellValue('D' . ($ri + 2), $fila[3]);
         }
 
-        $sheet->setCellValue('A7', '* Status válidos: Activo, Inactivo  |  Nexus ID es opcional  |  No modifiques la fila de encabezados');
-        $sheet->mergeCells('A7:C7');
-        $sheet->getStyle('A7')->applyFromArray([
-            'font' => ['italic' => true, 'color' => ['rgb' => '888888']],
-        ]);
+        $notas = [
+            '* Status válidos: Activo, Inactivo  |  Nexus ID y Estado son opcionales  |  No modifiques la fila de encabezados',
+            '* Estados válidos: Aguascalientes, Baja California, Baja California Sur, Campeche, Chiapas, Chihuahua,',
+            '  Ciudad de México (o CDMX), Coahuila, Colima, Durango, Guanajuato, Guerrero, Hidalgo, Jalisco,',
+            '  Estado de México (o Edomex), Michoacán, Morelos, Nayarit, Nuevo León, Oaxaca, Puebla, Querétaro,',
+            '  Quintana Roo, San Luis Potosí, Sinaloa, Sonora, Tabasco, Tamaulipas, Tlaxcala, Veracruz, Yucatán, Zacatecas',
+        ];
+
+        foreach ($notas as $ni => $nota) {
+            $fila = 7 + $ni;
+            $sheet->setCellValue("A{$fila}", $nota);
+            $sheet->mergeCells("A{$fila}:D{$fila}");
+            $sheet->getStyle("A{$fila}")->applyFromArray([
+                'font' => ['italic' => true, 'color' => ['rgb' => '888888']],
+            ]);
+        }
 
         $sheet->getColumnDimension('A')->setWidth(38);
         $sheet->getColumnDimension('B')->setWidth(16);
         $sheet->getColumnDimension('C')->setWidth(14);
+        $sheet->getColumnDimension('D')->setWidth(22);
 
         $tempFile = tempnam(sys_get_temp_dir(), 'plantilla_colegios_');
         (new Xlsx($spreadsheet))->save($tempFile);

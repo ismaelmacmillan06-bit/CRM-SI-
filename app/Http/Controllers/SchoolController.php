@@ -11,6 +11,7 @@ use App\Models\SchoolLevel;
 use App\Models\SchoolLevelProcess;
 use Illuminate\Http\Request;
 use App\Models\MeeAdmin;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -51,10 +52,15 @@ class SchoolController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'consultant_id' => 'nullable|exists:consultants,id',
-            'levels' => 'required|array',
-            'status' => 'required|in:prospecto,activo,inactivo',
+            'name'         => 'required|string|max:255',
+            'consultant_id'=> 'nullable|exists:consultants,id',
+            'levels'       => 'required|array',
+            'status'       => 'required|in:prospecto,activo,inactivo',
+            // Nexus ID: MEXMP seguido de exactamente 6 dígitos, único en la tabla
+            'nexus_id'     => ['nullable', 'regex:/^MEXMP\d{6}$/i', 'unique:schools,nexus_id'],
+        ], [
+            'nexus_id.regex'  => 'El Nexus ID debe tener el formato MEXMP######  (ej. MEXMP123456).',
+            'nexus_id.unique' => 'Este Nexus ID ya está registrado en otro colegio.',
         ]);
 
         $school = School::create($request->except('levels'));
@@ -139,12 +145,18 @@ foreach ($roles as $role => $consultantId) {
     public function update(Request $request, School $school)
     {
         $request->validate([
-            'name'   => 'required|string|max:255',
-            'status' => 'required|in:prospecto,activo,inactivo',
+            'name'    => 'required|string|max:255',
+            'status'  => 'required|in:prospecto,activo,inactivo',
+            // Excluir el propio colegio del chequeo de unicidad
+            'nexus_id'=> ['nullable', 'regex:/^MEXMP\d{6}$/i', "unique:schools,nexus_id,{$school->id}"],
+        ], [
+            'nexus_id.regex'  => 'El Nexus ID debe tener el formato MEXMP######  (ej. MEXMP123456).',
+            'nexus_id.unique' => 'Este Nexus ID ya está registrado en otro colegio.',
         ]);
 
+        // state reemplaza a city como campo canónico de ubicación geográfica
         $school->update($request->only([
-            'name', 'nexus_id', 'address', 'city',
+            'name', 'nexus_id', 'address', 'city', 'state',
             'phone', 'email', 'status', 'notes',
         ]));
 
@@ -230,18 +242,27 @@ foreach ($roles as $role => $consultantId) {
 
         $request->validate(
             ['archivo' => 'required|file|mimes:xlsx,xls|max:10240'],
-            ['archivo.required' => 'Selecciona un archivo Excel.',
-             'archivo.mimes'    => 'Solo se permiten archivos .xlsx o .xls.',
-             'archivo.max'      => 'El archivo no puede superar 10 MB.']
+            [
+                'archivo.required' => 'Selecciona un archivo Excel.',
+                'archivo.mimes'    => 'Solo se permiten archivos .xlsx o .xls.',
+                'archivo.max'      => 'El archivo no puede superar 10 MB.',
+            ]
         );
 
-        $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
-        $sheet       = $spreadsheet->getActiveSheet();
+        // try-catch separado: un archivo corrupto lanzaría excepción sin esto
+        try {
+            $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());
+        } catch (\Exception $e) {
+            return back()->withErrors(['archivo' => 'No se pudo leer el archivo. Asegúrate de que sea un Excel válido (.xlsx).']);
+        }
 
-        $importados     = 0;
-        $omitidos       = [];
-        $nexusEnArchivo = [];
+        $sheet            = $spreadsheet->getActiveSheet();
+        $filasValidas     = [];  // solo filas que pasaron todas las validaciones
+        $omitidos         = [];
+        $nexusEnArchivo   = [];
+        $nombresEnArchivo = [];
 
+        // ── Fase 1: validar todas las filas sin tocar la BD ──────────────
         foreach ($sheet->getRowIterator(2) as $row) {
             $ri        = $row->getRowIndex();
             $nombre    = trim((string) $sheet->getCell("A{$ri}")->getValue());
@@ -249,30 +270,39 @@ foreach ($roles as $role => $consultantId) {
             $statusRaw = trim((string) $sheet->getCell("C{$ri}")->getValue());
             $estadoRaw = trim((string) $sheet->getCell("D{$ri}")->getValue());
 
+            // Saltar filas completamente vacías
             if ($nombre === '' && $nexusId === '' && $statusRaw === '' && $estadoRaw === '') continue;
 
+            // Nombre es el único campo obligatorio
             if ($nombre === '') {
                 $omitidos[] = "Fila {$ri}: nombre vacío.";
                 continue;
             }
 
-            $statusKey = mb_strtolower($statusRaw);
-            $statusKey = str_replace(['á','é','í','ó','ú'], ['a','e','i','o','u'], $statusKey);
+            // Nexus ID: formato MEXMP + exactamente 6 dígitos
+            if ($nexusId !== '' && !preg_match('/^MEXMP\d{6}$/i', $nexusId)) {
+                $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' inválido (formato: MEXMP######).";
+                continue;
+            }
 
-            if ($statusKey === '' || $statusKey === 'activo') {
+            // Status: normalizar acentos antes de comparar
+            $statusNorm = str_replace(['á','é','í','ó','ú'], ['a','e','i','o','u'], mb_strtolower($statusRaw));
+            if ($statusNorm === '' || $statusNorm === 'activo') {
                 $status = 'activo';
-            } elseif ($statusKey === 'inactivo') {
+            } elseif ($statusNorm === 'inactivo') {
                 $status = 'inactivo';
             } else {
                 $omitidos[] = "Fila {$ri}: status '{$statusRaw}' no válido (usa Activo o Inactivo).";
                 continue;
             }
 
+            // Nexus ID: duplicado dentro del archivo
             if ($nexusId !== '') {
                 if (in_array($nexusId, $nexusEnArchivo)) {
                     $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' duplicado en el archivo.";
                     continue;
                 }
+                // Nexus ID: ya existe en la BD
                 if (School::where('nexus_id', $nexusId)->exists()) {
                     $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' ya existe en el sistema.";
                     continue;
@@ -280,25 +310,46 @@ foreach ($roles as $role => $consultantId) {
                 $nexusEnArchivo[] = $nexusId;
             }
 
+            // Nombre: duplicado dentro del archivo
+            $nombreNorm = mb_strtolower($nombre);
+            if (in_array($nombreNorm, $nombresEnArchivo)) {
+                $omitidos[] = "Fila {$ri}: '{$nombre}' aparece duplicado en el archivo.";
+                continue;
+            }
+            // Nombre: ya existe en la BD (case-insensitive)
+            if (School::whereRaw('LOWER(name) = ?', [$nombreNorm])->exists()) {
+                $omitidos[] = "Fila {$ri}: '{$nombre}' ya existe en el sistema.";
+                continue;
+            }
+            $nombresEnArchivo[] = $nombreNorm;
+
+            // Estado: no crítico — si no se reconoce, se importa sin estado
             $state = $this->normalizarEstado($estadoRaw);
             if ($estadoRaw !== '' && $state === null) {
-                $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (se ignoró, colegio importado sin estado).";
-                $state = null;
+                $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (importado sin estado).";
             }
 
-            School::create([
+            $filasValidas[] = [
                 'name'     => $nombre,
                 'nexus_id' => $nexusId ?: null,
                 'status'   => $status,
                 'state'    => $state,
-            ]);
-
-            $importados++;
+            ];
         }
+
+        // ── Fase 2: insertar todo en una sola transacción ─────────────────
+        // Si falla cualquier INSERT, se revierten todos los de esta importación
+        $importados = 0;
+        DB::transaction(function () use ($filasValidas, &$importados) {
+            foreach ($filasValidas as $fila) {
+                School::create($fila);
+                $importados++;
+            }
+        });
 
         $msg = "{$importados} colegio(s) importados correctamente.";
         if (!empty($omitidos)) {
-            $msg .= ' Avisos: ' . implode(' | ', $omitidos);
+            $msg .= '  Avisos: ' . implode(' | ', $omitidos);
         }
 
         return redirect()->route('schools.index')->with('success', $msg);
@@ -414,10 +465,16 @@ foreach ($roles as $role => $consultantId) {
         $sheet->getColumnDimension('D')->setWidth(22);
 
         $tempFile = tempnam(sys_get_temp_dir(), 'plantilla_colegios_');
-        (new Xlsx($spreadsheet))->save($tempFile);
 
-        return response()->download($tempFile, 'plantilla-colegios.xlsx', [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        // try-finally garantiza que el archivo temporal se elimine si la descarga falla
+        try {
+            (new Xlsx($spreadsheet))->save($tempFile);
+            return response()->download($tempFile, 'plantilla-colegios.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            @unlink($tempFile);
+            return back()->withErrors(['error' => 'No se pudo generar la plantilla. Intenta de nuevo.']);
+        }
     }
 }

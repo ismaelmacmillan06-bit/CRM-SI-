@@ -25,10 +25,13 @@ class StudentController extends Controller
         $request->validate([
             'name'         => 'required|string|max:255',
             'last_name'    => 'required|string|max:255',
-            'mee_username' => 'required|string|max:255',
+            // mee_username es único globalmente: un usuario MEE pertenece a un solo alumno
+            'mee_username' => 'required|string|max:255|unique:students,mee_username',
             'mee_password' => 'required|string|max:255',
             'grade'        => 'nullable|string|max:100',
             'level'        => 'nullable|string|max:100',
+        ], [
+            'mee_username.unique' => 'Este usuario MEE ya está registrado en el sistema.',
         ]);
 
         $school->students()->create($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
@@ -151,10 +154,13 @@ private function extractStudentsFromPdf(string $text): array
         $request->validate([
             'name'         => 'required|string|max:255',
             'last_name'    => 'required|string|max:255',
-            'mee_username' => 'required|string|max:255',
+            // Excluir al propio alumno para que pueda guardarse sin cambiar su username
+            'mee_username' => "required|string|max:255|unique:students,mee_username,{$student->id}",
             'mee_password' => 'required|string|max:255',
             'grade'        => 'nullable|string|max:100',
             'level'        => 'nullable|string|max:100',
+        ], [
+            'mee_username.unique' => 'Este usuario MEE ya está registrado en otro alumno.',
         ]);
 
         $student->update($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));

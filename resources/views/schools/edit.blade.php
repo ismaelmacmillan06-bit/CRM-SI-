@@ -29,21 +29,22 @@
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">Estado *</label>
-                        <select name="city" class="form-control">
+                        {{-- state es el campo canónico de ubicación; city queda libre para dirección --}}
+                        <label class="form-label">Estado de la república</label>
+                        <select name="state" class="form-control">
                             <option value="">-- Selecciona un estado --</option>
                             @foreach([
                                 'Aguascalientes', 'Baja California', 'Baja California Sur',
                                 'Campeche', 'Chiapas', 'Chihuahua', 'Ciudad de México',
                                 'Coahuila', 'Colima', 'Durango', 'Guanajuato', 'Guerrero',
-                                'Hidalgo', 'Jalisco', 'México', 'Michoacán',
+                                'Hidalgo', 'Jalisco', 'Estado de México', 'Michoacán',
                                 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla',
                                 'Querétaro', 'Quintana Roo', 'San Luis Potosí', 'Sinaloa',
                                 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz',
                                 'Yucatán', 'Zacatecas'
                             ] as $estado)
                                 <option value="{{ $estado }}"
-                                    {{ old('city', $school->city) == $estado ? 'selected' : '' }}>
+                                    {{ old('state', $school->state) == $estado ? 'selected' : '' }}>
                                     {{ $estado }}
                                 </option>
                             @endforeach

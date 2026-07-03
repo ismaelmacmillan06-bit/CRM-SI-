@@ -37,8 +37,8 @@
             <tr>
                 <td>
                     <strong>{{ $school->name }}</strong>
-                    @if($school->city)
-                        <br><small style="color:var(--text-muted)">{{ $school->city }}</small>
+                    @if($school->state || $school->city)
+                        <br><small style="color:var(--text-muted)">{{ $school->state ?? $school->city }}</small>
                     @endif
                 </td>
                 <td>{{ $school->nexus_id ?? '—' }}</td>

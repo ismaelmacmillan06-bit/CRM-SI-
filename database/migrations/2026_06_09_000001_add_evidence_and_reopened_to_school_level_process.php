@@ -13,12 +13,17 @@ return new class extends Migration
             $table->string('evidence')->nullable()->after('notes');
         });
 
-        DB::statement("ALTER TABLE school_level_process MODIFY COLUMN status ENUM('pending','in_progress','done','reopened') NOT NULL DEFAULT 'pending'");
+        // MODIFY COLUMN es sintaxis MySQL; SQLite no la soporta y no necesita ENUMs (valida en app)
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE school_level_process MODIFY COLUMN status ENUM('pending','in_progress','done','reopened') NOT NULL DEFAULT 'pending'");
+        }
     }
 
     public function down(): void
     {
-        DB::statement("ALTER TABLE school_level_process MODIFY COLUMN status ENUM('pending','in_progress','done') NOT NULL DEFAULT 'pending'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE school_level_process MODIFY COLUMN status ENUM('pending','in_progress','done') NOT NULL DEFAULT 'pending'");
+        }
 
         Schema::table('school_level_process', function (Blueprint $table) {
             $table->dropColumn('evidence');

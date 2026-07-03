@@ -70,18 +70,18 @@ class DashboardController extends Controller
         $colegiosProspecto = $schoolScopeId(School::where('status', 'prospecto'))->count();
         $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
-        // Colegios por estado para el mapa
-        $colegiosPorEstado = $schoolScopeId(School::selectRaw('city, count(*) as total'))
-            ->whereNotNull('city')
-            ->groupBy('city')
-            ->pluck('total', 'city')
+        // Colegios por estado para el mapa (state tiene prioridad sobre city)
+        $colegiosPorEstado = $schoolScopeId(School::selectRaw('COALESCE(state, city) as estado, count(*) as total'))
+            ->whereRaw('COALESCE(state, city) IS NOT NULL')
+            ->groupBy('estado')
+            ->pluck('total', 'estado')
             ->toArray();
 
         // Colegios por zona (regiones reales de Macmillan SI)
         $colegiosPorZona = array_fill_keys(array_keys(Zonas::map()), 0);
         $colegiosPorZona['Sin zona'] = 0;
-        $schoolScopeId(School::select('id', 'city'))->get()->each(function ($school) use (&$colegiosPorZona) {
-            $zona = Zonas::detectZona($school->city ?? '');
+        $schoolScopeId(School::select('id', 'city', 'state'))->get()->each(function ($school) use (&$colegiosPorZona) {
+            $zona = Zonas::detectZona($school->state ?? $school->city ?? '');
             $colegiosPorZona[$zona]++;
         });
 

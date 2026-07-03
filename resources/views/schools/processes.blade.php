@@ -138,10 +138,10 @@
                             <option value="reopened" {{ $slp->status === 'reopened' ? 'selected' : '' }}>🔁 Reapertura</option>
                         </select>
 
-                        {{-- Input oculto --}}
+                        {{-- Input oculto; solo JPG/PNG/WebP, máx 10 MB --}}
                         <input type="file"
                                name="evidence"
-                               accept="image/*"
+                               accept="image/jpeg,image/png,image/webp"
                                id="file-{{ $slp->id }}"
                                data-slp="{{ $slp->id }}"
                                data-has-evidence="{{ $slp->evidence ? '1' : '0' }}"
@@ -150,7 +150,7 @@
                         {{-- Botón icono evidencia --}}
                         <label for="file-{{ $slp->id }}"
                                id="file-label-{{ $slp->id }}"
-                               title="{{ $slp->evidence ? 'Cambiar evidencia' : 'Subir evidencia (requerida para Completar)' }}"
+                               title="{{ $slp->evidence ? 'Cambiar evidencia (JPG, PNG o WebP · máx 10 MB)' : 'Subir evidencia — JPG, PNG o WebP · máx 10 MB' }}"
                                style="cursor:pointer; flex-shrink:0; width:30px; height:30px;
                                       display:inline-flex; align-items:center; justify-content:center;
                                       background:var(--surface2); border-radius:6px; font-size:14px;
@@ -191,11 +191,27 @@ document.querySelectorAll('input[type="file"][data-slp]').forEach(function (file
     }
 
     fileInput.addEventListener('change', function () {
-        if (this.files && this.files.length > 0) {
-            doneOpt.disabled = false;
-            if (fileLabel) {
-                fileLabel.style.borderColor = '#f59e0b';
+        const file = this.files && this.files[0];
+
+        if (file) {
+            // Validación de tipo antes de llegar al servidor
+            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowed.includes(file.type)) {
+                alert('Formato no aceptado: ' + (file.type || 'desconocido') + '.\nSolo se permiten JPG, PNG o WebP.\nSi la foto es HEIC (iPhone), conviértela primero en "Archivos" → compartir → JPEG.');
+                this.value = '';
+                return;
             }
+
+            // Validación de tamaño: máx 10 MB
+            const maxMB = 10;
+            if (file.size > maxMB * 1024 * 1024) {
+                alert('La imagen pesa ' + (file.size / 1024 / 1024).toFixed(1) + ' MB y el límite es ' + maxMB + ' MB.\nReduce el tamaño o la calidad antes de subirla.');
+                this.value = '';
+                return;
+            }
+
+            doneOpt.disabled = false;
+            if (fileLabel) fileLabel.style.borderColor = '#f59e0b';
         } else {
             if (!alreadyDone && !hasEvidence) {
                 doneOpt.disabled = true;

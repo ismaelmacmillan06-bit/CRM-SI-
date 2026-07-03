@@ -8,6 +8,7 @@ use App\Models\SchoolLevelProcess;
 use App\Models\Consultant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class SchoolLevelProcessController extends Controller
 {
@@ -19,11 +20,28 @@ class SchoolLevelProcessController extends Controller
 
     public function update(Request $request, School $school, SchoolLevelProcess $schoolLevelProcess)
     {
-        $request->validate([
+        // Validador manual para poder re-keying el error de 'evidence' al proceso exacto
+        // y mostrarlo en la fila correcta (no en una fila genérica sin contexto)
+        $validator = Validator::make($request->all(), [
             'status'   => 'required|in:pending,in_progress,done,reopened',
             'notes'    => 'nullable|string',
-            'evidence' => 'nullable|image|max:4096',
+            // 10 MB; HEIC no es soportado por PHP natively, se informa en el mensaje
+            'evidence' => 'nullable|mimes:jpg,jpeg,png,webp|max:10240',
+        ], [
+            'evidence.mimes' => 'Solo se aceptan JPG, PNG o WebP. Los archivos HEIC (iPhone) deben convertirse antes de subirse.',
+            'evidence.max'   => 'La imagen no puede superar 10 MB.',
         ]);
+
+        if ($validator->fails()) {
+            // Re-keying: mueve el error de 'evidence' → 'evidence_{id}' para que
+            // aparezca exactamente en la fila del proceso que falló
+            $errors = collect($validator->errors()->toArray())
+                ->mapWithKeys(fn($msgs, $field) =>
+                    [$field === 'evidence' ? 'evidence_' . $schoolLevelProcess->id : $field => $msgs]
+                )->all();
+
+            return back()->withErrors($errors)->withInput();
+        }
 
         if ($request->status === 'done' && !$schoolLevelProcess->evidence && !$request->hasFile('evidence')) {
             return back()

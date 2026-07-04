@@ -22,10 +22,16 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-control"
-                               value="{{ $consultant->user->email }}" disabled
-                               style="background:var(--surface2); cursor:not-allowed">
-                        <small style="color:var(--text-muted)">El email no se puede modificar</small>
+                        @if(auth()->user()->hasRole('admin'))
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ old('email', $consultant->user->email) }}" required>
+                            @error('email')<small style="color:var(--danger)">{{ $message }}</small>@enderror
+                        @else
+                            <input type="email" class="form-control"
+                                   value="{{ $consultant->user->email }}" disabled
+                                   style="background:var(--surface2); cursor:not-allowed">
+                            <small style="color:var(--text-muted)">El email solo puede modificarlo el administrador</small>
+                        @endif
                     </div>
                 </div>
 
@@ -58,15 +64,22 @@
                 </div>
 
                 <div class="form-group">
-    <label class="form-label">Rol *</label>
-    <select name="role" class="form-control" required>
-        <option value="">-- Selecciona un rol --</option>
-        <option value="admin"                {{ $consultant->user->getRoleNames()->first() == 'admin'                ? 'selected' : '' }}>⚙️ Administrador</option>
-        <option value="consultor_digital"    {{ $consultant->user->getRoleNames()->first() == 'consultor_digital'    ? 'selected' : '' }}>💻 Consultor Digital</option>
-        <option value="consultor_eca"        {{ $consultant->user->getRoleNames()->first() == 'consultor_eca'        ? 'selected' : '' }}>📗 Consultor Académico ECA</option>
-        <option value="consultor_elt"        {{ $consultant->user->getRoleNames()->first() == 'consultor_elt'        ? 'selected' : '' }}>📘 Consultor Académico ELT</option>
-        <option value="representante_ventas" {{ $consultant->user->getRoleNames()->first() == 'representante_ventas' ? 'selected' : '' }}>🤝 Representante de Ventas</option>
-    </select>
+    <label class="form-label">Rol</label>
+    @if(auth()->user()->hasRole('admin'))
+        <select name="role" class="form-control" required>
+            <option value="">-- Selecciona un rol --</option>
+            <option value="admin"                {{ $consultant->user->getRoleNames()->first() == 'admin'                ? 'selected' : '' }}>⚙️ Administrador</option>
+            <option value="consultor_digital"    {{ $consultant->user->getRoleNames()->first() == 'consultor_digital'    ? 'selected' : '' }}>💻 Consultor Digital</option>
+            <option value="consultor_eca"        {{ $consultant->user->getRoleNames()->first() == 'consultor_eca'        ? 'selected' : '' }}>📗 Consultor Académico ECA</option>
+            <option value="consultor_elt"        {{ $consultant->user->getRoleNames()->first() == 'consultor_elt'        ? 'selected' : '' }}>📘 Consultor Académico ELT</option>
+            <option value="representante_ventas" {{ $consultant->user->getRoleNames()->first() == 'representante_ventas' ? 'selected' : '' }}>🤝 Representante de Ventas</option>
+        </select>
+    @else
+        <input type="text" class="form-control"
+               value="{{ $consultant->user->getRoleNames()->first() }}" disabled
+               style="background:var(--surface2); cursor:not-allowed">
+        <small style="color:var(--text-muted)">El rol solo puede modificarlo el administrador</small>
+    @endif
 </div>
 <div class="form-group">
     <label class="form-label">Foto de perfil</label>

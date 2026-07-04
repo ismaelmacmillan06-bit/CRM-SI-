@@ -73,35 +73,44 @@ public function store(Request $request)
 
     public function update(Request $request, Consultant $consultant)
     {
-        $request->validate([
+        $isAdmin = auth()->user()->hasRole('admin');
+
+        $rules = [
             'name'  => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'zone'  => 'nullable|string|max:100',
-            'role'  => 'required|exists:roles,name',
             'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
-        ]);
+        ];
 
-        $consultant->user->update(['name' => $request->name]);
-        $consultant->user->syncRoles($request->role);
-        $consultant->update([
-            'phone' => $request->phone,
-            'zone'  => $request->zone,
-        ]);
+        // Solo admin puede cambiar email y rol
+        if ($isAdmin) {
+            $rules['email'] = 'required|email|unique:users,email,' . $consultant->user->id;
+            $rules['role']  = 'required|exists:roles,name';
+        }
 
-        $data = [
-    'phone' => $request->phone,
-    'zone'  => $request->zone,
-];
+        $request->validate($rules);
 
-if ($request->hasFile('photo')) {
-    if ($consultant->photo) {
-        Storage::disk('public')->delete($consultant->photo);
-    }
-    $data['photo'] = $request->file('photo')->store('consultants', 'public');
-}
+        $userUpdate = ['name' => $request->name];
+        if ($isAdmin && $request->filled('email')) {
+            $userUpdate['email'] = $request->email;
+        }
+        $consultant->user->update($userUpdate);
 
-$consultant->update($data);
-         
+        if ($isAdmin && $request->filled('role')) {
+            $consultant->user->syncRoles($request->role);
+        }
+
+        $data = ['phone' => $request->phone, 'zone' => $request->zone];
+
+        if ($request->hasFile('photo')) {
+            if ($consultant->photo) {
+                Storage::disk('public')->delete($consultant->photo);
+            }
+            $data['photo'] = $request->file('photo')->store('consultants', 'public');
+        }
+
+        $consultant->update($data);
+
         return redirect()->route('consultants.index')
                          ->with('success', 'Consultor actualizado correctamente.');
     }

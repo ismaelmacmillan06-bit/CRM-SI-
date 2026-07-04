@@ -37,11 +37,17 @@
                     <label class="form-label">Nivel</label>
                     <select name="level" class="form-control">
                         <option value="">-- Selecciona --</option>
-                        <option value="Preescolar">Preescolar</option>
-                        <option value="Primaria">Primaria</option>
-                        <option value="Secundaria">Secundaria</option>
-                        <option value="Preparatoria">Preparatoria</option>
-                        <option value="Licenciatura">Licenciatura</option>
+                        @forelse($nivelesDelColegio as $nivel)
+                            <option value="{{ $nivel }}">{{ $nivel }}</option>
+                        @empty
+                            {{-- Fallback si el colegio no tiene niveles configurados aún --}}
+                            <option value="Maternal">Maternal</option>
+                            <option value="Preescolar">Preescolar</option>
+                            <option value="Primaria">Primaria</option>
+                            <option value="Secundaria">Secundaria</option>
+                            <option value="Preparatoria">Preparatoria</option>
+                            <option value="Licenciatura">Licenciatura</option>
+                        @endforelse
                     </select>
                 </div>
                 <div class="form-group">

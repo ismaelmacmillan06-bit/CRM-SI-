@@ -33,12 +33,16 @@
                         <label class="form-label">Nivel</label>
                         <select name="level" class="form-control">
                             <option value="">-- Selecciona --</option>
-                            <option value="Maternal"    {{ old('level') == 'Maternal'    ? 'selected' : '' }}>Maternal</option>
-                            <option value="Preescolar"  {{ old('level') == 'Preescolar'  ? 'selected' : '' }}>Preescolar</option>
-                            <option value="Primaria"    {{ old('level') == 'Primaria'    ? 'selected' : '' }}>Primaria</option>
-                            <option value="Secundaria"  {{ old('level') == 'Secundaria'  ? 'selected' : '' }}>Secundaria</option>
-                            <option value="Preparatoria"{{ old('level') == 'Preparatoria'? 'selected' : '' }}>Preparatoria</option>
-                            <option value="Licenciatura"{{ old('level') == 'Licenciatura'? 'selected' : '' }}>Licenciatura</option>
+                            @forelse($nivelesDelColegio as $nivel)
+                                <option value="{{ $nivel }}" {{ old('level') == $nivel ? 'selected' : '' }}>{{ $nivel }}</option>
+                            @empty
+                                <option value="Maternal"     {{ old('level') == 'Maternal'     ? 'selected' : '' }}>Maternal</option>
+                                <option value="Preescolar"   {{ old('level') == 'Preescolar'   ? 'selected' : '' }}>Preescolar</option>
+                                <option value="Primaria"     {{ old('level') == 'Primaria'     ? 'selected' : '' }}>Primaria</option>
+                                <option value="Secundaria"   {{ old('level') == 'Secundaria'   ? 'selected' : '' }}>Secundaria</option>
+                                <option value="Preparatoria" {{ old('level') == 'Preparatoria' ? 'selected' : '' }}>Preparatoria</option>
+                                <option value="Licenciatura" {{ old('level') == 'Licenciatura' ? 'selected' : '' }}>Licenciatura</option>
+                            @endforelse
                         </select>
                     </div>
                     <div class="form-group">

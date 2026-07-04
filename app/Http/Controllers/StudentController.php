@@ -12,12 +12,17 @@ class StudentController extends Controller
     public function index(School $school)
     {
         $students = $school->students()->orderBy('level')->orderBy('grade')->get();
-        return view('students.index', compact('school', 'students'));
+        // Solo los niveles registrados en el colegio para el dropdown de alta masiva
+        $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
+            ->pluck('level.name')->filter()->sort()->values();
+        return view('students.index', compact('school', 'students', 'nivelesDelColegio'));
     }
 
     public function create(School $school)
     {
-        return view('students.create', compact('school'));
+        $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
+            ->pluck('level.name')->filter()->sort()->values();
+        return view('students.create', compact('school', 'nivelesDelColegio'));
     }
 
     public function store(Request $request, School $school)

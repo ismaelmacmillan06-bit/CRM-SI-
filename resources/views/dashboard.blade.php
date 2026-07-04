@@ -305,7 +305,7 @@
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
          data-series="{{ $schoolSeries }}"
-         style="transition: all 0.2s">
+         style="transition: all 0.2s; display:flex; flex-direction:column;">
         <div class="card-header" style="padding:16px 20px">
             <div>
                 <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px">
@@ -323,7 +323,7 @@
                 <span class="badge badge-gray">Inactivo</span>
             @endif
         </div>
-        <div class="card-body" style="padding:16px 20px">
+        <div class="card-body" style="padding:16px 20px; flex:1; display:flex; flex-direction:column;">
             <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px">
                 <span style="color:var(--text-muted)">Consultor Digital</span>
                 <span style="font-weight:500">{{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}</span>
@@ -375,7 +375,7 @@
             <a href="{{ route('schools.show', $school) }}"
                style="display:block; text-align:center; padding:8px; background:var(--accent);
                       color:#fff; border-radius:8px; text-decoration:none; font-size:13px;
-                      font-weight:500; transition:background 0.2s"
+                      font-weight:500; transition:background 0.2s; margin-top:auto;"
                onmouseover="this.style.background='#d63651'"
                onmouseout="this.style.background='var(--accent)'">
                 IR →

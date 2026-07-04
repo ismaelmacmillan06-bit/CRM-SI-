@@ -20,7 +20,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class SchoolController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $query = School::with('levels', 'schoolConsultants.consultant.user');
 
@@ -32,8 +32,18 @@ class SchoolController extends Controller
             $query->whereIn('id', $schoolIds);
         }
 
-        $schools = $query->get();
-        return view('schools.index', compact('schools'));
+        // Búsqueda por nombre, Nexus ID o estado
+        if ($buscar = $request->input('buscar')) {
+            $query->where(function ($q) use ($buscar) {
+                $q->where('name', 'like', "%{$buscar}%")
+                  ->orWhere('nexus_id', 'like', "%{$buscar}%")
+                  ->orWhere('state', 'like', "%{$buscar}%")
+                  ->orWhere('city', 'like', "%{$buscar}%");
+            });
+        }
+
+        $schools = $query->orderBy('name')->paginate(20)->withQueryString();
+        return view('schools.index', compact('schools', 'buscar'));
     }
 
     public function create()

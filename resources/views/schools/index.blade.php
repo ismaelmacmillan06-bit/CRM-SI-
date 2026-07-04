@@ -17,6 +17,23 @@
             @endhasanyrole
         </div>
     </div>
+
+    {{-- Buscador --}}
+    <div style="padding:12px 24px; border-bottom:1px solid var(--border)">
+        <form method="GET" action="{{ route('schools.index') }}" style="display:flex; gap:8px; align-items:center">
+            <input type="text" name="buscar" value="{{ $buscar ?? '' }}"
+                   placeholder="🔍 Buscar por nombre, Nexus ID o estado..."
+                   class="form-control" style="max-width:380px">
+            <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+            @if($buscar)
+                <a href="{{ route('schools.index') }}" class="btn btn-secondary btn-sm">✕ Limpiar</a>
+            @endif
+            <span style="font-size:13px; color:var(--text-muted); margin-left:4px">
+                {{ $schools->total() }} colegio(s)
+            </span>
+        </form>
+    </div>
+
     <table class="table">
         <thead>
             <tr>
@@ -102,6 +119,12 @@
             @endforelse
         </tbody>
     </table>
+
+    @if($schools->hasPages())
+    <div style="padding:16px 24px; border-top:1px solid var(--border)">
+        {{ $schools->links() }}
+    </div>
+    @endif
 </div>
 @role('admin')
 {{-- Modal: Importar colegios --}}

@@ -63,12 +63,13 @@
         border-radius:9px; border:1px solid var(--border);
     }
 
-    /* footer de la card */
+    /* footer de la card — margin-top:auto lo empuja siempre al fondo */
     .comunicado-footer {
         display:flex; align-items:center; justify-content:space-between;
         flex-wrap:wrap; gap:8px;
         font-size:12px; color:var(--text-muted);
         padding-top:10px; border-top:1px solid var(--border);
+        margin-top:auto;
     }
     .badge-expira {
         display:inline-flex; align-items:center; gap:5px;

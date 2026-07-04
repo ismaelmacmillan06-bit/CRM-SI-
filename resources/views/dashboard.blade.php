@@ -4,100 +4,115 @@
 
 @section('content')
 
-{{-- Cards principales (compactas) --}}
+{{-- Cards principales --}}
+@php
+/* Macro para filas de sub-estadísticas: punto de color + label + número alineado a la derecha */
+function statRow(string $color, string $label, $value): string {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;
+                        font-size:12px;color:var(--text-muted);margin-top:6px">
+                <span><span style="display:inline-block;width:7px;height:7px;border-radius:50%;
+                            background:' . $color . ';margin-right:6px;flex-shrink:0"></span>'
+                    . e($label) . '</span>
+                <span style="font-weight:600;color:var(--text)">' . e($value) . '</span>
+            </div>';
+}
+@endphp
+
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:16px; margin-bottom:24px">
 
     {{-- Colegios --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid var(--accent); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Colegios</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalSchools }}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
-            <span class="badge badge-success">{{ $colegiosActivos }} activos</span>
-            <span class="badge badge-warning">{{ $colegiosProspecto }} prospecto</span>
-            <span class="badge badge-gray">{{ $colegiosInactivos }} inactivos</span>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid var(--accent); box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Colegios</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalSchools) }}</div>
+        <div style="margin-top:10px">
+            {!! statRow('#22c55e', 'activos',    $colegiosActivos)   !!}
+            {!! statRow('#f59e0b', 'prospecto',  $colegiosProspecto) !!}
+            {!! statRow('#94a3b8', 'inactivos',  $colegiosInactivos) !!}
         </div>
     </div>
 
     {{-- Directores --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Directores</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalDirectores }}</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Director General + Director de Nivel</div>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #8b5cf6; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Directores</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalDirectores) }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
+            Director General + Director de Nivel
+        </div>
     </div>
 
     {{-- Docentes --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #3b82f6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Docentes</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalTeachers }}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
-            <span class="badge badge-info">{{ $docentesELT }} ELT</span>
-            <span class="badge badge-success">{{ $docentesECA }} ECA</span>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #3b82f6; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Docentes</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalTeachers) }}</div>
+        <div style="margin-top:10px">
+            {!! statRow('#3b82f6', 'ELT', $docentesELT) !!}
+            {!! statRow('#22c55e', 'ECA', $docentesECA) !!}
         </div>
     </div>
 
     {{-- Alumnos --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #8b5cf6; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Alumnos</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalStudents }}</div>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #8b5cf6; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Alumnos</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalStudents) }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">registrados en MEE</div>
     </div>
 
     {{-- Tickets --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #f59e0b; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Tickets</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $ticketsAbiertos + $ticketsEnProceso + $ticketsResueltos }}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
-            <span class="badge badge-danger">{{ $ticketsAbiertos }} abiertos</span>
-            <span class="badge badge-warning">{{ $ticketsEnProceso }} en proceso</span>
-            <span class="badge badge-success">{{ $ticketsResueltos }} resueltos</span>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #f59e0b; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Tickets</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($ticketsAbiertos + $ticketsEnProceso + $ticketsResueltos) }}</div>
+        <div style="margin-top:10px">
+            {!! statRow('#ef4444', 'abiertos',   $ticketsAbiertos)   !!}
+            {!! statRow('#f59e0b', 'en proceso', $ticketsEnProceso)  !!}
+            {!! statRow('#22c55e', 'resueltos',  $ticketsResueltos)  !!}
         </div>
     </div>
 
     {{-- Visitas --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #0ea5e9; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Visitas</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalVisitas }}</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:12px">
-            <span class="badge badge-warning">{{ $visitasPendientes }} pendientes</span>
-            <span class="badge badge-success">{{ $totalVisitas - $visitasPendientes }} realizadas</span>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #0ea5e9; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Visitas</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalVisitas) }}</div>
+        <div style="margin-top:10px">
+            {!! statRow('#f59e0b', 'pendientes', $visitasPendientes)                    !!}
+            {!! statRow('#22c55e', 'realizadas', $totalVisitas - $visitasPendientes)    !!}
         </div>
     </div>
 
     {{-- Admins MEE --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #10b981; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Admins MEE</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalAdminsMee }}</div>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #10b981; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Admins MEE</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalAdminsMee) }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Administradores MEE registrados</div>
     </div>
 
     {{-- Resurtidos --}}
-    <div style="background:var(--surface); border-radius:14px; padding:16px 18px;
-                border-top:3px solid #f97316; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:6px">Resurtidos</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:28px; font-weight:700;
-                    color:var(--text); line-height:1">{{ $totalResurtidos }}</div>
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #f97316; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Resurtidos</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($totalResurtidos) }}</div>
         <div style="margin-top:12px">
             @if(auth()->user()->hasAnyRole(['admin', 'consultor_digital']))
             <a href="{{ route('reportes.resurtidos') }}"

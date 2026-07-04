@@ -37,7 +37,7 @@
                 </tr>
                 <tr>
                     <td style="padding:8px 0; color:var(--text-muted)">Ciudad</td>
-                    <td style="padding:8px 0">{{ $school->city ?? '—' }}</td>
+                    <td style="padding:8px 0">{{ $school->state ?? $school->city ?? '—' }}</td>
                 </tr>
                 <tr>
                     <td style="padding:8px 0; color:var(--text-muted)">Dirección</td>

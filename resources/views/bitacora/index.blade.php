@@ -136,7 +136,7 @@ $tiposConfig = [
                            style="color:var(--accent); text-decoration:none; font-weight:500">
                             {{ $log->school->name }}
                         </a>
-                        <div style="font-size:11px; color:var(--text-muted)">{{ $log->school->city }}</div>
+                        <div style="font-size:11px; color:var(--text-muted)">{{ $log->school->state ?? $log->school->city }}</div>
                     @else
                         <span style="color:var(--text-muted)">—</span>
                     @endif

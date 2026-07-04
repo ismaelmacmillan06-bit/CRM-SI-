@@ -170,7 +170,7 @@
                     <td style="font-size:13px; color:var(--text-muted)">
                         {{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}
                     </td>
-                    <td style="font-size:13px; color:var(--text-muted)">{{ $school->city ?? '—' }}</td>
+                    <td style="font-size:13px; color:var(--text-muted)">{{ $school->state ?? $school->city ?? '—' }}</td>
 
                     @if($tarea)
                     <td style="text-align:center">

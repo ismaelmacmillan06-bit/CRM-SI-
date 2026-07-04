@@ -57,7 +57,7 @@
                 <div>
                     <strong style="font-size:14px">{{ $school->name }}</strong>
                     <br>
-                    <small style="color:var(--text-muted)">{{ $school->city ?? 'Sin ciudad' }}</small>
+                    <small style="color:var(--text-muted)">{{ $school->state ?? $school->city ?? 'Sin ciudad' }}</small>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px">
                     @if($school->status === 'activo')

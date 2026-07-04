@@ -303,7 +303,7 @@
     @endphp
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
-         data-estado="{{ strtolower($school->city ?? '') }}"
+         data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
          data-series="{{ $schoolSeries }}"
          style="transition: all 0.2s">
         <div class="card-header" style="padding:16px 20px">
@@ -312,7 +312,7 @@
                     {{ $school->name }}
                 </div>
                 <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
-                    {{ $school->city ?? 'Sin estado' }}
+                    {{ $school->state ?? $school->city ?? 'Sin estado' }}
                 </div>
             </div>
             @if($school->status === 'activo')

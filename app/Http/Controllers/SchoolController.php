@@ -272,16 +272,23 @@ foreach ($roles as $role => $consultantId) {
         $nexusEnArchivo   = [];
         $nombresEnArchivo = [];
 
+        // Pre-cargar consultores digitales (nombre → id) para evitar N+1
+        $consultoresMap = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
+            ->with('user')
+            ->get()
+            ->keyBy(fn($c) => mb_strtolower(trim($c->user->name)));
+
         // ── Fase 1: validar todas las filas sin tocar la BD ──────────────
         foreach ($sheet->getRowIterator(2) as $row) {
-            $ri        = $row->getRowIndex();
-            $nombre    = trim((string) $sheet->getCell("A{$ri}")->getValue());
-            $nexusId   = trim((string) $sheet->getCell("B{$ri}")->getValue());
-            $statusRaw = trim((string) $sheet->getCell("C{$ri}")->getValue());
-            $estadoRaw = trim((string) $sheet->getCell("D{$ri}")->getValue());
+            $ri             = $row->getRowIndex();
+            $nombre         = trim((string) $sheet->getCell("A{$ri}")->getValue());
+            $nexusId        = trim((string) $sheet->getCell("B{$ri}")->getValue());
+            $statusRaw      = trim((string) $sheet->getCell("C{$ri}")->getValue());
+            $estadoRaw      = trim((string) $sheet->getCell("D{$ri}")->getValue());
+            $consultorNombre= trim((string) $sheet->getCell("E{$ri}")->getValue());
 
             // Saltar filas completamente vacías
-            if ($nombre === '' && $nexusId === '' && $statusRaw === '' && $estadoRaw === '') continue;
+            if ($nombre === '' && $nexusId === '' && $statusRaw === '' && $estadoRaw === '' && $consultorNombre === '') continue;
 
             // Nombre es el único campo obligatorio
             if ($nombre === '') {
@@ -339,20 +346,42 @@ foreach ($roles as $role => $consultantId) {
                 $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (importado sin estado).";
             }
 
+            // Consultor Digital: si se indicó, debe existir exactamente con ese nombre
+            $consultorId = null;
+            if ($consultorNombre !== '') {
+                $consultorKey = mb_strtolower($consultorNombre);
+                if (!isset($consultoresMap[$consultorKey])) {
+                    $omitidos[] = "Fila {$ri}: consultor digital '{$consultorNombre}' no encontrado. Verifica el nombre exacto.";
+                    continue;
+                }
+                $consultorId = $consultoresMap[$consultorKey]->id;
+            }
+
             $filasValidas[] = [
-                'name'     => $nombre,
-                'nexus_id' => $nexusId ?: null,
-                'status'   => $status,
-                'state'    => $state,
+                'name'        => $nombre,
+                'nexus_id'    => $nexusId ?: null,
+                'status'      => $status,
+                'state'       => $state,
+                'consultor_id'=> $consultorId,
             ];
         }
 
         // ── Fase 2: insertar todo en una sola transacción ─────────────────
-        // Si falla cualquier INSERT, se revierten todos los de esta importación
         $importados = 0;
         DB::transaction(function () use ($filasValidas, &$importados) {
             foreach ($filasValidas as $fila) {
-                School::create($fila);
+                $consultorId = $fila['consultor_id'];
+                unset($fila['consultor_id']);
+
+                $school = School::create($fila);
+
+                if ($consultorId) {
+                    \App\Models\SchoolConsultant::create([
+                        'school_id'     => $school->id,
+                        'consultant_id' => $consultorId,
+                        'role'          => 'digital',
+                    ]);
+                }
                 $importados++;
             }
         });
@@ -428,32 +457,38 @@ foreach ($roles as $role => $consultantId) {
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Colegios');
 
-        foreach (['A' => 'Nombre del Colegio', 'B' => 'Nexus ID', 'C' => 'Status', 'D' => 'Estado'] as $col => $header) {
+        foreach ([
+            'A' => 'Nombre del Colegio',
+            'B' => 'Nexus ID',
+            'C' => 'Status',
+            'D' => 'Estado',
+            'E' => 'Consultor Digital',
+        ] as $col => $header) {
             $sheet->setCellValue("{$col}1", $header);
         }
 
-        $sheet->getStyle('A1:D1')->applyFromArray([
+        $sheet->getStyle('A1:E1')->applyFromArray([
             'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
         $ejemplos = [
-            ['Colegio Lomas Verdes',          'NX-001', 'Activo',   'Jalisco'],
-            ['Instituto Cultural del Sur',     'NX-002', 'Activo',   'Ciudad de México'],
-            ['Colegio San Felipe Neri',        'NX-003', 'Inactivo', 'Nuevo León'],
-            ['Centro Educativo Benito Juárez', '',       'Activo',   ''],
+            ['Colegio Lomas Verdes',          'MEXMP000001', 'Activo',   'Jalisco',           'Jose Ismael Flores Avila'],
+            ['Instituto Cultural del Sur',     'MEXMP000002', 'Activo',   'Ciudad de México',  ''],
+            ['Colegio San Felipe Neri',        'MEXMP000003', 'Inactivo', 'Nuevo León',        ''],
+            ['Centro Educativo Benito Juárez', '',            'Activo',   '',                  ''],
         ];
 
         foreach ($ejemplos as $ri => $fila) {
-            $sheet->setCellValue('A' . ($ri + 2), $fila[0]);
-            $sheet->setCellValue('B' . ($ri + 2), $fila[1]);
-            $sheet->setCellValue('C' . ($ri + 2), $fila[2]);
-            $sheet->setCellValue('D' . ($ri + 2), $fila[3]);
+            foreach ($fila as $ci => $val) {
+                $sheet->setCellValue(chr(65 + $ci) . ($ri + 2), $val);
+            }
         }
 
         $notas = [
-            '* Status válidos: Activo, Inactivo  |  Nexus ID y Estado son opcionales  |  No modifiques la fila de encabezados',
+            '* Consultor Digital: escribe el nombre EXACTO del consultor (ver hoja "Consultores"). Es opcional.',
+            '* Status válidos: Activo, Inactivo  |  Nexus ID y Estado son opcionales',
             '* Estados válidos: Aguascalientes, Baja California, Baja California Sur, Campeche, Chiapas, Chihuahua,',
             '  Ciudad de México (o CDMX), Coahuila, Colima, Durango, Guanajuato, Guerrero, Hidalgo, Jalisco,',
             '  Estado de México (o Edomex), Michoacán, Morelos, Nayarit, Nuevo León, Oaxaca, Puebla, Querétaro,',
@@ -463,7 +498,7 @@ foreach ($roles as $role => $consultantId) {
         foreach ($notas as $ni => $nota) {
             $fila = 7 + $ni;
             $sheet->setCellValue("A{$fila}", $nota);
-            $sheet->mergeCells("A{$fila}:D{$fila}");
+            $sheet->mergeCells("A{$fila}:E{$fila}");
             $sheet->getStyle("A{$fila}")->applyFromArray([
                 'font' => ['italic' => true, 'color' => ['rgb' => '888888']],
             ]);
@@ -473,6 +508,51 @@ foreach ($roles as $role => $consultantId) {
         $sheet->getColumnDimension('B')->setWidth(16);
         $sheet->getColumnDimension('C')->setWidth(14);
         $sheet->getColumnDimension('D')->setWidth(22);
+        $sheet->getColumnDimension('E')->setWidth(30);
+
+        // ── Hoja auxiliar: Consultores disponibles ────────────────────────
+        $wsConsultores = $spreadsheet->createSheet(1);
+        $wsConsultores->setTitle('Consultores');
+
+        $wsConsultores->setCellValue('A1', 'Consultores Digitales disponibles');
+        $wsConsultores->mergeCells('A1:C1');
+        $wsConsultores->getStyle('A1')->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 12],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $wsConsultores->getRowDimension(1)->setRowHeight(22);
+
+        foreach (['A' => 'Nombre (usar tal cual)', 'B' => 'Email', 'C' => 'Rol'] as $col => $h) {
+            $wsConsultores->setCellValue("{$col}2", $h);
+        }
+        $wsConsultores->getStyle('A2:C2')->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFEFEF']],
+        ]);
+
+        $consultoresDigitales = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
+            ->with('user')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($consultoresDigitales as $i => $c) {
+            $r = $i + 3;
+            $wsConsultores->setCellValue("A{$r}", $c->user->name);
+            $wsConsultores->setCellValue("B{$r}", $c->user->email);
+            $wsConsultores->setCellValue("C{$r}", 'Consultor Digital');
+            if ($i % 2) {
+                $wsConsultores->getStyle("A{$r}:C{$r}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F9F9F9']],
+                ]);
+            }
+        }
+
+        $wsConsultores->getColumnDimension('A')->setWidth(32);
+        $wsConsultores->getColumnDimension('B')->setWidth(34);
+        $wsConsultores->getColumnDimension('C')->setWidth(22);
+
+        $spreadsheet->setActiveSheetIndex(0);
 
         $tempFile = tempnam(sys_get_temp_dir(), 'plantilla_colegios_');
 

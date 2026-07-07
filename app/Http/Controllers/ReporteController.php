@@ -344,6 +344,98 @@ class ReporteController extends Controller
 
         $this->setWidths($ws4, [22,22,30,32,20,14,36,10,22,22]);
 
+        // ── HOJA 5: COLEGIOS ENTREGADOS ──────────────────────────────────
+        $entregados = School::with([
+            'schoolConsultants.consultant.user',
+            'schoolLevels.level',
+            'schoolLevels.processes',
+            'students',
+            'meeAdmins',
+        ])->whereHas('schoolLevels.processes')
+          ->whereDoesntHave('schoolLevels', fn($q) =>
+              $q->whereHas('processes', fn($q2) => $q2->where('status', '!=', 'done'))
+          )
+          ->orderBy('name')
+          ->get();
+
+        $ws5 = $spreadsheet->createSheet(4);
+        $ws5->setTitle('Colegios Entregados');
+
+        $this->sheetTitle($ws5, "MacmillanSI — Colegios Entregados ({$entregados->count()})", '16A34A', 10, $generado);
+
+        $headers5 = ['Nombre', 'Estado', 'Nexus ID', 'Consultor Digital', 'Consultor ECA',
+                     'Consultor ELT', 'Rep. Ventas', 'Niveles', 'Alumnos SI', 'Admin MEE'];
+        $this->writeHeaders($ws5, 4, $headers5, '16A34A');
+
+        $row = 5;
+        foreach ($entregados as $i => $s) {
+            $cons    = $s->schoolConsultants;
+            $digital = $cons->where('role','digital')->first()?->consultant->user->name ?? '—';
+            $eca     = $cons->where('role','eca')    ->first()?->consultant->user->name ?? '—';
+            $elt     = $cons->where('role','elt')    ->first()?->consultant->user->name ?? '—';
+            $ventas  = $cons->where('role','ventas') ->first()?->consultant->user->name ?? '—';
+            $niveles = $s->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
+            $meeAdmin = $s->meeAdmins->first()?->username ?? '—';
+
+            $ws5->fromArray([
+                $s->name, $s->state ?? $s->city ?? '—', $s->nexus_id ?? '—',
+                $digital, $eca, $elt, $ventas, $niveles,
+                $s->students->count(), $meeAdmin,
+            ], null, "A{$row}");
+
+            if ($i % 2) $this->stripeRow($ws5, $row, 10);
+            $row++;
+        }
+
+        $this->setWidths($ws5, [38,22,16,26,26,26,26,30,12,24]);
+
+        // ── HOJA 6: PERSONALIZACIÓN COLEGIO ──────────────────────────────
+        $personalizados = School::with([
+            'schoolConsultants.consultant.user',
+            'schoolLevels.level',
+            'schoolLevels.processes',
+            'students',
+            'meeAdmins',
+        ])->where('custom_passwords', true)
+          ->orderBy('name')
+          ->get();
+
+        $ws6 = $spreadsheet->createSheet(5);
+        $ws6->setTitle('Personalización Colegio');
+
+        $this->sheetTitle($ws6, "MacmillanSI — Personalización Colegio ({$personalizados->count()})", '0891B2', 10, $generado);
+
+        $headers6 = ['Nombre', 'Estado', 'Nexus ID', 'Estatus', 'Consultor Digital',
+                     'Consultor ECA', 'Consultor ELT', 'Niveles', 'Progreso %', 'Alumnos SI'];
+        $this->writeHeaders($ws6, 4, $headers6, '0891B2');
+
+        $row = 5;
+        foreach ($personalizados as $i => $s) {
+            $cons    = $s->schoolConsultants;
+            $digital = $cons->where('role','digital')->first()?->consultant->user->name ?? '—';
+            $eca     = $cons->where('role','eca')    ->first()?->consultant->user->name ?? '—';
+            $elt     = $cons->where('role','elt')    ->first()?->consultant->user->name ?? '—';
+            $niveles = $s->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
+
+            $totalP = 0; $doneP = 0;
+            foreach ($s->schoolLevels as $sl) {
+                $totalP += $sl->processes->count();
+                $doneP  += $sl->processes->where('status','done')->count();
+            }
+            $pct = $totalP > 0 ? round(($doneP / $totalP) * 100) . '%' : '0%';
+
+            $ws6->fromArray([
+                $s->name, $s->state ?? $s->city ?? '—', $s->nexus_id ?? '—',
+                ucfirst($s->status), $digital, $eca, $elt,
+                $niveles, $pct, $s->students->count(),
+            ], null, "A{$row}");
+
+            if ($i % 2) $this->stripeRow($ws6, $row, 10);
+            $row++;
+        }
+
+        $this->setWidths($ws6, [38,22,16,14,26,26,26,30,12,12]);
+
         // ── Exportar ─────────────────────────────────────────────────────
         $spreadsheet->setActiveSheetIndex(0);
 

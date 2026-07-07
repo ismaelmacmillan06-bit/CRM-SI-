@@ -34,30 +34,6 @@ function statRow(string $color, string $label, $value): string {
         </div>
     </div>
 
-    {{-- Colegios Entregados --}}
-    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
-                border-left:4px solid #16a34a; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:8px">Colegios Entregados</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
-                    color:var(--text); line-height:1">{{ number_format($colegiosEntregados) }}</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
-            Progreso general al 100%
-        </div>
-    </div>
-
-    {{-- Usuarios y contraseñas personalizadas --}}
-    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
-                border-left:4px solid #0891b2; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:8px">Contraseñas personalizadas</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
-                    color:var(--text); line-height:1">{{ number_format($colegiosCustomPasswords) }}</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
-            Colegios con este servicio
-        </div>
-    </div>
-
     {{-- Directores --}}
     <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
                 border-left:4px solid #8b5cf6; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
@@ -128,6 +104,30 @@ function statRow(string $color, string $label, $value): string {
         <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
                     color:var(--text); line-height:1">{{ number_format($totalAdminsMee) }}</div>
         <div style="font-size:11px; color:var(--text-muted); margin-top:12px">Administradores MEE registrados</div>
+    </div>
+
+    {{-- Colegios Entregados --}}
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #16a34a; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Colegios Entregados</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($colegiosEntregados) }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
+            Progreso general al 100%
+        </div>
+    </div>
+
+    {{-- Contraseñas personalizadas --}}
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #0891b2; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Personalización Colegio</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                    color:var(--text); line-height:1">{{ number_format($colegiosCustomPasswords) }}</div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
+            Usuarios y contraseñas personalizadas
+        </div>
     </div>
 
     {{-- Resurtidos --}}

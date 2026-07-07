@@ -272,11 +272,12 @@ foreach ($roles as $role => $consultantId) {
         $nexusEnArchivo   = [];
         $nombresEnArchivo = [];
 
-        // Pre-cargar consultores digitales (nombre → id) para evitar N+1
+        // Pre-cargar consultores digitales (nombre normalizado → consultant)
+        // Se normalizan acentos para que "Jose" y "José" coincidan
         $consultoresMap = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
             ->with('user')
             ->get()
-            ->keyBy(fn($c) => mb_strtolower(trim($c->user->name)));
+            ->keyBy(fn($c) => $this->normalizarTexto($c->user->name));
 
         // ── Fase 1: validar todas las filas sin tocar la BD ──────────────
         foreach ($sheet->getRowIterator(2) as $row) {
@@ -346,10 +347,10 @@ foreach ($roles as $role => $consultantId) {
                 $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (importado sin estado).";
             }
 
-            // Consultor Digital: si se indicó, debe existir exactamente con ese nombre
+            // Consultor Digital: si se indicó, debe existir (búsqueda sin acentos)
             $consultorId = null;
             if ($consultorNombre !== '') {
-                $consultorKey = mb_strtolower($consultorNombre);
+                $consultorKey = $this->normalizarTexto($consultorNombre);
                 if (!isset($consultoresMap[$consultorKey])) {
                     $omitidos[] = "Fila {$ri}: consultor digital '{$consultorNombre}' no encontrado. Verifica el nombre exacto.";
                     continue;
@@ -392,6 +393,17 @@ foreach ($roles as $role => $consultantId) {
         }
 
         return redirect()->route('schools.index')->with('success', $msg);
+    }
+
+    private function normalizarTexto(string $s): string
+    {
+        return mb_strtolower(
+            str_replace(
+                ['á','é','í','ó','ú','ü','ñ','Á','É','Í','Ó','Ú','Ü','Ñ'],
+                ['a','e','i','o','u','u','n','a','e','i','o','u','u','n'],
+                trim($s)
+            )
+        );
     }
 
     private function normalizarEstado(string $raw): ?string
@@ -474,10 +486,10 @@ foreach ($roles as $role => $consultantId) {
         ]);
 
         $ejemplos = [
-            ['Colegio Lomas Verdes',          'MEXMP000001', 'Activo',   'Jalisco',           'Jose Ismael Flores Avila'],
-            ['Instituto Cultural del Sur',     'MEXMP000002', 'Activo',   'Ciudad de México',  ''],
-            ['Colegio San Felipe Neri',        'MEXMP000003', 'Inactivo', 'Nuevo León',        ''],
-            ['Centro Educativo Benito Juárez', '',            'Activo',   '',                  ''],
+            ['Colegio Lomas Verdes',          'MEXMP000001', 'Activo',   'Jalisco',          ''],
+            ['Instituto Cultural del Sur',     'MEXMP000002', 'Activo',   'Ciudad de México', ''],
+            ['Colegio San Felipe Neri',        'MEXMP000003', 'Inactivo', 'Nuevo León',       ''],
+            ['Centro Educativo Benito Juárez', '',            'Activo',   '',                 ''],
         ];
 
         foreach ($ejemplos as $ri => $fila) {

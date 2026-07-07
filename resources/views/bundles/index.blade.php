@@ -84,17 +84,19 @@
                 <td style="font-size:13px; color:var(--text-muted)">{{ $bundle->serie }}</td>
                 <td><strong style="font-size:13px">{{ $bundle->name }}</strong></td>
                 <td>
-                    @if($bundle->type == 'ELT')
-                        <span class="badge badge-info">ELT</span>
-                    @elseif($bundle->type == 'Imagina')
-                        <span class="badge badge-success">Imagina</span>
-                    @elseif($bundle->type == 'Wikids')
-                        <span class="badge badge-warning">Wikids</span>
-                    @elseif($bundle->type == 'Plan Lector')
-                        <span class="badge badge-gray">Plan Lector</span>
-                    @else
-                        <span class="badge badge-danger">{{ $bundle->type }}</span>
-                    @endif
+                    @php
+                        $badgeMap = [
+                            'ELT'           => 'badge-info',
+                            'Imagina'       => 'badge-success',
+                            'Wikids'        => 'badge-warning',
+                            'Plan Lector'   => 'badge-gray',
+                            'Pienso Contigo'=> 'badge-gray',
+                            'Complemento'   => 'badge-gray',
+                            'Entrelineas'   => 'badge-success',
+                            'Palabrario'    => 'badge-warning',
+                        ];
+                    @endphp
+                    <span class="badge {{ $badgeMap[$bundle->type] ?? 'badge-danger' }}">{{ $bundle->type }}</span>
                 </td>
                 <td>{{ $bundle->level ?? '—' }}</td>
                 <td>{{ $bundle->grade ?? '—' }}</td>
@@ -157,7 +159,7 @@
             </div>
 
             <div style="background:#fffbeb; border:1px solid #f59e0b; border-radius:8px; padding:12px; margin-bottom:20px; font-size:13px; color:#92400e">
-                <strong>Tipos válidos:</strong> ELT · Plan Lector · Imagina · Wikids · Pienso Contigo · Complemento<br>
+                <strong>Tipos válidos:</strong> ELT · Plan Lector · Imagina · Wikids · Pienso Contigo · Complemento · Entrelineas · Palabrario<br>
                 <strong>Roles válidos:</strong> Alumno · Docente
             </div>
 

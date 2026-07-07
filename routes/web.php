@@ -98,6 +98,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
         ->name('api.bundles.by.series');
      
      // Bundles catálogo
+     Route::post('bundles/importar',  [BundleController::class, 'importar']) ->name('bundles.importar');
+     Route::get('bundles/plantilla',  [BundleController::class, 'plantilla'])->name('bundles.plantilla');
      Route::resource('bundles', BundleController::class)->only(['index', 'create', 'store', 'destroy']);
 
      // Reportes

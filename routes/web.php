@@ -120,6 +120,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('herramientas-si/altas-bundles',          [HerramientasController::class, 'altasBundles'])   ->name('herramientas.altas-bundles');
      Route::get('herramientas-si/accesos',                [HerramientasController::class, 'accesos'])        ->name('herramientas.accesos');
      Route::get('herramientas-si/consulta-accesos',       [HerramientasController::class, 'consultaAccesos'])->name('herramientas.consulta-accesos');
+     Route::get('herramientas-si/borrar-usuarios',        [HerramientasController::class, 'borrarUsuarios'])  ->name('herramientas.borrar-usuarios');
+     Route::get('herramientas-si/cambio-usuario',         [HerramientasController::class, 'cambioUsuario'])   ->name('herramientas.cambio-usuario');
+     Route::get('herramientas-si/cambio-password',        [HerramientasController::class, 'cambioPassword'])  ->name('herramientas.cambio-password');
+     Route::get('herramientas-si/eliminacion-bundles',    [HerramientasController::class, 'eliminacionBundles'])->name('herramientas.eliminacion-bundles');
      Route::post('herramientas-si/archivos',              [HerramientasController::class, 'store'])          ->name('herramientas.archivos.store');
      Route::post('herramientas-si/archivos/{archivoSI}',  [HerramientasController::class, 'update'])         ->name('herramientas.archivos.update');
      Route::delete('herramientas-si/archivos/{archivoSI}',[HerramientasController::class, 'destroy'])        ->name('herramientas.archivos.destroy');

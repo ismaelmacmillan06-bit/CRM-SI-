@@ -31,6 +31,26 @@ class HerramientasController extends Controller
         return $this->servirHerramienta('consulta-accesos.html');
     }
 
+    public function borrarUsuarios()
+    {
+        return $this->servirHerramienta('borrar-usuarios.html');
+    }
+
+    public function cambioUsuario()
+    {
+        return $this->servirHerramienta('cambio-usuario.html');
+    }
+
+    public function cambioPassword()
+    {
+        return $this->servirHerramienta('cambio-password.html');
+    }
+
+    public function eliminacionBundles()
+    {
+        return $this->servirHerramienta('eliminacion-bundles.html');
+    }
+
     private function servirHerramienta(string $archivo)
     {
         $base = realpath(resource_path('tools'));

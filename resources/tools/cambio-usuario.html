@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cambio de Nombre de Usuario · MEE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eaeef5; --surface:#ffffff; --surface-2:#f6f8fc;
+    --ink:#0e1726; --muted:#5b6680; --faint:#8b97ad;
+    --border:#e3e8f1; --border-strong:#cbd4e3;
+    --primary:#7c3aed; --primary-d:#6d28d9; --primary-t:#f3eeff;
+    --ok:#15a34a; --ok-bg:#e6f7ee;
+    --danger:#c0322b;
+    --warn:#b45309; --warn-bg:#fffbeb;
+    --shadow-sm:0 1px 2px rgba(14,23,38,.06);
+    --shadow:0 1px 2px rgba(14,23,38,.05),0 10px 28px rgba(14,23,38,.07);
+    --shadow-lg:0 24px 60px rgba(14,23,38,.22);
+    --radius:15px; --header-h:74px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(1100px 460px at 88% -8%, #ede8fb 0%, transparent 60%),
+      radial-gradient(900px 420px at 5% 0%, #e8e6f9 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); -webkit-font-smoothing:antialiased; padding-bottom:104px;
+  }
+
+  /* ---------- Header ---------- */
+  header.app{position:sticky;top:0;z-index:40;
+    background:linear-gradient(125deg,#120726 0%,#3b1370 55%,#5b21b6 100%);
+    color:#fff;box-shadow:0 10px 30px rgba(18,7,38,.28)}
+  .head-inner{max-width:1000px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#a78bfa,#7c3aed);display:grid;place-items:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(124,58,237,.4)}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand .kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#c4b5fd;font-weight:600}
+  .brand h1{font-family:"Space Grotesk",sans-serif;font-size:20px;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#ddd6fe;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 11px;border-radius:999px}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:#a78bfa}
+
+  /* ---------- Layout ---------- */
+  .layout{max-width:1000px;margin:0 auto;padding:24px 24px}
+
+  .btn{border:none;border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;text-decoration:none;
+    transition:transform .05s,background .15s,box-shadow .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);box-shadow:var(--shadow-sm)}
+  .btn-ghost:hover{background:var(--surface-2);border-color:var(--faint)}
+  .btn-primary{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;box-shadow:0 6px 16px rgba(124,58,237,.32)}
+  .btn-primary:hover{box-shadow:0 8px 22px rgba(124,58,237,.44)}
+  .btn-primary:disabled{background:#c4b5fd;box-shadow:none;cursor:not-allowed}
+  .btn-lg{padding:13px 22px;font-size:14.5px;border-radius:13px}
+
+  /* ---------- Cards ---------- */
+  .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px 24px;box-shadow:var(--shadow-sm);margin-bottom:18px}
+  .section-title{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;
+    display:flex;align-items:center;gap:8px}
+
+  /* ---------- Format preview ---------- */
+  .format-preview{
+    display:inline-grid;grid-template-columns:1fr 1fr;
+    background:var(--surface-2);border:1px solid var(--border-strong);
+    border-radius:10px;overflow:hidden;margin-bottom:14px;font-variant-numeric:tabular-nums;min-width:340px}
+  .col-header{background:#ede8fb;color:var(--primary-d);font-weight:700;font-size:13px;
+    padding:8px 18px;border-bottom:2px solid var(--border-strong);letter-spacing:.02em}
+  .col-header.b{border-left:1px solid var(--border-strong)}
+  .col-row{padding:7px 18px;font-size:12.5px;color:var(--ink);border-bottom:1px solid var(--border);font-family:"Space Grotesk",monospace}
+  .col-row:last-child{border-bottom:none}
+  .col-row.b{border-left:1px solid var(--border-strong);color:var(--primary-d);font-weight:600}
+  .col-row.muted{color:var(--faint);font-style:italic}
+  .col-row.b.muted{color:var(--faint)}
+  .format-desc{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
+  .format-desc b{color:var(--ink)}
+
+  /* ---------- Two-column input ---------- */
+  .cols-header{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+  .col-label{font-size:12.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px}
+  .col-label .badge{display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;color:#fff}
+  .col-label .badge.a{background:#64748b}
+  .col-label .badge.b{background:var(--primary)}
+  .cols-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;position:relative}
+  .cols-divider{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);transform:translateX(-50%);pointer-events:none}
+  .cols-divider::before{content:"→";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:var(--surface);color:var(--faint);font-size:18px;padding:4px 6px;border-radius:8px;
+    border:1px solid var(--border)}
+  textarea{width:100%;padding:13px 14px;border:1px solid var(--border-strong);border-radius:12px;
+    font-size:13px;font-family:"Space Grotesk",monospace,"Space Grotesk",sans-serif;color:var(--ink);
+    resize:vertical;min-height:220px;line-height:1.7;transition:border-color .15s,outline .15s;background:var(--surface-2)}
+  textarea:focus{outline:2px solid var(--primary);outline-offset:-1px;border-color:var(--primary);background:#fff}
+  textarea::placeholder{color:var(--faint)}
+  textarea.err{outline:2px solid var(--danger);border-color:var(--danger)}
+
+  /* ---------- Status bar ---------- */
+  .status-bar{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+  .pair-count{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;
+    background:var(--primary-t);color:var(--primary-d);padding:4px 10px;border-radius:999px}
+  .pair-count.ok{background:var(--ok-bg);color:var(--ok)}
+  .mismatch-warn{display:none;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+    color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:5px 10px}
+  .mismatch-warn.show{display:flex}
+
+  /* ---------- Info box ---------- */
+  .info-box{background:var(--warn-bg);border:1px solid #fde68a;border-radius:10px;padding:12px 16px;
+    font-size:13px;color:var(--warn);line-height:1.55;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px}
+  .info-box .ico{flex:none;margin-top:1px}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+  /* ---------- Footer ---------- */
+  .footer-bar{position:fixed;left:0;right:0;bottom:0;z-index:35;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(10px);border-top:1px solid var(--border-strong);box-shadow:0 -8px 26px rgba(14,23,38,.09)}
+  .footer-inner{max-width:1000px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .tally{display:flex;gap:14px;flex-wrap:wrap}
+  .tally .box{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:8px 16px;min-width:96px}
+  .tally .n{font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:700;line-height:1;color:var(--ink)}
+  .tally .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;margin-top:4px}
+  .footer-actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* ---------- Modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(11,18,38,.58);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+  .overlay.show{display:flex;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border-radius:20px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;
+    box-shadow:var(--shadow-lg);overflow:hidden;animation:pop .2s cubic-bezier(.2,.9,.3,1.2)}
+  .modal.wide{max-width:900px}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  .modal-head{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-head h2{margin:0;font-size:17px;font-family:"Space Grotesk",sans-serif;font-weight:600}
+  .modal-head .x{border:none;background:var(--surface-2);width:34px;height:34px;border-radius:10px;font-size:18px;cursor:pointer;color:var(--muted)}
+  .modal-head .x:hover{background:#eef1f7;color:var(--ink)}
+  .modal-body{padding:22px;overflow:auto}
+  .modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+  .done-head{text-align:center;padding:6px 4px 2px}
+  .success-ico{width:66px;height:66px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;margin:0 auto 14px;
+    color:var(--ok);animation:popcheck .4s cubic-bezier(.2,.9,.3,1.4)}
+  @keyframes popcheck{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .done-head h2{margin:0 0 7px;font-family:"Space Grotesk",sans-serif;font-size:21px}
+  .done-head .file{font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
+    border-radius:9px;padding:6px 12px;display:inline-block;font-weight:600}
+  .done-sub{font-size:13.5px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5}
+  .contacts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:600px){.contacts{grid-template-columns:1fr}}
+  .contact{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .c-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .c-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;
+    font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;flex:none}
+  .c-name{font-weight:700;font-size:14px;color:var(--ink)}
+  .c-role{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .c-email{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:9px;
+    padding:8px 10px;margin-bottom:10px;overflow:hidden}
+  .c-email span{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-email button{flex:none;border:none;background:transparent;cursor:pointer;color:var(--faint);padding:2px;border-radius:6px;line-height:0}
+  .c-email button:hover{background:var(--border);color:var(--ink)}
+  .c-tpl{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;padding:9px 10px;
+    background:#fff;border:1px solid var(--border);border-radius:9px}
+  .c-tpl b{color:var(--ink)}
+  .c-actions{display:flex;gap:8px}
+  .c-actions .btn{flex:1;font-size:12.5px;padding:9px 10px}
+  .done-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px;
+    background:var(--warn-bg);border:1px solid #fde68a;border-radius:9px;padding:10px 14px}
+  .done-note b{color:var(--ink)}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:#0e1726;color:#fff;padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:500;
+    opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:99;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#c0322b}
+
+  @media(max-width:700px){
+    .cols-wrap{grid-template-columns:1fr}
+    .cols-header{grid-template-columns:1fr}
+    .cols-divider{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="head-inner">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        <path d="M21 21v-2a4 4 0 0 0-3-3.87"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <span class="kicker">Herramientas SI · MEE</span>
+      <h1>Cambio de Nombre de Usuario</h1>
+    </div>
+    <div class="chip"><span class="dot"></span>Actualización masiva de usuarios MEE</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="info-box">
+    <span class="ico">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </span>
+    <span>Ingresa el usuario actual en la columna izquierda y el nuevo nombre de usuario en la derecha, <b>uno por línea</b>. Ambas columnas deben tener el mismo número de filas. Descarga el archivo y envíalo al equipo MEE para procesar los cambios.</span>
+  </div>
+
+  <!-- Format preview -->
+  <div class="section-card">
+    <div class="section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Formato del archivo
+    </div>
+    <div class="format-preview">
+      <div class="col-header">Correo</div>
+      <div class="col-header b">UsuarioNuevo</div>
+      <div class="col-row">aromero347014</div>
+      <div class="col-row b">aromero3470141</div>
+      <div class="col-row">amadi499</div>
+      <div class="col-row b">amadi4999</div>
+      <div class="col-row muted">...</div>
+      <div class="col-row b muted">...</div>
+    </div>
+    <p class="format-desc">Columna <b>Correo</b>: usuario actual en MEE. Columna <b>UsuarioNuevo</b>: el nombre de usuario al que se cambiará. Cada fila es un cambio independiente.</p>
+  </div>
+
+  <!-- Two-column input -->
+  <div class="section-card">
+    <div class="cols-header">
+      <div class="col-label">
+        <span class="badge a">A</span>
+        Usuario actual <span style="font-size:11px;font-weight:400;color:var(--muted)">(Correo)</span>
+      </div>
+      <div class="col-label">
+        <span class="badge b">B</span>
+        Usuario nuevo <span style="font-size:11px;font-weight:400;color:var(--muted)">(UsuarioNuevo)</span>
+      </div>
+    </div>
+    <div class="cols-wrap">
+      <div class="cols-divider"></div>
+      <textarea id="colA" placeholder="aromero347014&#10;amadi499&#10;mcornejocastañeda139&#10;..."></textarea>
+      <textarea id="colB" placeholder="aromero3470141&#10;amadi4999&#10;mcornejocastañeda1399&#10;..."></textarea>
+    </div>
+    <div class="status-bar">
+      <span class="pair-count" id="pairCount">0 pares</span>
+      <span class="mismatch-warn" id="mismatchWarn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span id="mismatchMsg"></span>
+      </span>
+    </div>
+    <div class="hint">Pega los usuarios desde Excel, un usuario por línea. Las filas se emparejan por posición.</div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+  <div class="footer-inner">
+    <div class="tally">
+      <div class="box">
+        <div class="n" id="tallyN">0</div>
+        <div class="l">Cambios</div>
+      </div>
+    </div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnLimpiar">Limpiar</button>
+      <button class="btn btn-ghost" id="btnPlantilla" title="Descargar Excel en blanco">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Plantilla en blanco
+      </button>
+      <button class="btn btn-primary btn-lg" id="btnDescargar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar con cambios
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: éxito / compartir -->
+<div class="overlay" id="ovDone">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Comparte tu formato</h2><button class="x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="done-head">
+        <div class="success-ico">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h2>¡Formato generado!</h2>
+        <div class="file" id="doneFile">archivo.xlsx</div>
+      </div>
+      <div class="done-sub">Envía el archivo descargado a uno de nuestros contactos. Copia la plantilla y pégala en tu correo.</div>
+      <div class="contacts" id="contactCards"></div>
+      <div class="done-note">📎 Recuerda adjuntar el archivo <b id="noteFile"></b> antes de enviar el correo.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="doneAgain">Descargar de nuevo</button>
+      <button class="btn btn-primary" data-close>Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONTACTS = [
+  {first:'Ismael', name:'Ismael Avila', role:'Macmillan Education', email:'ismael.flores.contractor@macmillaneducation.com', color:'linear-gradient(140deg,#6366f1,#4f46e5)', initials:'IA'},
+  {first:'Rodrigo', name:'Rodrigo Bárcenas', role:'Macmillan Education', email:'rodrigo.barcenas@macmillaneducation.com', color:'linear-gradient(140deg,#3b82f6,#1a56e8)', initials:'RB'}
+];
+
+let lastFileName = '';
+
+const $ = s => document.querySelector(s);
+const colA       = $('#colA');
+const colB       = $('#colB');
+const tallyEl    = $('#tallyN');
+const pairEl     = $('#pairCount');
+const warnEl     = $('#mismatchWarn');
+const warnMsgEl  = $('#mismatchMsg');
+
+function parseCol(ta) {
+  return ta.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function updateTally() {
+  const a = parseCol(colA);
+  const b = parseCol(colB);
+  const n = Math.max(a.length, b.length);
+  const pairs = Math.min(a.length, b.length);
+  tallyEl.textContent = pairs;
+  pairEl.textContent  = `${pairs} par${pairs !== 1 ? 'es' : ''}`;
+  pairEl.classList.toggle('ok', pairs > 0 && a.length === b.length);
+
+  const mismatch = a.length !== b.length && n > 0;
+  warnEl.classList.toggle('show', mismatch);
+  if (mismatch) {
+    const diff = Math.abs(a.length - b.length);
+    warnMsgEl.textContent = a.length > b.length
+      ? `Faltan ${diff} usuario${diff > 1 ? 's' : ''} nuevo${diff > 1 ? 's' : ''}`
+      : `Faltan ${diff} usuario${diff > 1 ? 's' : ''} actual${diff > 1 ? 'es' : ''}`;
+  }
+
+  colA.classList.toggle('err', mismatch && a.length > b.length);
+  colB.classList.toggle('err', mismatch && b.length > a.length);
+}
+
+colA.addEventListener('input', updateTally);
+colB.addEventListener('input', updateTally);
+
+$('#btnLimpiar').addEventListener('click', () => {
+  colA.value = '';
+  colB.value = '';
+  updateTally();
+  toast('Lista limpiada');
+});
+
+function buildAndDownload() {
+  const a = parseCol(colA);
+  const b = parseCol(colB);
+  const maxLen = Math.max(a.length, b.length, 1);
+  const rows = [['Correo', 'UsuarioNuevo']];
+  for (let i = 0; i < maxLen; i++) {
+    rows.push([a[i] || '', b[i] || '']);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch: 36}, {wch: 36}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  lastFileName = `cambioDeUsuario_${stamp}.xlsx`;
+  XLSX.writeFile(wb, lastFileName);
+}
+
+$('#btnPlantilla').addEventListener('click', () => {
+  const ws = XLSX.utils.aoa_to_sheet([['Correo', 'UsuarioNuevo']]);
+  ws['!cols'] = [{wch: 36}, {wch: 36}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+  XLSX.writeFile(wb, 'cambioDeUsuario.xlsx');
+  toast('Plantilla en blanco descargada');
+});
+
+$('#btnDescargar').addEventListener('click', descargar);
+$('#doneAgain').addEventListener('click', buildAndDownload);
+
+function descargar() {
+  const a = parseCol(colA);
+  const b = parseCol(colB);
+  if (a.length === 0 && b.length === 0) {
+    buildAndDownload();
+    $('#doneFile').textContent = lastFileName;
+    $('#noteFile').textContent = lastFileName;
+    buildContactCards();
+    openOv('#ovDone');
+    return;
+  }
+  if (a.length !== b.length) {
+    toast('Ambas columnas deben tener el mismo número de usuarios', 'err');
+    return;
+  }
+  buildAndDownload();
+  $('#doneFile').textContent = lastFileName;
+  $('#noteFile').textContent = lastFileName;
+  buildContactCards();
+  openOv('#ovDone');
+}
+
+function emailTemplate(first) {
+  return `Hola ${first} te comparto mi formato de CAMBIO DE NOMBRE DE USUARIO quedo atento a cualquier duda u observacion, saludos.`;
+}
+
+function buildContactCards() {
+  const box = $('#contactCards');
+  box.innerHTML = CONTACTS.map((c, i) => {
+    const tpl    = emailTemplate(c.first);
+    const mailto = `mailto:${c.email}?subject=${encodeURIComponent('Cambio de nombre de usuario')}&body=${encodeURIComponent(tpl)}`;
+    return `<div class="contact">
+      <div class="c-top">
+        <div class="c-av" style="background:${c.color}">${c.initials}</div>
+        <div><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc(c.role)}</div></div>
+      </div>
+      <div class="c-email">
+        <span title="${esc(c.email)}">${esc(c.email)}</span>
+        <button data-copy="${esc(c.email)}" data-msg="Correo copiado" title="Copiar correo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+      <div class="c-tpl" id="tpl${i}">Hola <b>${esc(c.first)}</b> te comparto mi formato de <b>CAMBIO DE NOMBRE DE USUARIO</b> quedo atento a cualquier duda u observacion, saludos.</div>
+      <div class="c-actions">
+        <button class="btn btn-ghost" data-copy="${esc(tpl)}" data-msg="Plantilla copiada">Copiar plantilla</button>
+        <a class="btn btn-primary" href="${mailto}">Redactar correo</a>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-copy]').forEach(b =>
+    b.addEventListener('click', () => copyText(b.dataset.copy, b.dataset.msg))
+  );
+}
+
+function openOv(sel)  { document.querySelector(sel).classList.add('show'); }
+function closeOv(sel) { document.querySelector(sel).classList.remove('show'); }
+
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.closest('[data-close]')) {
+    e.target.closest('.overlay').classList.remove('show');
+  }
+  if (e.target.matches('.overlay')) e.target.classList.remove('show');
+});
+
+function copyText(text, msg) {
+  const ok = () => toast(msg || 'Copiado');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(ok).catch(legacy);
+  } else legacy();
+  function legacy() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); ok(); } catch(e) { toast('No se pudo copiar', 'err'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function esc(s) {
+  return (s + '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+let toastT;
+function toast(msg, type) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'err' ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = 'toast' + (type === 'err' ? ' err' : ''), 2800);
+}
+
+updateTally();
+</script>
+</body>
+</html>

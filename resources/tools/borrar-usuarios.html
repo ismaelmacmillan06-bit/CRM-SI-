@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Borrado de Usuarios · MEE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eaeef5; --surface:#ffffff; --surface-2:#f6f8fc;
+    --ink:#0e1726; --muted:#5b6680; --faint:#8b97ad;
+    --border:#e3e8f1; --border-strong:#cbd4e3;
+    --primary:#1a56e8; --primary-d:#1342c0; --primary-t:#e9f0ff;
+    --indigo:#4f46e5;
+    --danger:#c0322b; --danger-bg:#fef0f0; --ok:#15a34a; --ok-bg:#e6f7ee;
+    --warn:#b45309; --warn-bg:#fffbeb;
+    --shadow-sm:0 1px 2px rgba(14,23,38,.06);
+    --shadow:0 1px 2px rgba(14,23,38,.05),0 10px 28px rgba(14,23,38,.07);
+    --shadow-lg:0 24px 60px rgba(14,23,38,.22);
+    --radius:15px; --header-h:74px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(1100px 460px at 88% -8%, #fde8e8 0%, transparent 60%),
+      radial-gradient(900px 420px at 5% 0%, #f9e6e6 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); -webkit-font-smoothing:antialiased; padding-bottom:104px;
+  }
+
+  /* ---------- Header ---------- */
+  header.app{position:sticky;top:0;z-index:40;
+    background:linear-gradient(125deg,#1a0505 0%,#5c1010 55%,#8b1a1a 100%);
+    color:#fff;box-shadow:0 10px 30px rgba(51,12,12,.28)}
+  .head-inner{max-width:860px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#ef4444,#b91c1c);display:grid;place-items:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(239,68,68,.4)}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand .kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#f0a0a0;font-weight:600}
+  .brand h1{font-family:"Space Grotesk",sans-serif;font-size:20px;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#f0c0c0;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 11px;border-radius:999px}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:#f87171}
+
+  /* ---------- Layout ---------- */
+  .layout{max-width:860px;margin:0 auto;padding:24px 24px}
+
+  .btn{border:none;border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:inherit;text-decoration:none;
+    transition:transform .05s,background .15s,box-shadow .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);box-shadow:var(--shadow-sm)}
+  .btn-ghost:hover{background:var(--surface-2);border-color:var(--faint)}
+  .btn-primary{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;box-shadow:0 6px 16px rgba(239,68,68,.32)}
+  .btn-primary:hover{box-shadow:0 8px 22px rgba(239,68,68,.44)}
+  .btn-primary:disabled{background:#d4a0a0;box-shadow:none;cursor:not-allowed}
+  .btn-lg{padding:13px 22px;font-size:14.5px;border-radius:13px}
+
+  /* ---------- Cards ---------- */
+  .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px 24px;box-shadow:var(--shadow-sm);margin-bottom:18px}
+  .section-title{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:600;color:var(--ink);margin-bottom:14px;
+    display:flex;align-items:center;gap:8px}
+  .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .section-header .section-title{margin-bottom:0}
+
+  /* ---------- Format preview ---------- */
+  .format-preview{
+    display:inline-block;background:var(--surface-2);border:1px solid var(--border-strong);
+    border-radius:10px;overflow:hidden;min-width:260px;margin-bottom:14px;font-variant-numeric:tabular-nums}
+  .col-header{background:#e5edff;color:var(--primary-d);font-weight:700;font-size:13px;
+    padding:8px 18px;border-bottom:2px solid var(--border-strong);letter-spacing:.02em}
+  .col-row{padding:7px 18px;font-size:12.5px;color:var(--ink);border-bottom:1px solid var(--border);font-family:"Space Grotesk",sans-serif}
+  .col-row:last-child{border-bottom:none}
+  .col-row.muted{color:var(--faint);font-style:italic}
+  .format-desc{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
+  .format-desc b{color:var(--ink)}
+
+  /* ---------- Textarea ---------- */
+  .user-count{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;
+    background:var(--primary-t);color:var(--primary-d);padding:4px 10px;border-radius:999px}
+  .user-count.has-users{background:#fee2e2;color:#b91c1c}
+  textarea{width:100%;padding:13px 14px;border:1px solid var(--border-strong);border-radius:12px;
+    font-size:13.5px;font-family:"Space Grotesk",monospace,"Space Grotesk",sans-serif;color:var(--ink);
+    resize:vertical;min-height:200px;line-height:1.65;transition:border-color .15s;background:var(--surface-2)}
+  textarea:focus{outline:2px solid #ef4444;outline-offset:-1px;border-color:#ef4444;background:#fff}
+  textarea::placeholder{color:var(--faint)}
+  .hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+  /* ---------- Info box ---------- */
+  .info-box{background:var(--warn-bg);border:1px solid #fde68a;border-radius:10px;padding:12px 16px;
+    font-size:13px;color:var(--warn);line-height:1.55;display:flex;gap:10px;align-items:flex-start;margin-bottom:18px}
+  .info-box .ico{flex:none;margin-top:1px}
+
+  /* ---------- Footer ---------- */
+  .footer-bar{position:fixed;left:0;right:0;bottom:0;z-index:35;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(10px);border-top:1px solid var(--border-strong);box-shadow:0 -8px 26px rgba(14,23,38,.09)}
+  .footer-inner{max-width:860px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .tally{display:flex;gap:14px;flex-wrap:wrap}
+  .tally .box{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:8px 16px;min-width:96px}
+  .tally .n{font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:700;line-height:1;color:var(--ink)}
+  .tally .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600;margin-top:4px}
+  .footer-actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+
+  /* ---------- Modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(11,18,38,.58);z-index:60;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+  .overlay.show{display:flex;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border-radius:20px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;
+    box-shadow:var(--shadow-lg);overflow:hidden;animation:pop .2s cubic-bezier(.2,.9,.3,1.2)}
+  .modal.wide{max-width:900px}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  .modal-head{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-head h2{margin:0;font-size:17px;font-family:"Space Grotesk",sans-serif;font-weight:600}
+  .modal-head .x{border:none;background:var(--surface-2);width:34px;height:34px;border-radius:10px;font-size:18px;cursor:pointer;color:var(--muted)}
+  .modal-head .x:hover{background:#eef1f7;color:var(--ink)}
+  .modal-body{padding:22px;overflow:auto}
+  .modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+  /* success / share modal */
+  .done-head{text-align:center;padding:6px 4px 2px}
+  .success-ico{width:66px;height:66px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;margin:0 auto 14px;
+    color:var(--ok);animation:popcheck .4s cubic-bezier(.2,.9,.3,1.4)}
+  @keyframes popcheck{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .done-head h2{margin:0 0 7px;font-family:"Space Grotesk",sans-serif;font-size:21px}
+  .done-head .file{font-size:12.5px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
+    border-radius:9px;padding:6px 12px;display:inline-block;font-weight:600}
+  .done-sub{font-size:13.5px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5}
+  .contacts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:600px){.contacts{grid-template-columns:1fr}}
+  .contact{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .c-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .c-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;
+    font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;flex:none}
+  .c-name{font-weight:700;font-size:14px;color:var(--ink)}
+  .c-role{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .c-email{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);border-radius:9px;
+    padding:8px 10px;margin-bottom:10px;overflow:hidden}
+  .c-email span{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-email button{flex:none;border:none;background:transparent;cursor:pointer;color:var(--faint);padding:2px;border-radius:6px;line-height:0}
+  .c-email button:hover{background:var(--border);color:var(--ink)}
+  .c-tpl{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;padding:9px 10px;
+    background:#fff;border:1px solid var(--border);border-radius:9px}
+  .c-tpl b{color:var(--ink)}
+  .c-actions{display:flex;gap:8px}
+  .c-actions .btn{flex:1;font-size:12.5px;padding:9px 10px}
+  .done-note{font-size:12px;color:var(--muted);text-align:center;margin-top:16px;
+    background:var(--warn-bg);border:1px solid #fde68a;border-radius:9px;padding:10px 14px}
+  .done-note b{color:var(--ink)}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:#0e1726;color:#fff;padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:500;
+    opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:99;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#c0322b}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="head-inner">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/>
+        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <span class="kicker">Herramientas SI · MEE</span>
+      <h1>Borrado de Usuarios</h1>
+    </div>
+    <div class="chip"><span class="dot"></span>Baja masiva de cuentas MEE</div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <div class="info-box">
+    <span class="ico">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </span>
+    <span>Esta herramienta genera el archivo de usuarios a eliminar del colegio. Descarga la plantilla, <b>pega los usuarios en la columna A</b> (uno por fila) y envíala a los responsables de MEE para procesar la baja masiva.</span>
+  </div>
+
+  <!-- Format preview -->
+  <div class="section-card">
+    <div class="section-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Formato del archivo
+    </div>
+    <div class="format-preview">
+      <div class="col-header">Usuarios</div>
+      <div class="col-row">matevance.arroyo.3</div>
+      <div class="col-row">mcornejocastañeda139</div>
+      <div class="col-row">maguilarcarreon688</div>
+      <div class="col-row">msaldivarcortés068</div>
+      <div class="col-row muted">...</div>
+    </div>
+    <p class="format-desc">El archivo debe tener una sola columna con el encabezado <b>Usuarios</b> y un nombre de usuario por fila, sin espacios ni filas vacías intermedias.</p>
+  </div>
+
+  <!-- Paste area -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Usuarios a eliminar
+      </div>
+      <span class="user-count" id="userCount">0 usuarios</span>
+    </div>
+    <textarea id="userList"
+      placeholder="Pega aquí los usuarios, uno por línea:&#10;matevance.arroyo.3&#10;mcornejocastañeda139&#10;maguilarcarreon688&#10;..."></textarea>
+    <div class="hint">Opcional — si pegas los usuarios aquí el archivo se generará con ellos pre-cargados. Si lo dejas vacío se descargará la plantilla en blanco para llenarla manualmente.</div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+  <div class="footer-inner">
+    <div class="tally">
+      <div class="box">
+        <div class="n" id="tallyN">0</div>
+        <div class="l">Usuarios</div>
+      </div>
+    </div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="btnLimpiar">Limpiar lista</button>
+      <button class="btn btn-ghost" id="btnPlantilla" title="Descargar Excel en blanco">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Plantilla en blanco
+      </button>
+      <button class="btn btn-primary btn-lg" id="btnDescargar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Descargar con usuarios
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: éxito / compartir -->
+<div class="overlay" id="ovDone">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Comparte tu formato</h2><button class="x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="done-head">
+        <div class="success-ico">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h2>¡Formato generado!</h2>
+        <div class="file" id="doneFile">archivo.xlsx</div>
+      </div>
+      <div class="done-sub">Envía el archivo descargado a uno de nuestros contactos. Copia la plantilla y pégala en tu correo.</div>
+      <div class="contacts" id="contactCards"></div>
+      <div class="done-note">📎 Recuerda adjuntar el archivo <b id="noteFile"></b> antes de enviar el correo.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="doneAgain">Descargar de nuevo</button>
+      <button class="btn btn-primary" data-close>Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONTACTS = [
+  {first:'Ismael', name:'Ismael Avila', role:'Macmillan Education', email:'ismael.flores.contractor@macmillaneducation.com', color:'linear-gradient(140deg,#6366f1,#4f46e5)', initials:'IA'},
+  {first:'Rodrigo', name:'Rodrigo Bárcenas', role:'Macmillan Education', email:'rodrigo.barcenas@macmillaneducation.com', color:'linear-gradient(140deg,#3b82f6,#1a56e8)', initials:'RB'}
+];
+
+let lastFileName = '';
+
+const $ = s => document.querySelector(s);
+const userListEl = $('#userList');
+const tallyEl    = $('#tallyN');
+const countEl    = $('#userCount');
+
+// ---- user list counter ----
+function parseUsers() {
+  return userListEl.value
+    .split('\n')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
+userListEl.addEventListener('input', updateTally);
+
+function updateTally() {
+  const users = parseUsers();
+  const n = users.length;
+  tallyEl.textContent = n;
+  countEl.textContent = `${n} usuario${n !== 1 ? 's' : ''}`;
+  countEl.classList.toggle('has-users', n > 0);
+}
+
+// ---- limpiar ----
+$('#btnLimpiar').addEventListener('click', () => {
+  userListEl.value = '';
+  updateTally();
+  toast('Lista limpiada');
+});
+
+// ---- download ----
+function buildAndDownload() {
+  const users = parseUsers();
+  const rows = [['Usuarios'], ...users.map(u => [u])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch: 36}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  lastFileName = `borrarUsuarios_${stamp}.xlsx`;
+  XLSX.writeFile(wb, lastFileName);
+}
+
+$('#btnPlantilla').addEventListener('click', () => {
+  const ws = XLSX.utils.aoa_to_sheet([['Usuarios']]);
+  ws['!cols'] = [{wch: 36}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
+  XLSX.writeFile(wb, 'borrarUsuarios.xlsx');
+  toast('Plantilla en blanco descargada');
+});
+
+$('#btnDescargar').addEventListener('click', descargar);
+$('#doneAgain').addEventListener('click', buildAndDownload);
+
+function descargar() {
+  buildAndDownload();
+  $('#doneFile').textContent = lastFileName;
+  $('#noteFile').textContent = lastFileName;
+  buildContactCards();
+  openOv('#ovDone');
+}
+
+// ---- email template ----
+function emailTemplate(first) {
+  return `Hola ${first} te comparto mi formato de ELIMINACION DE USUARIOS quedo atento a cualquier duda u observacion, saludos.`;
+}
+
+function buildContactCards() {
+  const box = $('#contactCards');
+  box.innerHTML = CONTACTS.map((c, i) => {
+    const tpl    = emailTemplate(c.first);
+    const mailto = `mailto:${c.email}?subject=${encodeURIComponent('Borrado de usuarios')}&body=${encodeURIComponent(tpl)}`;
+    return `<div class="contact">
+      <div class="c-top">
+        <div class="c-av" style="background:${c.color}">${c.initials}</div>
+        <div><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc(c.role)}</div></div>
+      </div>
+      <div class="c-email">
+        <span title="${esc(c.email)}">${esc(c.email)}</span>
+        <button data-copy="${esc(c.email)}" data-msg="Correo copiado" title="Copiar correo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+      <div class="c-tpl" id="tpl${i}">Hola <b>${esc(c.first)}</b> te comparto mi formato de <b>ELIMINACION DE USUARIOS</b> quedo atento a cualquier duda u observacion, saludos.</div>
+      <div class="c-actions">
+        <button class="btn btn-ghost" data-copy="${esc(tpl)}" data-msg="Plantilla copiada">Copiar plantilla</button>
+        <a class="btn btn-primary" href="${mailto}">Redactar correo</a>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-copy]').forEach(b =>
+    b.addEventListener('click', () => copyText(b.dataset.copy, b.dataset.msg))
+  );
+}
+
+// ---- overlay helpers ----
+function openOv(sel)  { document.querySelector(sel).classList.add('show'); }
+function closeOv(sel) { document.querySelector(sel).classList.remove('show'); }
+
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.closest('[data-close]')) {
+    e.target.closest('.overlay').classList.remove('show');
+  }
+  if (e.target.matches('.overlay')) {
+    e.target.classList.remove('show');
+  }
+});
+
+// ---- copy helper ----
+function copyText(text, msg) {
+  const ok = () => toast(msg || 'Copiado');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(ok).catch(legacy);
+  } else legacy();
+  function legacy() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); ok(); } catch(e) { toast('No se pudo copiar', 'err'); }
+    document.body.removeChild(ta);
+  }
+}
+
+// ---- escape ----
+function esc(s) {
+  return (s + '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// ---- toast ----
+let toastT;
+function toast(msg, type) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'err' ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = 'toast' + (type === 'err' ? ' err' : ''), 2600);
+}
+
+updateTally();
+</script>
+</body>
+</html>

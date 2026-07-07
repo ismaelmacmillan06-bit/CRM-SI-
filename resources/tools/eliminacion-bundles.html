@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eliminación de Bundles · MEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eaeef5; --surface:#ffffff; --surface-2:#f6f8fc;
+    --ink:#0e1726; --muted:#5b6680; --faint:#8b97ad;
+    --border:#e3e8f1; --border-strong:#cbd4e3;
+    --primary:#d97706; --primary-d:#b45309; --primary-t:#fffbeb;
+    --ok:#15a34a; --ok-bg:#e6f7ee;
+    --danger:#c0322b;
+    --shadow-sm:0 1px 2px rgba(14,23,38,.06);
+    --shadow:0 1px 2px rgba(14,23,38,.05),0 10px 28px rgba(14,23,38,.07);
+    --shadow-lg:0 24px 60px rgba(14,23,38,.22);
+    --radius:15px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100vh}
+  body{
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(1100px 460px at 88% -8%, #fef3c7 0%, transparent 60%),
+      radial-gradient(900px 420px at 5% 0%, #fef9ec 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column;
+  }
+
+  /* ---------- Header ---------- */
+  header.app{
+    background:linear-gradient(125deg,#1c0e00 0%,#78340f 55%,#b45309 100%);
+    color:#fff;box-shadow:0 10px 30px rgba(28,14,0,.28)}
+  .head-inner{max-width:700px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#fbbf24,#d97706);display:grid;place-items:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(217,119,6,.4)}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand .kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#fde68a;font-weight:600}
+  .brand h1{font-family:"Space Grotesk",sans-serif;font-size:20px;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#fef3c7;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 11px;border-radius:999px}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:#fbbf24}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:500px;text-align:center}
+
+  .card-icon{width:72px;height:72px;border-radius:20px;margin:0 auto 22px;
+    background:linear-gradient(140deg,#fbbf24,#d97706);display:grid;place-items:center;
+    box-shadow:0 8px 24px rgba(217,119,6,.3)}
+
+  .card h2{font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:-.02em}
+  .card .sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:32px}
+
+  .input-group{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;text-align:left}
+  .input-group label{font-size:12.5px;font-weight:700;color:var(--ink)}
+  .id-wrap{position:relative}
+  .id-input{width:100%;padding:14px 52px 14px 16px;border:2px solid var(--border-strong);border-radius:13px;
+    font-size:16px;font-weight:700;font-family:"Space Grotesk",sans-serif;color:var(--ink);
+    text-transform:uppercase;letter-spacing:.06em;background:var(--surface-2);
+    transition:border-color .15s,outline .15s}
+  .id-input:focus{outline:none;border-color:var(--primary);background:#fff}
+  .id-input.err{border-color:var(--danger);background:#fff8f8}
+  .id-input::placeholder{font-weight:500;letter-spacing:.03em;color:var(--faint);text-transform:none}
+  .id-count{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    font-size:11.5px;font-weight:700;color:var(--faint);font-family:"Space Grotesk",sans-serif;pointer-events:none}
+  .id-count.ok{color:var(--ok)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:28px}
+
+  .btn{border:none;border-radius:13px;padding:15px 24px;font-size:15px;font-weight:700;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:inherit;text-decoration:none;
+    width:100%;transition:transform .05s,box-shadow .15s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 6px 20px rgba(217,119,6,.36)}
+  .btn-primary:hover{box-shadow:0 8px 26px rgba(217,119,6,.48)}
+  .btn-primary:disabled{background:#e5c07a;box-shadow:none;cursor:not-allowed}
+  .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--border-strong);
+    box-shadow:var(--shadow-sm);font-size:13.5px;padding:11px 16px;width:auto;border-radius:12px}
+  .btn-ghost:hover{background:var(--surface-2)}
+
+  /* ---------- Modal ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(11,18,38,.58);z-index:60;display:none;
+    align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+  .overlay.show{display:flex;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--surface);border-radius:20px;width:100%;max-width:560px;max-height:88vh;
+    display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;
+    animation:pop .2s cubic-bezier(.2,.9,.3,1.2)}
+  .modal.wide{max-width:900px}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  .modal-head{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-head h2{margin:0;font-size:17px;font-family:"Space Grotesk",sans-serif;font-weight:600}
+  .modal-head .x{border:none;background:var(--surface-2);width:34px;height:34px;border-radius:10px;
+    font-size:18px;cursor:pointer;color:var(--muted)}
+  .modal-head .x:hover{background:#eef1f7;color:var(--ink)}
+  .modal-body{padding:22px;overflow:auto}
+  .modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+  .done-head{text-align:center;padding:6px 4px 10px}
+  .success-ico{width:66px;height:66px;border-radius:50%;background:var(--ok-bg);display:grid;place-items:center;
+    margin:0 auto 14px;color:var(--ok);animation:popcheck .4s cubic-bezier(.2,.9,.3,1.4)}
+  @keyframes popcheck{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+  .done-head h2{margin:0 0 7px;font-family:"Space Grotesk",sans-serif;font-size:21px}
+  .done-head .colegio-tag{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;
+    color:var(--primary-d);background:var(--primary-t);border:1px solid #fde68a;
+    border-radius:9px;padding:6px 14px;font-family:"Space Grotesk",sans-serif;letter-spacing:.04em}
+  .done-sub{font-size:13.5px;color:var(--muted);text-align:center;margin:14px 0 6px;line-height:1.5}
+
+  .contacts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:600px){.contacts{grid-template-columns:1fr}}
+  .contact{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .c-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .c-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;
+    font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;flex:none}
+  .c-name{font-weight:700;font-size:14px;color:var(--ink)}
+  .c-role{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .c-email{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);
+    border-radius:9px;padding:8px 10px;margin-bottom:10px;overflow:hidden}
+  .c-email span{flex:1;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .c-email button{flex:none;border:none;background:transparent;cursor:pointer;color:var(--faint);
+    padding:2px;border-radius:6px;line-height:0}
+  .c-email button:hover{background:var(--border);color:var(--ink)}
+  .c-tpl{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;padding:9px 10px;
+    background:#fff;border:1px solid var(--border);border-radius:9px}
+  .c-tpl b{color:var(--ink)}
+  .c-actions{display:flex;gap:8px}
+  .c-actions .btn{flex:1;font-size:12.5px;padding:9px 10px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);
+    background:#0e1726;color:#fff;padding:10px 18px;border-radius:12px;font-size:13.5px;font-weight:500;
+    opacity:0;transition:opacity .22s,transform .22s;pointer-events:none;z-index:99;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:#c0322b}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="head-inner">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/><path d="M8 6V4h8v2"/>
+        <rect x="5" y="6" width="14" height="14" rx="2"/>
+        <path d="M10 11v4"/><path d="M14 11v4"/>
+      </svg>
+    </div>
+    <div class="brand">
+      <span class="kicker">Herramientas SI · MEE</span>
+      <h1>Eliminación de Bundles</h1>
+    </div>
+    <div class="chip"><span class="dot"></span>Solicitud de baja de bundles MEE</div>
+  </div>
+</header>
+
+<div class="main">
+  <div class="card">
+    <div class="card-icon">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18"/><path d="M8 6V4h8v2"/>
+        <rect x="5" y="6" width="14" height="14" rx="2"/>
+        <path d="M10 11v4"/><path d="M14 11v4"/>
+      </svg>
+    </div>
+    <h2>Solicitar eliminación de bundles</h2>
+    <p class="sub">Ingresa el ID del colegio y genera el correo de solicitud para enviar al equipo MEE.</p>
+
+    <div class="input-group">
+      <label>ID del colegio</label>
+      <div class="id-wrap">
+        <input id="colegioId" class="id-input" type="text" maxlength="11"
+               placeholder="MEXMP000000" autocomplete="off">
+        <span class="id-count" id="idCount">0/11</span>
+      </div>
+    </div>
+    <p class="hint">El ID del colegio tiene 11 caracteres (ej. MEXMP102919). Se incluirá en el cuerpo del correo.</p>
+
+    <button class="btn btn-primary" id="btnGenerar">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+      </svg>
+      Generar solicitud
+    </button>
+  </div>
+</div>
+
+<!-- Modal: solicitud lista -->
+<div class="overlay" id="ovDone">
+  <div class="modal wide">
+    <div class="modal-head"><h2>Solicitud lista</h2><button class="x" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="done-head">
+        <div class="success-ico">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <h2>¡Solicitud generada!</h2>
+        <div class="colegio-tag" id="doneId">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          COLEGIO
+        </div>
+      </div>
+      <div class="done-sub">Redacta el correo directamente a uno de nuestros contactos o copia la plantilla para pegarla manualmente.</div>
+      <div class="contacts" id="contactCards"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CONTACTS = [
+  {first:'Ismael', name:'Ismael Avila', role:'Macmillan Education', email:'ismael.flores.contractor@macmillaneducation.com', color:'linear-gradient(140deg,#6366f1,#4f46e5)', initials:'IA'},
+  {first:'Rodrigo', name:'Rodrigo Bárcenas', role:'Macmillan Education', email:'rodrigo.barcenas@macmillaneducation.com', color:'linear-gradient(140deg,#3b82f6,#1a56e8)', initials:'RB'}
+];
+
+const ID_LEN = 11;
+const $ = s => document.querySelector(s);
+const input    = $('#colegioId');
+const idCount  = $('#idCount');
+
+input.addEventListener('input', () => {
+  input.value = input.value.toUpperCase().replace(/\s/g, '');
+  const L = input.value.length;
+  idCount.textContent = `${L}/${ID_LEN}`;
+  idCount.classList.toggle('ok', L === ID_LEN);
+  if (L === ID_LEN) input.classList.remove('err');
+});
+
+$('#btnGenerar').addEventListener('click', () => {
+  const id = input.value.trim().toUpperCase();
+  if (id.length !== ID_LEN) {
+    input.classList.add('err');
+    input.focus();
+    toast(`El ID debe tener ${ID_LEN} caracteres`, 'err');
+    setTimeout(() => input.classList.remove('err'), 2800);
+    return;
+  }
+  $('#doneId').innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    ${esc(id)}`;
+  buildContactCards(id);
+  openOv('#ovDone');
+});
+
+function emailTemplate(id) {
+  return `Hola, me ayudas a eliminar los bundles de este colegio ${id}, gracias y quedo a la espera.`;
+}
+
+function buildContactCards(id) {
+  const box = $('#contactCards');
+  box.innerHTML = CONTACTS.map((c, i) => {
+    const tpl    = emailTemplate(id);
+    const mailto = `mailto:${c.email}?subject=${encodeURIComponent('Eliminación de bundles - ' + id)}&body=${encodeURIComponent(tpl)}`;
+    return `<div class="contact">
+      <div class="c-top">
+        <div class="c-av" style="background:${c.color}">${c.initials}</div>
+        <div><div class="c-name">${esc(c.name)}</div><div class="c-role">${esc(c.role)}</div></div>
+      </div>
+      <div class="c-email">
+        <span title="${esc(c.email)}">${esc(c.email)}</span>
+        <button data-copy="${esc(c.email)}" data-msg="Correo copiado" title="Copiar correo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+        </button>
+      </div>
+      <div class="c-tpl">Hola, me ayudas a eliminar los bundles de este colegio <b>${esc(id)}</b>, gracias y quedo a la espera.</div>
+      <div class="c-actions">
+        <button class="btn btn-ghost" data-copy="${esc(tpl)}" data-msg="Plantilla copiada">Copiar plantilla</button>
+        <a class="btn btn-primary" href="${mailto}">Redactar correo</a>
+      </div>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-copy]').forEach(b =>
+    b.addEventListener('click', () => copyText(b.dataset.copy, b.dataset.msg))
+  );
+}
+
+function openOv(sel) { document.querySelector(sel).classList.add('show'); }
+
+document.addEventListener('click', e => {
+  if (e.target.matches('[data-close]') || e.target.closest('[data-close]')) {
+    e.target.closest('.overlay').classList.remove('show');
+  }
+  if (e.target.matches('.overlay')) e.target.classList.remove('show');
+});
+
+input.addEventListener('keydown', e => { if (e.key === 'Enter') $('#btnGenerar').click(); });
+
+function copyText(text, msg) {
+  const ok = () => toast(msg || 'Copiado');
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(ok).catch(legacy);
+  } else legacy();
+  function legacy() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); ok(); } catch(e) { toast('No se pudo copiar', 'err'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function esc(s) {
+  return (s + '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+let toastT;
+function toast(msg, type) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type === 'err' ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = 'toast' + (type === 'err' ? ' err' : ''), 2800);
+}
+</script>
+</body>
+</html>

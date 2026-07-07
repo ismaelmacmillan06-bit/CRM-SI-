@@ -229,6 +229,62 @@
         </a>
     </div>
 
+    <div class="herramienta-card">
+        <div class="herramienta-icono">🔄</div>
+        <div class="herramienta-titulo">Cambio de Nombre de Usuario</div>
+        <span class="herramienta-tag">📄 Genera .xlsx</span>
+        <p class="herramienta-desc">
+            Ingresa el usuario actual y el nuevo lado a lado, descarga el Excel con
+            las columnas <b>Correo</b> y <b>UsuarioNuevo</b> listo para enviar al equipo MEE.
+        </p>
+        <a href="{{ route('herramientas.cambio-usuario') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
+    <div class="herramienta-card">
+        <div class="herramienta-icono">🔐</div>
+        <div class="herramienta-titulo">Cambio de Password</div>
+        <span class="herramienta-tag">📄 Genera .xlsx</span>
+        <p class="herramienta-desc">
+            Ingresa el usuario y la nueva contraseña lado a lado, descarga el Excel con
+            las columnas <b>Correo</b> y <b>Password</b> listo para enviar al equipo MEE.
+        </p>
+        <a href="{{ route('herramientas.cambio-password') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
+    <div class="herramienta-card">
+        <div class="herramienta-icono">📦</div>
+        <div class="herramienta-titulo">Eliminación de Bundles</div>
+        <span class="herramienta-tag">✉️ Genera solicitud por correo</span>
+        <p class="herramienta-desc">
+            Ingresa el ID del colegio y genera el correo de solicitud para que el equipo MEE
+            procese la baja de todos los bundles del colegio.
+        </p>
+        <a href="{{ route('herramientas.eliminacion-bundles') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
+    <div class="herramienta-card">
+        <div class="herramienta-icono">🗑️</div>
+        <div class="herramienta-titulo">Borrado de Usuarios</div>
+        <span class="herramienta-tag">📄 Genera .xlsx</span>
+        <p class="herramienta-desc">
+            Genera el archivo de baja masiva de cuentas MEE. Pega los usuarios a eliminar
+            y descarga el Excel listo para enviar al equipo.
+        </p>
+        <a href="{{ route('herramientas.borrar-usuarios') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
 </div>
 
 {{-- ══ ARCHIVOS SI COLEGIOS ══ --}}

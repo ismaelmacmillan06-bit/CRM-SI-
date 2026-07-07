@@ -70,6 +70,17 @@ class DashboardController extends Controller
         $colegiosProspecto = $schoolScopeId(School::where('status', 'prospecto'))->count();
         $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
+        // Colegios con usuarios y contraseñas personalizadas
+        $colegiosCustomPasswords = $schoolScopeId(School::where('custom_passwords', true))->count();
+
+        // Colegios entregados: tienen al menos un proceso y todos están en 'done'
+        $colegiosEntregados = $schoolScopeId(
+            School::whereHas('schoolLevels.processes')
+                  ->whereDoesntHave('schoolLevels', fn($q) =>
+                      $q->whereHas('processes', fn($q2) => $q2->where('status', '!=', 'done'))
+                  )
+        )->count();
+
         // Colegios por estado para el mapa (state tiene prioridad sobre city)
         $colegiosPorEstado = $schoolScopeId(School::selectRaw('COALESCE(state, city) as estado, count(*) as total'))
             ->whereRaw('COALESCE(state, city) IS NOT NULL')
@@ -119,7 +130,8 @@ class DashboardController extends Controller
             'schools', 'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
-            'seriesDisponibles', 'totalResurtidos'
+            'seriesDisponibles', 'totalResurtidos',
+            'colegiosCustomPasswords', 'colegiosEntregados'
         ));
     }
 }

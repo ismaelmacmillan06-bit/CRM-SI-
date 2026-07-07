@@ -165,10 +165,10 @@ foreach ($roles as $role => $consultantId) {
         ]);
 
         // state reemplaza a city como campo canónico de ubicación geográfica
-        $school->update($request->only([
-            'name', 'nexus_id', 'address', 'city', 'state',
-            'phone', 'email', 'status', 'notes',
-        ]));
+        $school->update(array_merge(
+            $request->only(['name', 'nexus_id', 'address', 'city', 'state', 'phone', 'email', 'status', 'notes']),
+            ['custom_passwords' => $request->boolean('custom_passwords')]
+        ));
 
         // Actualizar niveles
         $newLevelIds = array_map('intval', $request->levels ?? []);

@@ -8,7 +8,11 @@ class School extends Model
 {
     protected $fillable = [
         'name', 'nexus_id', 'address', 'city', 'state',
-        'phone', 'email', 'status', 'notes', 'consultant_id'
+        'phone', 'email', 'status', 'notes', 'consultant_id', 'custom_passwords'
+    ];
+
+    protected $casts = [
+        'custom_passwords' => 'boolean',
     ];
 
     public function consultant()

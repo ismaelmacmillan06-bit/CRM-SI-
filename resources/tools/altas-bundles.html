@@ -434,6 +434,8 @@ listEl.addEventListener('input',e=>{
   let v=Math.max(0,Math.floor(+e.target.value||0));
   setQty(id,v,box,e.target,true);
 });
+// Lookup por id (no por índice) para ser robusto ante inserciones en el catálogo
+const CATALOG_BY_ID = Object.fromEntries(CATALOG.map(b=>[b.id,b]));
 // Imagina Primaria: "2Ed X Alumno Digital" → "3Ed X Docente Digital" (qty 10)
 const COMPANION_MAP = {568:569,575:577,584:587,592:596,600:601,608:610};
 function setQty(id,v,box,inp,fromType){
@@ -443,7 +445,7 @@ function setQty(id,v,box,inp,fromType){
   box.querySelector('.dec').disabled=v<=0;
   box.closest('.card').classList.toggle('on',v>0);
   if(v>0&&prev===0){
-    const b=CATALOG[id];
+    const b=CATALOG_BY_ID[id];
     if(b&&b.c==='Alumno'){
       let t=null;
       if(COMPANION_MAP[id]!==undefined){

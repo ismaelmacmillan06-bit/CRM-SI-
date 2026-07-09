@@ -162,7 +162,7 @@
     <div class="panel p2">
       <h2><span class="step">2</span> Datos de la escuela</h2>
       <label class="field">Nombre de la escuela (aparece como título)</label>
-      <input type="text" id="schoolName" placeholder="Ej. Colegio Isma">
+      <input type="text" id="schoolName" placeholder="Colegio MADI">
       <label class="field">Logo (opcional)</label>
       <div class="logo-row">
         <div class="logo-prev" id="logoPrev">Sin logo</div>
@@ -429,56 +429,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>__TITLE__ · Accesos</title>
 <style>
-  :root{--paper:#f5ece0;--ink:#2b211b;--card:#fffdf9;--line:#e7dcc9;--line2:#dac9b1;--muted:#8c7c69;--brick:#b23a2c;--brick-d:#8e2c20;--brick-soft:#f6e3dc;--orange:#c0612b;--ok:#5c7d3a;--wa:#25D366;--wa-d:#128C7E;}
+  :root{--dark:#0d1117;--red:#c8102e;--red-d:#a50d24;--red-soft:#fff0f2;--bg:#f3f4f6;--card:#ffffff;--ink:#111827;--muted:#6b7280;--border:#e5e7eb;--ok:#059669;--wa:#25D366;--wa-d:#128C7E;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.45;padding-bottom:30px;}
-  header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;padding:16px 16px 14px;box-shadow:0 4px 16px rgba(178,58,44,.25);}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45;padding-bottom:30px;}
+  header{position:sticky;top:0;z-index:10;background:var(--dark);color:#fff;padding:16px 16px 14px;box-shadow:0 4px 16px rgba(0,0,0,.4);}
   .hwrap{display:flex;align-items:center;gap:12px;}
-  .hlogo{width:40px;height:40px;border-radius:10px;background:#fff;object-fit:contain;flex:none;padding:3px;}
+  .hlogo{width:40px;height:40px;border-radius:6px;background:#fff;object-fit:contain;flex:none;padding:3px;}
+  .hbar{width:2px;height:36px;background:var(--red);flex:none;border-radius:2px;}
   .htxt h1{font-size:18px;font-weight:800;line-height:1.1;letter-spacing:-.01em;}
-  .htxt .hs{font-size:12px;opacity:.9;margin-top:2px;}
-  .hcount{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.18);padding:5px 10px;border-radius:999px;text-align:right;flex:none;}
-  .tools{position:sticky;top:70px;z-index:9;background:var(--paper);padding:12px 16px 8px;border-bottom:1px solid var(--line);}
+  .htxt .hs{font-size:12px;color:#9ca3af;margin-top:2px;}
+  .hcount{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.1);padding:5px 10px;border-radius:8px;text-align:right;flex:none;border:1px solid rgba(255,255,255,.12);}
+  .tools{position:sticky;top:70px;z-index:9;background:var(--bg);padding:12px 16px 8px;border-bottom:1px solid var(--border);}
   .search{position:relative;}
-  .search input{width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line2);border-radius:12px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;}
-  .search input:focus{outline:2px solid var(--brick);border-color:var(--brick);}
+  .search input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;}
+  .search input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.1);}
   .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted);}
   .chips{display:flex;gap:7px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none;}
   .chips::-webkit-scrollbar{display:none;}
-  .chip{flex:none;border:1px solid var(--line2);background:#fff;color:var(--ink);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;font-family:inherit;}
-  .chip.on{background:var(--brick);color:#fff;border-color:var(--brick);}
+  .chip{flex:none;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;font-family:inherit;}
+  .chip.on{background:var(--red);color:#fff;border-color:var(--red);}
   .priv{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-top:8px;cursor:pointer;user-select:none;}
-  .priv input{width:16px;height:16px;accent-color:var(--brick);}
+  .priv input{width:16px;height:16px;accent-color:var(--red);}
   .list{padding:12px 16px 0;}
   .gh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 2px 9px;display:flex;align-items:center;gap:8px;}
   .gh:first-child{margin-top:4px;}
-  .gh::after{content:"";flex:1;height:1px;background:var(--line);}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin-bottom:10px;box-shadow:0 1px 2px rgba(43,33,27,.05);}
+  .gh::after{content:"";flex:1;height:1px;background:var(--border);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
   .cname{font-size:16px;font-weight:700;line-height:1.15;margin-bottom:11px;}
-  .crow{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:8px;}
+  .crow{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;}
   .crow .ci{flex:1;min-width:0;}
   .crow .cl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;}
   .crow .cv{font-size:16px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;margin-top:1px;}
   .crow .cv.mask{letter-spacing:2px;}
-  .copy{flex:none;border:none;background:var(--brick-soft);color:var(--brick);width:38px;height:38px;border-radius:9px;cursor:pointer;display:grid;place-items:center;}
-  .copy:active{background:#eecbc2;}
+  .copy{flex:none;border:none;background:var(--red-soft);color:var(--red);width:38px;height:38px;border-radius:9px;cursor:pointer;display:grid;place-items:center;}
+  .copy:active{background:#ffd7dc;}
   .btn-row{display:flex;flex-direction:column;gap:8px;margin-top:3px;}
   .clink{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-weight:700;font-size:14px;padding:11px;border-radius:11px;}
-  .clink-mee{background:linear-gradient(135deg,var(--brick),var(--orange));color:#fff;}
+  .clink-mee{background:var(--red);color:#fff;}
   .clink-wa{background:linear-gradient(135deg,var(--wa),var(--wa-d));color:#fff;}
-  .clink-sv{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;font-size:13px;padding:9px;}
-  .clink-sv span{font-size:11px;background:#e5e7eb;color:#6b7280;padding:2px 7px;border-radius:99px;font-weight:600;}
+  .clink-sv{background:#f9fafb;color:#6b7280;border:1px solid var(--border);font-size:13px;padding:9px;}
+  .clink-sv span{font-size:11px;background:var(--border);color:#6b7280;padding:2px 7px;border-radius:99px;font-weight:600;}
   .empty{text-align:center;color:var(--muted);padding:50px 20px;}
   .empty .e{font-size:40px;margin-bottom:8px;}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:50;transition:.25s;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.3);}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:50;transition:.25s;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.3);}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  .foot{text-align:center;font-size:11.5px;color:var(--muted);padding:24px 16px 0;}
+  .foot{text-align:center;font-size:11.5px;color:#9ca3af;background:var(--dark);margin-top:24px;padding:16px;}
 </style>
 </head>
 <body>
 <header>
   <div class="hwrap">
-    __LOGO__
+    __LOGO__<div class="hbar"></div>
     <div class="htxt"><h1>__TITLE__</h1><div class="hs">Consulta de accesos</div></div>
     <div class="hcount" id="hcount"></div>
   </div>
@@ -492,7 +493,7 @@
   <label class="priv"><input type="checkbox" id="hp"> Ocultar contraseñas en pantalla</label>
 </div>
 <div class="list" id="list"></div>
-<div class="foot">Generado con la Herramienta de Accesos · Solución Integral</div>
+<div class="foot">Macmillan Castillo · Solución Integral</div>
 <div class="toast" id="toast"></div>
 <script>
 (function(){

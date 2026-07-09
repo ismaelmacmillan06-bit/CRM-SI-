@@ -316,11 +316,12 @@ function onConsultorChange() {
 }
 
 function buildEmailHTML(c, director, colegio) {
-  const nombre   = c      ? c.nombre  : 'Tu Consultor Digital';
-  const correo   = c      ? c.correo  : '—';
-  const tel      = c      ? c.tel     : '—';
-  const dir      = director || 'Director(a)';
-  const col      = colegio  || 'Su Colegio';
+  const nombre = c ? c.nombre : 'Tu Consultor Digital';
+  const correo = c ? c.correo : '—';
+  const tel    = c ? c.tel    : '—';
+  const dir    = director || 'Director(a)';
+  const col    = colegio  || 'Su Colegio';
+  const ini    = nombre.charAt(0).toUpperCase();
 
   return `<!DOCTYPE html>
 <html>
@@ -328,159 +329,152 @@ function buildEmailHTML(c, director, colegio) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 </head>
-<body style="margin:0;padding:24px 0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+<body style="margin:0;padding:20px 0;background-color:#f1f1f1;font-family:Arial,Helvetica,sans-serif;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;width:100%;background-color:#ffffff;margin:0 auto;">
 
-<table width="600" cellpadding="0" cellspacing="0" border="0" align="center"
-  style="max-width:600px;width:100%;background-color:#ffffff;margin:0 auto;">
-
-  <!-- Header rojo -->
+  <!-- HEADER: dark + M logo + divider + title -->
   <tr>
-    <td align="center" bgcolor="#c8102e"
-      style="padding:36px 24px 32px;background-color:#c8102e;">
-      <p style="margin:0 0 6px 0;font-size:30px;font-weight:bold;color:#ffffff;font-family:Arial,sans-serif;">
-        &#161;Bienvenidos!
-      </p>
-      <p style="margin:0 0 4px 0;font-size:15px;font-weight:bold;color:#fecaca;font-family:Arial,sans-serif;">
-        Ciclo escolar 2026-2027
-      </p>
-      <p style="margin:0;font-size:13px;color:#fca5a5;font-family:Arial,sans-serif;">
-        Macmillan Castillo SI
-      </p>
-    </td>
-  </tr>
-
-  <!-- Badge colegio -->
-  <tr>
-    <td align="center" bgcolor="#ffffff" style="padding:24px 24px 4px;background-color:#ffffff;">
-      <table cellpadding="0" cellspacing="0" border="0" align="center">
+    <td bgcolor="#0d1117" style="padding:0;background-color:#0d1117;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td bgcolor="#f9fafb" style="padding:6px 20px;background-color:#f9fafb;border:1px solid #e5e7eb;font-size:13px;color:#374151;font-family:Arial,sans-serif;">
-            &#127983; ${col}
+          <td width="148" bgcolor="#0d1117" valign="middle" style="padding:22px 16px;background-color:#0d1117;width:148px;">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td bgcolor="#c8102e" align="center" style="padding:5px 13px;background-color:#c8102e;">
+                  <p style="margin:0;font-size:24px;font-weight:900;color:#ffffff;font-family:Arial Black,Arial,sans-serif;line-height:1;">M</p>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:10px 0 0 0;font-size:8px;font-weight:700;color:#6b7280;font-family:Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;word-break:break-word;">${col}</p>
+          </td>
+          <td width="2" bgcolor="#c8102e" style="background-color:#c8102e;width:2px;font-size:0;line-height:0;">&nbsp;</td>
+          <td bgcolor="#0d1117" valign="middle" style="padding:22px 20px;background-color:#0d1117;">
+            <p style="margin:0 0 2px 0;font-size:9px;font-weight:700;color:#c8102e;font-family:Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;">PROYECTO SOLUCIÓN INTEGRAL</p>
+            <p style="margin:0 0 6px 0;font-size:26px;font-weight:900;color:#ffffff;font-family:Arial Black,Arial,sans-serif;line-height:1.05;">¡BIENVENIDOS!</p>
+            <p style="margin:0 0 2px 0;font-size:11px;color:#9ca3af;font-family:Arial,sans-serif;">Ciclo escolar 2026-2027</p>
+            <p style="margin:0;font-size:11px;font-weight:700;color:#c8102e;font-family:Arial,sans-serif;">Macmillan Castillo SI</p>
           </td>
         </tr>
       </table>
     </td>
   </tr>
 
-  <!-- Encabezado principal -->
+  <!-- HEADING -->
   <tr>
-    <td align="center" bgcolor="#ffffff" style="padding:18px 40px 6px;background-color:#ffffff;">
-      <p style="margin:0 0 0 0;font-size:21px;font-weight:bold;color:#111827;text-align:center;font-family:Arial,sans-serif;">
+    <td align="center" bgcolor="#ffffff" style="padding:28px 40px 8px;background-color:#ffffff;">
+      <p style="margin:0 0 10px 0;font-size:20px;font-weight:bold;color:#111827;text-align:center;font-family:Arial,sans-serif;">
         Nos alegra comenzar este ciclo escolar con ustedes.
       </p>
+      <table cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr><td height="2" width="56" bgcolor="#c8102e" style="height:2px;width:56px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td></tr>
+      </table>
     </td>
   </tr>
 
-  <!-- Tarjeta consultor: franja amber como columna bgcolor para Outlook -->
+  <!-- CONSULTOR CARD: bordered gray -->
   <tr>
-    <td bgcolor="#ffffff" style="padding:22px 28px;background-color:#ffffff;">
+    <td bgcolor="#ffffff" style="padding:18px 28px 24px;background-color:#ffffff;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td width="4" bgcolor="#f59e0b" style="width:4px;background-color:#f59e0b;"></td>
-          <td bgcolor="#fffbeb" style="padding:18px 22px;background-color:#fffbeb;">
-            <p style="margin:0 0 5px 0;font-size:12px;font-weight:bold;color:#92400e;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em;">
-              &#128075; Su Consultor Digital
-            </p>
-            <p style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">
-              Hola, ${dir}:
-            </p>
-            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">
-              Mi nombre es <strong>${nombre}</strong> y seré su Consultor Digital durante la
-              implementación de la plataforma MEE en su colegio para el ciclo escolar 2026-2027.
-              Mi objetivo es acompañarlos en cada etapa del proceso y brindarles el apoyo necesario
-              para que la implementación sea sencilla y exitosa.
-            </p>
-            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">
-              Como primer paso, me gustaría agendar una reunión con usted para realizar la
-              capacitación inicial, presentar la plataforma y definir la forma de trabajo que
-              seguiremos durante este ciclo escolar. ¿Podría compartirme una fecha y horario
-              que le resulten convenientes?
-            </p>
-            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">
-              Asimismo, le envío el <strong>formato de docentes</strong>, el cual será necesario
-              completar con la información de los profesores que tendrán acceso a la plataforma.
-              Si surge alguna duda al llenarlo, con gusto podremos revisarlo juntos durante la
-              reunión.
-            </p>
-            <p style="margin:0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">
-              Quedo atento a sus comentarios. &#161;Será un gusto trabajar con ustedes!
-            </p>
+          <td bgcolor="#f9fafb" style="padding:22px 24px;background-color:#f9fafb;border:1px solid #e5e7eb;">
+            <p style="margin:0 0 4px 0;font-size:10px;font-weight:700;color:#c8102e;font-family:Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;">👋 SU CONSULTOR DIGITAL</p>
+            <p style="margin:0 0 14px 0;font-size:14px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">Hola, ${dir}:</p>
+            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">Mi nombre es <strong>${nombre}</strong> y seré su Consultor Digital durante la implementación de la plataforma MEE en su colegio para el ciclo escolar 2026-2027. Mi objetivo es acompañarlos en cada etapa del proceso y brindarles el apoyo necesario para que la implementación sea sencilla y exitosa.</p>
+            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">Como primer paso, me gustaría agendar una reunión con usted para realizar la capacitación inicial, presentar la plataforma y definir la forma de trabajo que seguiremos durante este ciclo escolar. ¿Podría compartirme una fecha y horario que le resulten convenientes?</p>
+            <p style="margin:0 0 10px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">Asimismo, le envío el <strong>formato de docentes</strong>, el cual será necesario completar con la información de los profesores que tendrán acceso a la plataforma. Si surge alguna duda al llenarlo, con gusto podremos revisarlo juntos durante la reunión.</p>
+            <p style="margin:0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">Quedo atento a sus comentarios. ¡Será un gusto trabajar con ustedes!</p>
           </td>
         </tr>
       </table>
     </td>
   </tr>
 
-  <!-- Próximos pasos -->
+  <!-- PRÓXIMOS PASOS: red dot decorators -->
   <tr>
-    <td align="center" bgcolor="#ffffff" style="padding:8px 28px 4px;background-color:#ffffff;">
-      <p style="margin:0 0 20px 0;font-size:15px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">
-        Próximos pasos
-      </p>
+    <td bgcolor="#ffffff" style="padding:4px 28px 0;background-color:#ffffff;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr valign="middle">
+          <td>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td height="2" bgcolor="#c8102e" style="height:2px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+          <td width="8" height="8" bgcolor="#c8102e" style="width:8px;height:8px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td>
+          <td align="center" style="padding:0 14px;white-space:nowrap;font-size:15px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">Próximos pasos</td>
+          <td width="8" height="8" bgcolor="#c8102e" style="width:8px;height:8px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td>
+          <td>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td height="2" bgcolor="#c8102e" style="height:2px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" bgcolor="#ffffff" style="padding:16px 28px 4px;background-color:#ffffff;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td width="33%" align="center" valign="top" style="padding:0 8px 16px;">
-            <p style="font-size:34px;margin:0 0 8px 0;">&#128197;</p>
-            <p style="margin:0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">
-              Reunión
-            </p>
+          <td width="33%" align="center" valign="top" style="padding:0 6px 8px;">
+            <p style="font-size:30px;margin:0 0 6px 0;">📅</p>
+            <p style="margin:0 0 6px 0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">Reunión</p>
+            <table cellpadding="0" cellspacing="0" border="0" align="center"><tr><td height="2" width="28" bgcolor="#c8102e" style="height:2px;width:28px;background-color:#c8102e;font-size:0;line-height:0;">&nbsp;</td></tr></table>
           </td>
-          <td width="33%" align="center" valign="top" style="padding:0 8px 16px;">
-            <p style="font-size:34px;margin:0 0 8px 0;">&#128203;</p>
-            <p style="margin:0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">
-              Entrega de<br>información
-            </p>
+          <td width="33%" align="center" valign="top" style="padding:0 6px 8px;">
+            <p style="font-size:30px;margin:0 0 6px 0;">📋</p>
+            <p style="margin:0 0 6px 0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">Entrega de<br>información</p>
+            <table cellpadding="0" cellspacing="0" border="0" align="center"><tr><td height="2" width="28" bgcolor="#e5e7eb" style="height:2px;width:28px;background-color:#e5e7eb;font-size:0;line-height:0;">&nbsp;</td></tr></table>
           </td>
-          <td width="33%" align="center" valign="top" style="padding:0 8px 16px;">
-            <p style="font-size:34px;margin:0 0 8px 0;">&#128273;</p>
-            <p style="margin:0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">
-              Entrega de<br>accesos
-            </p>
+          <td width="33%" align="center" valign="top" style="padding:0 6px 8px;">
+            <p style="font-size:30px;margin:0 0 6px 0;">🔑</p>
+            <p style="margin:0 0 6px 0;font-size:12px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">Entrega de<br>accesos</p>
+            <table cellpadding="0" cellspacing="0" border="0" align="center"><tr><td height="2" width="28" bgcolor="#e5e7eb" style="height:2px;width:28px;background-color:#e5e7eb;font-size:0;line-height:0;">&nbsp;</td></tr></table>
           </td>
         </tr>
       </table>
     </td>
   </tr>
 
-  <!-- Barra de progreso -->
+  <!-- PROGRESS BAR -->
   <tr>
-    <td bgcolor="#ffffff" style="padding:4px 28px 28px;background-color:#ffffff;">
-      <p style="margin:0 0 8px 0;font-size:11px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">
-        Etapa actual
-      </p>
+    <td bgcolor="#ffffff" style="padding:8px 28px 28px;background-color:#ffffff;">
+      <p style="margin:0 0 8px 0;font-size:11px;font-weight:bold;color:#374151;font-family:Arial,sans-serif;">Etapa actual</p>
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td width="33%" height="5" bgcolor="#c8102e"
-            style="height:5px;background-color:#c8102e;"></td>
-          <td width="67%" height="5" bgcolor="#e5e7eb"
-            style="height:5px;background-color:#e5e7eb;"></td>
+          <td width="33%" height="5" bgcolor="#c8102e" style="height:5px;background-color:#c8102e;"></td>
+          <td width="67%" height="5" bgcolor="#e5e7eb" style="height:5px;background-color:#e5e7eb;"></td>
         </tr>
       </table>
-      <p style="margin:5px 0 0 0;font-size:11px;color:#9ca3af;font-family:Arial,sans-serif;">
-        Paso 1 de 3
-      </p>
+      <p style="margin:5px 0 0 0;font-size:11px;color:#9ca3af;font-family:Arial,sans-serif;">Paso 1 de 3</p>
     </td>
   </tr>
 
-  <!-- Footer -->
+  <!-- FOOTER: two-column dark -->
   <tr>
-    <td align="center" bgcolor="#1f2937"
-      style="padding:28px 32px;background-color:#1f2937;">
-      <p style="margin:0 0 4px 0;font-size:15px;font-weight:bold;color:#ffffff;font-family:Arial,sans-serif;">
-        ${nombre}
-      </p>
-      <p style="margin:0 0 14px 0;font-size:12px;color:#c8102e;font-family:Arial,sans-serif;">
-        Consultor Digital
-      </p>
-      <p style="margin:0 0 4px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">
-        &#128231; ${correo}
-      </p>
-      <p style="margin:0 0 18px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">
-        &#128241; ${tel}
-      </p>
-      <p style="margin:0;font-size:11px;color:#6b7280;font-family:Arial,sans-serif;">
-        Macmillan Castillo &bull; Proyecto Solución Integral
-      </p>
+    <td bgcolor="#0d1117" style="padding:24px 28px;background-color:#0d1117;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr valign="middle">
+          <td width="185" valign="middle" style="padding-right:18px;">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr valign="middle">
+                <td width="44" height="44" bgcolor="#c8102e" align="center" valign="middle" style="width:44px;height:44px;background-color:#c8102e;">
+                  <p style="margin:0;font-size:20px;font-weight:bold;color:#ffffff;font-family:Arial,sans-serif;line-height:44px;">${ini}</p>
+                </td>
+                <td valign="middle" style="padding-left:12px;">
+                  <p style="margin:0 0 2px 0;font-size:13px;font-weight:bold;color:#ffffff;font-family:Arial,sans-serif;">${nombre}</p>
+                  <p style="margin:0;font-size:11px;color:#c8102e;font-family:Arial,sans-serif;">Consultor Digital</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td width="1" bgcolor="#374151" style="background-color:#374151;width:1px;font-size:0;line-height:0;">&nbsp;</td>
+          <td valign="middle" style="padding-left:18px;">
+            <p style="margin:0 0 5px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">✉ ${correo}</p>
+            <p style="margin:0 0 14px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">📱 ${tel}</p>
+            <p style="margin:0;font-size:10px;color:#6b7280;font-family:Arial,sans-serif;">Macmillan Castillo ● Proyecto Solución Integral</p>
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
 

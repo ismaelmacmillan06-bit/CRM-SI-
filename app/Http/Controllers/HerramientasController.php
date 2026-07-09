@@ -51,6 +51,16 @@ class HerramientasController extends Controller
         return $this->servirHerramienta('eliminacion-bundles.html');
     }
 
+    public function templateBienvenida()
+    {
+        return $this->servirHerramienta('template-bienvenida.html');
+    }
+
+    public function templateConfirmacion()
+    {
+        return $this->servirHerramienta('template-confirmacion.html');
+    }
+
     private function servirHerramienta(string $archivo)
     {
         $base = realpath(resource_path('tools'));

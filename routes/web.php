@@ -124,6 +124,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('herramientas-si/cambio-usuario',         [HerramientasController::class, 'cambioUsuario'])   ->name('herramientas.cambio-usuario');
      Route::get('herramientas-si/cambio-password',        [HerramientasController::class, 'cambioPassword'])  ->name('herramientas.cambio-password');
      Route::get('herramientas-si/eliminacion-bundles',    [HerramientasController::class, 'eliminacionBundles'])->name('herramientas.eliminacion-bundles');
+     Route::get('herramientas-si/template-bienvenida',    [HerramientasController::class, 'templateBienvenida'])->name('herramientas.template-bienvenida');
+     Route::get('herramientas-si/template-confirmacion',  [HerramientasController::class, 'templateConfirmacion'])->name('herramientas.template-confirmacion');
      Route::post('herramientas-si/archivos',              [HerramientasController::class, 'store'])          ->name('herramientas.archivos.store');
      Route::post('herramientas-si/archivos/{archivoSI}',  [HerramientasController::class, 'update'])         ->name('herramientas.archivos.update');
      Route::delete('herramientas-si/archivos/{archivoSI}',[HerramientasController::class, 'destroy'])        ->name('herramientas.archivos.destroy');

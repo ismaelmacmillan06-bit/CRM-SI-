@@ -231,6 +231,8 @@
 </div>
 
 <script>
+const LOGO_URL = window.location.origin + '/images/macmillansilogo.png';
+
 const CONSULTORES = [
   { nombre: "Celeste May",       correo: "celeste.may.contractor@macmillaneducation.com",      tel: "999 445 6141" },
   { nombre: "Zacek Balderas",    correo: "zacek.balderas.contractor@macmillaneducation.com",   tel: "33 3201 3691" },
@@ -292,19 +294,12 @@ function buildEmailHTML(c, director, colegio, fecha, hora, link) {
     <td bgcolor="#0d1117" style="padding:0;background-color:#0d1117;">
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td width="148" bgcolor="#0d1117" valign="middle" style="padding:22px 16px;background-color:#0d1117;width:148px;">
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td bgcolor="#c8102e" align="center" style="padding:5px 13px;background-color:#c8102e;">
-                  <p style="margin:0;font-size:24px;font-weight:900;color:#ffffff;font-family:Arial Black,Arial,sans-serif;line-height:1;">M</p>
-                </td>
-              </tr>
-            </table>
-            <p style="margin:10px 0 0 0;font-size:8px;font-weight:700;color:#6b7280;font-family:Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;word-break:break-word;">${col}</p>
+          <td width="148" bgcolor="#0d1117" valign="middle" style="padding:18px 16px;background-color:#0d1117;width:148px;">
+            <img src="${LOGO_URL}" width="116" alt="Macmillan Castillo SI" style="display:block;width:116px;max-width:116px;">
           </td>
           <td width="2" bgcolor="#c8102e" style="background-color:#c8102e;width:2px;font-size:0;line-height:0;">&nbsp;</td>
           <td bgcolor="#0d1117" valign="middle" style="padding:22px 20px;background-color:#0d1117;">
-            <p style="margin:0 0 2px 0;font-size:9px;font-weight:700;color:#c8102e;font-family:Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;">PROYECTO SOLUCIÓN INTEGRAL</p>
+            <p style="margin:0 0 2px 0;font-size:9px;font-weight:700;color:#c8102e;font-family:Arial,sans-serif;letter-spacing:.09em;text-transform:uppercase;">SOLUCIÓN INTEGRAL</p>
             <p style="margin:0 0 2px 0;font-size:22px;font-weight:900;color:#c8102e;font-family:Arial Black,Arial,sans-serif;line-height:1.1;">¡REUNIÓN</p>
             <p style="margin:0 0 6px 0;font-size:22px;font-weight:900;color:#ffffff;font-family:Arial Black,Arial,sans-serif;line-height:1.1;">CONFIRMADA!</p>
             <p style="margin:0 0 2px 0;font-size:11px;color:#9ca3af;font-family:Arial,sans-serif;">Ciclo escolar 2026-2027</p>
@@ -338,6 +333,7 @@ function buildEmailHTML(c, director, colegio, fecha, hora, link) {
       <table width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td bgcolor="#f9fafb" style="padding:22px 24px;background-color:#f9fafb;border:1px solid #e5e7eb;">
+            <p style="margin:0 0 8px 0;font-size:13px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">🏫 ${col}</p>
             <p style="margin:0 0 12px 0;font-size:14px;font-weight:bold;color:#111827;font-family:Arial,sans-serif;">Hola, ${dir}:</p>
             <p style="margin:0 0 14px 0;font-size:13px;color:#374151;line-height:1.7;font-family:Arial,sans-serif;">Queda confirmada nuestra reunión para:</p>
             <!-- DATE/TIME BOX: red left column -->
@@ -469,7 +465,7 @@ function buildEmailHTML(c, director, colegio, fecha, hora, link) {
           <td valign="middle" style="padding-left:18px;">
             <p style="margin:0 0 5px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">✉ ${correo}</p>
             <p style="margin:0 0 14px 0;font-size:12px;color:#d1d5db;font-family:Arial,sans-serif;">📱 ${tel}</p>
-            <p style="margin:0;font-size:10px;color:#6b7280;font-family:Arial,sans-serif;">Macmillan Castillo ● Proyecto Solución Integral</p>
+            <p style="margin:0;font-size:10px;color:#6b7280;font-family:Arial,sans-serif;">Macmillan Castillo ● Solución Integral</p>
           </td>
         </tr>
       </table>

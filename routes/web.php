@@ -100,7 +100,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      // Bundles catálogo
      Route::post('bundles/importar',  [BundleController::class, 'importar']) ->name('bundles.importar');
      Route::get('bundles/plantilla',  [BundleController::class, 'plantilla'])->name('bundles.plantilla');
-     Route::resource('bundles', BundleController::class)->only(['index', 'create', 'store', 'destroy']);
+     Route::resource('bundles', BundleController::class)->only(['index', 'create', 'store', 'destroy', 'edit', 'update']);
 
      // Reportes
      Route::get('reportes/zonas',      [ReporteController::class, 'reporteZonas']      )->name('reportes.zonas');

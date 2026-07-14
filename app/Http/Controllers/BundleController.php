@@ -171,6 +171,28 @@ class BundleController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    public function edit(Bundle $bundle)
+    {
+        return response()->json($bundle);
+    }
+
+    public function update(Request $request, Bundle $bundle)
+    {
+        $request->validate([
+            'serie' => 'required|string|max:255',
+            'name'  => 'required|string|max:255',
+            'grade' => 'nullable|string|max:50',
+            'level' => 'nullable|string|max:100',
+            'role'  => 'required|in:student,teacher',
+            'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario',
+        ]);
+
+        $bundle->update($request->all());
+
+        return redirect()->route('bundles.index')
+                         ->with('success', 'Bundle actualizado correctamente.');
+    }
+
     public function destroy(Bundle $bundle)
     {
         $bundle->delete();

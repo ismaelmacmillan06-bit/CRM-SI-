@@ -107,7 +107,11 @@
                         <span class="badge badge-gray">Alumno</span>
                     @endif
                 </td>
-                <td>
+                <td style="display:flex; gap:6px">
+                    <button class="btn btn-secondary btn-sm"
+                            onclick="abrirEditar({{ $bundle->id }}, '{{ addslashes($bundle->serie) }}', '{{ addslashes($bundle->name) }}', '{{ $bundle->grade }}', '{{ $bundle->level }}', '{{ $bundle->role }}', '{{ $bundle->type }}')">
+                        Editar
+                    </button>
                     <form method="POST" action="{{ route('bundles.destroy', $bundle) }}"
                           onsubmit="return confirm('¿Eliminar este bundle?')">
                         @csrf @method('DELETE')
@@ -181,6 +185,92 @@
 </script>
 @endif
 @endrole
+
+{{-- Modal: Editar bundle --}}
+<div id="modal-editar-bundle" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:100%; max-width:580px; box-shadow:0 8px 32px rgba(0,0,0,.18); position:relative">
+        <button onclick="cerrarEditar()"
+                style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888">✕</button>
+
+        <h3 style="margin:0 0 20px">✏️ Editar Bundle</h3>
+
+        <form id="form-editar" method="POST">
+            @csrf @method('PUT')
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Tipo *</label>
+                    <select name="type" id="edit-type" class="form-control" required>
+                        <option value="ELT">ELT</option>
+                        <option value="Plan Lector">Plan Lector</option>
+                        <option value="Imagina">Imagina</option>
+                        <option value="Wikids">Wikids</option>
+                        <option value="Pienso Contigo">Pienso Contigo</option>
+                        <option value="Complemento">Complemento</option>
+                        <option value="Entrelineas">Entrelineas</option>
+                        <option value="Palabrario">Palabrario</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Serie *</label>
+                    <input type="text" name="serie" id="edit-serie" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Nombre del Bundle *</label>
+                <input type="text" name="name" id="edit-name" class="form-control" required>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nivel</label>
+                    <select name="level" id="edit-level" class="form-control">
+                        <option value="">-- Sin nivel --</option>
+                        <option value="Preescolar">Preescolar</option>
+                        <option value="Primaria">Primaria</option>
+                        <option value="Secundaria">Secundaria</option>
+                        <option value="Preparatoria">Preparatoria</option>
+                        <option value="Licenciatura">Licenciatura</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grado</label>
+                    <input type="text" name="grade" id="edit-grade" class="form-control" placeholder="Ej: 1°, 2°">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Rol *</label>
+                <select name="role" id="edit-role" class="form-control" required>
+                    <option value="student">👨‍🎓 Alumno</option>
+                    <option value="teacher">👨‍🏫 Docente</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px">
+                <button type="button" onclick="cerrarEditar()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirEditar(id, serie, name, grade, level, role, type) {
+    document.getElementById('form-editar').action = '/bundles/' + id;
+    document.getElementById('edit-serie').value = serie;
+    document.getElementById('edit-name').value  = name;
+    document.getElementById('edit-grade').value = grade;
+    document.getElementById('edit-level').value = level || '';
+    document.getElementById('edit-role').value  = role;
+    document.getElementById('edit-type').value  = type;
+    document.getElementById('modal-editar-bundle').style.display = 'flex';
+}
+function cerrarEditar() {
+    document.getElementById('modal-editar-bundle').style.display = 'none';
+}
+</script>
 
 <script>
 const buscador    = document.getElementById('buscador');

@@ -593,5 +593,41 @@
 })();
 </script>
 
+{{-- Modal global de confirmación de eliminación --}}
+<div id="modal-confirmar-eliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2000; align-items:center; justify-content:center">
+    <div style="background:#fff; border-radius:14px; padding:36px 32px; width:100%; max-width:440px; box-shadow:0 12px 48px rgba(0,0,0,.28); text-align:center">
+        <div style="font-size:44px; margin-bottom:12px">🗑️</div>
+        <h3 id="modal-eliminar-titulo" style="margin:0 0 10px; font-size:18px; color:#111827"></h3>
+        <p id="modal-eliminar-mensaje" style="color:#6b7280; font-size:14px; margin:0 0 28px; line-height:1.6"></p>
+        <div style="display:flex; gap:12px; justify-content:center">
+            <button type="button" onclick="cerrarModalEliminar()"
+                    style="padding:10px 24px; border-radius:8px; border:1.5px solid #d1d5db; background:#fff; font-size:14px; font-weight:600; cursor:pointer; color:#374151">
+                Cancelar
+            </button>
+            <button id="modal-eliminar-btn" type="button"
+                    style="padding:10px 24px; border-radius:8px; border:none; background:#dc2626; color:#fff; font-size:14px; font-weight:600; cursor:pointer">
+                Sí, eliminar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarEliminar(titulo, mensaje, formId) {
+    document.getElementById('modal-eliminar-titulo').textContent = titulo;
+    document.getElementById('modal-eliminar-mensaje').textContent = mensaje;
+    document.getElementById('modal-eliminar-btn').onclick = function () {
+        document.getElementById(formId).submit();
+    };
+    document.getElementById('modal-confirmar-eliminar').style.display = 'flex';
+}
+function cerrarModalEliminar() {
+    document.getElementById('modal-confirmar-eliminar').style.display = 'none';
+}
+document.getElementById('modal-confirmar-eliminar').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalEliminar();
+});
+</script>
+
 </body>
 </html>

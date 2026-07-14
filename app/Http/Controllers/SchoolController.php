@@ -244,6 +244,14 @@ foreach ($roles as $role => $consultantId) {
             ->with('success', 'Colegio eliminado correctamente.');
     }
 
+    public function destroyAll()
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        School::query()->delete();
+        return redirect()->route('schools.index')
+            ->with('success', 'Todos los colegios han sido eliminados.');
+    }
+
     // ── Importación masiva ────────────────────────────────────────────────
 
     public function importarMasivo(Request $request)
@@ -344,7 +352,7 @@ foreach ($roles as $role => $consultantId) {
             // Estado: no crítico — si no se reconoce, se importa sin estado
             $state = $this->normalizarEstado($estadoRaw);
             if ($estadoRaw !== '' && $state === null) {
-                $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido (importado sin estado).";
+                $omitidos[] = "Fila {$ri}: estado '{$estadoRaw}' no reconocido — usa el nombre oficial del estado (ej: Estado de México, Jalisco, Ciudad de México). Importado sin estado.";
             }
 
             // Consultor Digital: si se indicó, debe existir (búsqueda sin acentos)

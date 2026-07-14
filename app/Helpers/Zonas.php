@@ -9,7 +9,7 @@ class Zonas
         return [
             'Pacífico' => ['baja california sur', 'baja california', 'sonora', 'hermosillo', 'sinaloa', 'culiacan', 'nayarit', 'jalisco', 'guadalajara', 'colima'],
             'Norte'    => ['chihuahua', 'coahuila', 'nuevo leon', 'tamaulipas', 'durango'],
-            'Centro'   => ['estado de mexico', 'ciudad de mexico', 'cdmx', 'hidalgo', 'tlaxcala', 'morelos', 'guerrero', 'mexico'],
+            'Centro'   => ['edomex', 'estado de mexico', 'ciudad de mexico', 'cdmx', 'hidalgo', 'tlaxcala', 'morelos', 'guerrero'],
             'Bajío'    => ['guanajuato', 'queretaro', 'aguascalientes', 'san luis potosi', 'michoacan', 'zacatecas'],
             'Sureste'  => ['veracruz', 'oaxaca', 'puebla', 'chiapas', 'tabasco', 'campeche', 'yucatan', 'quintana roo'],
         ];

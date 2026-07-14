@@ -130,14 +130,41 @@
             @if($tarea)
             @php $p = $tarea->progreso(); @endphp
             <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap">
-                <span class="badge badge-warning">{{ $p['pendiente'] }} pend.</span>
-                <span class="badge badge-info">{{ $p['en_proceso'] }} proceso</span>
-                <span class="badge badge-success">{{ $p['realizada'] }} listas</span>
+                <button id="filtro-pendiente" onclick="toggleFiltro('pendiente')"
+                        data-count="{{ $p['pendiente'] }}"
+                        class="badge badge-warning"
+                        style="cursor:pointer; border:2px solid transparent; background:none;
+                               color:#b45309; padding:4px 10px; font-size:12px; font-weight:600;
+                               border-radius:20px; transition:all 0.15s"
+                        title="Filtrar: solo pendientes">
+                    {{ $p['pendiente'] }} pend.
+                </button>
+                <button id="filtro-en_proceso" onclick="toggleFiltro('en_proceso')"
+                        data-count="{{ $p['en_proceso'] }}"
+                        class="badge badge-info"
+                        style="cursor:pointer; border:2px solid transparent; background:none;
+                               color:#1d4ed8; padding:4px 10px; font-size:12px; font-weight:600;
+                               border-radius:20px; transition:all 0.15s"
+                        title="Filtrar: solo en proceso">
+                    {{ $p['en_proceso'] }} proceso
+                </button>
+                <button id="filtro-realizada" onclick="toggleFiltro('realizada')"
+                        data-count="{{ $p['realizada'] }}"
+                        class="badge badge-success"
+                        style="cursor:pointer; border:2px solid transparent; background:none;
+                               color:#065f46; padding:4px 10px; font-size:12px; font-weight:600;
+                               border-radius:20px; transition:all 0.15s"
+                        title="Filtrar: solo realizadas">
+                    {{ $p['realizada'] }} listas
+                </button>
                 @if(auth()->user()->hasRole('admin'))
                 <form method="POST" action="{{ route('tareas.destroy', $tarea) }}"
-                      onsubmit="return confirm('¿Eliminar esta tarea?')" style="margin:0">
+                      id="form-eliminar-tarea-{{ $tarea->id }}" style="margin:0">
                     @csrf @method('DELETE')
-                    <button class="btn btn-danger btn-sm" style="padding:4px 10px">🗑 Eliminar</button>
+                    <button type="button" class="btn btn-danger btn-sm" style="padding:4px 10px"
+                            onclick="confirmarEliminar('Eliminar tarea', '¿Deseas eliminar esta tarea? Esta acción no se puede deshacer.', 'form-eliminar-tarea-{{ $tarea->id }}')">
+                        🗑 Eliminar
+                    </button>
                 </form>
                 @endif
             </div>
@@ -165,7 +192,10 @@
             <tbody>
                 @forelse($schools as $school)
                 @php $status = $statusMap[$school->id] ?? 'pendiente'; @endphp
-                <tr class="tarea-row" data-nombre="{{ strtolower($school->name) }}">
+                <tr class="tarea-row"
+                    data-nombre="{{ strtolower($school->name) }}"
+                    data-status="{{ $status }}"
+                    id="row-{{ $school->id }}">
                     <td><strong>{{ $school->name }}</strong></td>
                     <td style="font-size:13px; color:var(--text-muted)">
                         {{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}
@@ -226,16 +256,68 @@
 <script>
 const TAREA_ID = {{ $tarea?->id ?? 'null' }};
 
+let filtroActivo = null; // 'pendiente' | 'en_proceso' | 'realizada' | null
+
 const colores = {
-    pendiente:  { bg:'#f59e0b', color:'#fff', off:'#b45309', border:'#f59e0b' },
-    en_proceso: { bg:'#3b82f6', color:'#fff', off:'#1d4ed8', border:'#3b82f6' },
-    realizada:  { bg:'#10b981', color:'#fff', off:'#065f46', border:'#10b981' },
+    pendiente:  { bg:'#f59e0b', color:'#fff', off:'#b45309' },
+    en_proceso: { bg:'#3b82f6', color:'#fff', off:'#1d4ed8' },
+    realizada:  { bg:'#10b981', color:'#fff', off:'#065f46' },
 };
 const badgeMap = {
     pendiente:  { cls:'badge-warning', txt:'○ Pendiente' },
     en_proceso: { cls:'badge-info',    txt:'⟳ En proceso' },
     realizada:  { cls:'badge-success', txt:'✓ Realizada'  },
 };
+const filtroColors = {
+    pendiente:  { active:'#f59e0b', activeBorder:'#d97706' },
+    en_proceso: { active:'#3b82f6', activeBorder:'#2563eb' },
+    realizada:  { active:'#10b981', activeBorder:'#059669' },
+};
+
+function aplicarFiltroVisible() {
+    const q = (document.getElementById('buscador-tareas')?.value || '').toLowerCase().trim();
+    document.querySelectorAll('.tarea-row').forEach(row => {
+        const matchNombre = !q || row.dataset.nombre.includes(q);
+        const matchStatus = !filtroActivo || row.dataset.status === filtroActivo;
+        row.style.display = (matchNombre && matchStatus) ? '' : 'none';
+    });
+}
+
+function toggleFiltro(status) {
+    filtroActivo = filtroActivo === status ? null : status;
+
+    // Actualizar visual de cada botón de filtro
+    ['pendiente', 'en_proceso', 'realizada'].forEach(s => {
+        const btn = document.getElementById('filtro-' + s);
+        if (!btn) return;
+        const fc = filtroColors[s];
+        if (filtroActivo === s) {
+            btn.style.background    = fc.active;
+            btn.style.color         = '#fff';
+            btn.style.borderColor   = fc.activeBorder;
+            btn.style.boxShadow     = '0 0 0 3px ' + fc.active + '44';
+        } else {
+            btn.style.background    = 'none';
+            btn.style.color         = colores[s].off;
+            btn.style.borderColor   = 'transparent';
+            btn.style.boxShadow     = 'none';
+        }
+    });
+
+    aplicarFiltroVisible();
+}
+
+function actualizarContadores() {
+    const rows = document.querySelectorAll('.tarea-row');
+    const counts = { pendiente: 0, en_proceso: 0, realizada: 0 };
+    rows.forEach(r => { if (counts[r.dataset.status] !== undefined) counts[r.dataset.status]++; });
+
+    const labels = { pendiente: 'pend.', en_proceso: 'proceso', realizada: 'listas' };
+    Object.entries(counts).forEach(([s, n]) => {
+        const btn = document.getElementById('filtro-' + s);
+        if (btn) btn.textContent = n + ' ' + labels[s];
+    });
+}
 
 function aplicarEstadoUI(row, badge, nuevoStatus) {
     row.querySelectorAll('button[data-valor]').forEach(btn => {
@@ -249,6 +331,10 @@ function aplicarEstadoUI(row, badge, nuevoStatus) {
         badge.className   = 'badge ' + badgeMap[nuevoStatus].cls;
         badge.textContent = badgeMap[nuevoStatus].txt;
     }
+    // Actualizar data-status para que el filtro funcione en tiempo real
+    row.dataset.status = nuevoStatus;
+    actualizarContadores();
+    aplicarFiltroVisible();
 }
 
 function mostrarToast(msg, ok = true) {
@@ -270,7 +356,6 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
     const row   = btnClicked.closest('tr');
     const badge = document.getElementById('badge-' + schoolId);
 
-    // Deshabilitar mientras guarda
     row.querySelectorAll('button[data-valor]').forEach(b => b.disabled = true);
     btnClicked.textContent = '⏳';
 
@@ -285,7 +370,6 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
         });
 
         if (resp.ok) {
-            // Restaurar texto del botón
             const textos = { pendiente:'○ Pendiente', en_proceso:'⟳ En proceso', realizada:'✓ Realizada' };
             btnClicked.textContent = textos[nuevoStatus];
             aplicarEstadoUI(row, badge, nuevoStatus);
@@ -294,7 +378,6 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
             throw new Error('HTTP ' + resp.status);
         }
     } catch(e) {
-        // Restaurar texto original
         const textos = { pendiente:'○ Pendiente', en_proceso:'⟳ En proceso', realizada:'✓ Realizada' };
         row.querySelectorAll('button[data-valor]').forEach(b => {
             b.disabled = false;
@@ -305,12 +388,7 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
     }
 }
 
-document.getElementById('buscador-tareas')?.addEventListener('input', function() {
-    const q = this.value.toLowerCase().trim();
-    document.querySelectorAll('.tarea-row').forEach(row => {
-        row.style.display = !q || row.dataset.nombre.includes(q) ? '' : 'none';
-    });
-});
+document.getElementById('buscador-tareas')?.addEventListener('input', aplicarFiltroVisible);
 </script>
 
 {{-- Toast de confirmación --}}

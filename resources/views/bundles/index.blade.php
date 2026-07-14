@@ -113,9 +113,12 @@
                         Editar
                     </button>
                     <form method="POST" action="{{ route('bundles.destroy', $bundle) }}"
-                          onsubmit="return confirm('¿Eliminar este bundle?')">
+                          id="form-eliminar-bundle-{{ $bundle->id }}">
                         @csrf @method('DELETE')
-                        <button class="btn btn-danger btn-sm">Eliminar</button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                onclick="confirmarEliminar('Eliminar bundle', '¿Deseas eliminar este bundle del catálogo? Esta acción no se puede deshacer.', 'form-eliminar-bundle-{{ $bundle->id }}')">
+                            Eliminar
+                        </button>
                     </form>
                 </td>
             </tr>

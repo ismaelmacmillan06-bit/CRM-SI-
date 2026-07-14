@@ -38,9 +38,12 @@
                         <a href="{{ route('consultants.show', $consultant) }}" class="btn btn-secondary btn-sm">Ver</a>
                         <a href="{{ route('consultants.edit', $consultant) }}" class="btn btn-secondary btn-sm">Editar</a>
                         <form method="POST" action="{{ route('consultants.destroy', $consultant) }}"
-                              onsubmit="return confirm('¿Eliminar este consultor?')">
+                              id="form-eliminar-consultor-{{ $consultant->id }}">
                             @csrf @method('DELETE')
-                            <button class="btn btn-danger btn-sm">Eliminar</button>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="confirmarEliminar('Eliminar miembro', '¿Deseas eliminar a {{ addslashes($consultant->user->name) }} del equipo? Esta acción no se puede deshacer.', 'form-eliminar-consultor-{{ $consultant->id }}')">
+                                Eliminar
+                            </button>
                         </form>
                     </div>
                 </td>

@@ -7,16 +7,82 @@
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.students.create', $school) }}" class="btn btn-primary">+ Nuevo Alumno</a>
+    <button onclick="document.getElementById('modal-excel').style.display='flex'"
+            class="btn btn-secondary">📊 Carga masiva Excel</button>
     <button onclick="document.getElementById('modal-pdf').style.display='flex'"
             class="btn btn-secondary">📄 Carga masiva PDF</button>
     @endhasanyrole
     @role('admin')
     <form method="POST" action="{{ route('schools.students.destroy-all', $school) }}"
-          onsubmit="return confirm('⚠️ ¿Estás seguro? Esto eliminará TODOS los alumnos de este colegio.')">
+          id="form-borrar-todos-alumnos">
         @csrf @method('DELETE')
-        <button type="submit" class="btn btn-danger">🗑️ Borrar todos</button>
+        <button type="button" class="btn btn-danger"
+                onclick="confirmarEliminar('Borrar todos los alumnos', '¿Estás seguro? Esto eliminará TODOS los alumnos de este colegio.', 'form-borrar-todos-alumnos')">
+            🗑️ Borrar todos
+        </button>
     </form>
     @endrole
+</div>
+
+{{-- Modal Excel --}}
+<div id="modal-excel" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+     z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:560px; max-width:95%; max-height:90vh; overflow-y:auto; position:relative">
+        <button onclick="document.getElementById('modal-excel').style.display='none'"
+                style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888">✕</button>
+
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif; margin:0 0 6px">📊 Carga masiva desde Excel</h3>
+        <p style="margin:0 0 20px; font-size:14px; color:var(--text-muted)">
+            El archivo debe tener estas columnas: <strong>Nombre Completo · Usuario · Contraseña</strong>
+            (+ opcionalmente <strong>Clase</strong> en columna D para asignar grado por fila).
+        </p>
+
+        <form method="POST" action="{{ route('schools.students.import-excel', $school) }}"
+              enctype="multipart/form-data">
+            @csrf
+
+            <div class="form-group">
+                <label class="form-label">Archivo Excel (.xlsx / .xls) *</label>
+                <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls" required>
+                @error('excel_file')
+                    <p style="color:#e74c3c; font-size:12px; margin:4px 0 0">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label class="form-label">Nivel</label>
+                    <select name="level" class="form-control">
+                        <option value="">-- Selecciona --</option>
+                        @forelse($nivelesDelColegio as $nivel)
+                            <option value="{{ $nivel }}">{{ $nivel }}</option>
+                        @empty
+                            <option value="Maternal">Maternal</option>
+                            <option value="Preescolar">Preescolar</option>
+                            <option value="Primaria">Primaria</option>
+                            <option value="Secundaria">Secundaria</option>
+                            <option value="Preparatoria">Preparatoria</option>
+                            <option value="Licenciatura">Licenciatura</option>
+                        @endforelse
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Grado <span style="font-size:11px; color:var(--text-muted)">(se aplica a todos si col. D está vacía)</span></label>
+                    <input type="text" name="grade" class="form-control" placeholder="Ej: 1°A, 2°B">
+                </div>
+            </div>
+
+            <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:20px; font-size:13px; color:#0369a1">
+                💡 Si la columna D contiene la clase de cada alumno (ej. <em>1°A</em>), se usará como grado individual y sobreescribe el campo de arriba.
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end">
+                <button type="button" onclick="document.getElementById('modal-excel').style.display='none'"
+                        class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">📤 Importar alumnos</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {{-- Modal PDF --}}
@@ -66,6 +132,17 @@
 
 @if(session('error'))
     <div class="alert alert-danger">❌ {{ session('error') }}</div>
+@endif
+
+@if(session('excel_omitidos') && count(session('excel_omitidos')))
+    <div style="background:#fffbeb; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px">
+        <strong>Alumnos omitidos (usuario ya registrado):</strong>
+        <ul style="margin:6px 0 0 16px">
+            @foreach(session('excel_omitidos') as $msg)
+                <li>{{ $msg }}</li>
+            @endforeach
+        </ul>
+    </div>
 @endif
 {{-- Buscador --}}
 <div class="card" style="margin-bottom:20px">
@@ -137,9 +214,9 @@
             @empty
             <tr>
                 <td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px">
-                    No hay alumnos registrados. 
-                    <a href="{{ route('schools.students.create', $school) }}">Agrega uno</a> 
-                    o usa la <strong>carga masiva PDF</strong>.
+                    No hay alumnos registrados.
+                    <a href="{{ route('schools.students.create', $school) }}">Agrega uno</a>,
+                    usa la <strong>carga masiva Excel</strong> o la <strong>carga masiva PDF</strong>.
                 </td>
             </tr>
             @endforelse

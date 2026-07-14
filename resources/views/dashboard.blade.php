@@ -437,9 +437,17 @@ const normalizar = str => str?.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ').trim();
 
+// El GeoJSON llama "México" al polígono de Estado de México (no "Estado de México")
+const aliasGeoJSON = {
+    'estado de mexico': 'mexico',
+    'edomex':           'mexico',
+};
+
 const estadosData = {};
 Object.entries(colegiosPorEstado).forEach(([estado, total]) => {
-    estadosData[normalizar(estado)] = { nombre: estado, total };
+    const dbKey  = normalizar(estado);
+    const geoKey = aliasGeoJSON[dbKey] ?? dbKey;
+    estadosData[geoKey] = { nombre: estado, total };
 });
 
 fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json')

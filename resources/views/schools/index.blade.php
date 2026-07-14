@@ -11,6 +11,10 @@
             <button onclick="document.getElementById('modal-importar').style.display='flex'" class="btn btn-secondary">
                 ⬆ Importar Excel
             </button>
+            <button onclick="document.getElementById('modal-borrar-todo').style.display='flex'"
+                    class="btn btn-danger">
+                🗑 Borrar Colegios
+            </button>
             @endrole
             @hasanyrole('admin|consultor_digital')
             <a href="{{ route('schools.create') }}" class="btn btn-primary">+ Nuevo Colegio</a>
@@ -99,9 +103,12 @@
                         @endhasanyrole
                         @role('admin')
                         <form method="POST" action="{{ route('schools.destroy', $school) }}"
-                              onsubmit="return confirm('¿Eliminar este colegio?')">
+                              id="form-eliminar-colegio-{{ $school->id }}">
                             @csrf @method('DELETE')
-                            <button class="btn btn-danger btn-sm">Eliminar</button>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="confirmarEliminar('Eliminar colegio', '¿Deseas eliminar {{ addslashes($school->name) }}? Esta acción no se puede deshacer.', 'form-eliminar-colegio-{{ $school->id }}')">
+                                Eliminar
+                            </button>
                         </form>
                         @endrole
                     </div>
@@ -191,6 +198,28 @@
     });
 </script>
 @endif
+@endrole
+
+@role('admin')
+{{-- Modal: Borrar todos los colegios --}}
+<div id="modal-borrar-todo" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:center; justify-content:center">
+    <div style="background:#fff; border-radius:12px; padding:36px; width:100%; max-width:480px; box-shadow:0 8px 40px rgba(0,0,0,.25); position:relative; text-align:center">
+        <div style="font-size:48px; margin-bottom:12px">⚠️</div>
+        <h3 style="margin:0 0 10px; color:#b91c1c; font-size:20px">Borrar todos los colegios</h3>
+        <p style="color:#374151; font-size:15px; margin:0 0 28px; line-height:1.6">
+            Estás a punto de borrar <strong>todos los colegios</strong>.<br>¿Deseas eliminarlos?
+        </p>
+        <div style="display:flex; gap:12px; justify-content:center">
+            <button type="button"
+                    onclick="document.getElementById('modal-borrar-todo').style.display='none'"
+                    class="btn btn-secondary">Cancelar</button>
+            <form method="POST" action="{{ route('schools.destroy-all') }}">
+                @csrf @method('DELETE')
+                <button type="submit" class="btn btn-danger">Sí, borrar todo</button>
+            </form>
+        </div>
+    </div>
+</div>
 @endrole
 
 @endsection

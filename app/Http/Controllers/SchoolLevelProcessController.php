@@ -43,12 +43,6 @@ class SchoolLevelProcessController extends Controller
             return back()->withErrors($errors)->withInput();
         }
 
-        if ($request->status === 'done' && !$schoolLevelProcess->evidence && !$request->hasFile('evidence')) {
-            return back()
-                ->withErrors(['evidence_' . $schoolLevelProcess->id => 'Debes subir una evidencia antes de marcar como Completado.'])
-                ->withInput();
-        }
-
         $data = [
             'status' => $request->status,
             'notes'  => $request->notes,
@@ -100,5 +94,18 @@ class SchoolLevelProcessController extends Controller
         }
 
         return back()->with('success', 'Proceso actualizado correctamente.');
+    }
+
+    public function destroyEvidence(School $school, SchoolLevelProcess $schoolLevelProcess)
+    {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+
+        if ($schoolLevelProcess->evidence) {
+            Storage::disk('public')->delete($schoolLevelProcess->evidence);
+            $schoolLevelProcess->update(['evidence' => null]);
+            ActivityLog::log('proceso', 'Evidencia eliminada del proceso "' . ($schoolLevelProcess->process->name ?? 'Proceso') . '"', $school->id, '🗑️');
+        }
+
+        return back()->with('success', 'Evidencia eliminada.');
     }
 }

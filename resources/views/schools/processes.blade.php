@@ -95,7 +95,7 @@
                                      font-family:inherit; line-height:1.4; box-sizing:border-box">{{ $slp->notes }}</textarea>
                 </td>
 
-                {{-- Evidencia: thumbnail --}}
+                {{-- Evidencia: thumbnail + borrar --}}
                 <td style="text-align:center">
                     @if($slp->evidence)
                         <a href="{{ Storage::url($slp->evidence) }}" target="_blank" title="Ver evidencia">
@@ -103,8 +103,21 @@
                                  style="width:40px; height:40px; object-fit:cover; border-radius:6px;
                                         border:2px solid #22c55e; display:block; margin:0 auto">
                         </a>
+                        @hasanyrole('admin|consultor_digital')
+                        <form method="POST"
+                              action="{{ route('schools.processes.evidence.destroy', [$school, $slp]) }}"
+                              id="form-del-ev-{{ $slp->id }}"
+                              style="margin-top:4px">
+                            @csrf @method('DELETE')
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    style="font-size:10px; padding:2px 6px; line-height:1.4"
+                                    onclick="confirmarEliminar('Eliminar evidencia', '¿Deseas borrar la imagen de evidencia de este proceso?', 'form-del-ev-{{ $slp->id }}')">
+                                🗑
+                            </button>
+                        </form>
+                        @endhasanyrole
                     @else
-                        <span style="color:var(--text-muted); font-size:12px">—</span>
+                        <span id="ev-placeholder-{{ $slp->id }}" style="color:var(--text-muted); font-size:12px">—</span>
                     @endif
                 </td>
 
@@ -119,23 +132,17 @@
                           action="{{ route('schools.processes.update', [$school, $slp]) }}"
                           enctype="multipart/form-data"
                           id="form-slp-{{ $slp->id }}"
-                          style="display:flex; gap:4px; align-items:center">
+                          style="display:flex; gap:4px; align-items:center; flex-wrap:wrap">
                         @csrf @method('POST')
 
-                        {{-- done deshabilitado solo si status NO es done Y no tiene evidencia aún --}}
                         <select name="status"
                                 id="status-{{ $slp->id }}"
                                 class="form-control"
                                 style="flex:1; min-width:0; padding:6px 6px; font-size:12px">
                             <option value="pending"     {{ $slp->status === 'pending'     ? 'selected' : '' }}>⏳ Pendiente</option>
                             <option value="in_progress" {{ $slp->status === 'in_progress' ? 'selected' : '' }}>🔄 En progreso</option>
-                            <option value="done"
-                                    id="done-opt-{{ $slp->id }}"
-                                    {{ $slp->status === 'done' ? 'selected' : '' }}
-                                    data-already-done="{{ $slp->status === 'done' ? '1' : '0' }}">
-                                ✅ Completado
-                            </option>
-                            <option value="reopened" {{ $slp->status === 'reopened' ? 'selected' : '' }}>🔁 Reapertura</option>
+                            <option value="done"        {{ $slp->status === 'done'        ? 'selected' : '' }}>✅ Completado</option>
+                            <option value="reopened"    {{ $slp->status === 'reopened'    ? 'selected' : '' }}>🔁 Reapertura</option>
                         </select>
 
                         {{-- Input oculto; solo JPG/PNG/WebP, máx 10 MB --}}
@@ -147,16 +154,21 @@
                                data-has-evidence="{{ $slp->evidence ? '1' : '0' }}"
                                style="display:none">
 
-                        {{-- Botón icono evidencia --}}
+                        {{-- Botón icono evidencia: verde si ya hay imagen, naranja si hay nueva seleccionada --}}
                         <label for="file-{{ $slp->id }}"
                                id="file-label-{{ $slp->id }}"
-                               title="{{ $slp->evidence ? 'Cambiar evidencia (JPG, PNG o WebP · máx 10 MB)' : 'Subir evidencia — JPG, PNG o WebP · máx 10 MB' }}"
+                               title="{{ $slp->evidence ? 'Cambiar evidencia (JPG, PNG o WebP · máx 10 MB)' : 'Subir evidencia (opcional) — JPG, PNG o WebP · máx 10 MB' }}"
                                style="cursor:pointer; flex-shrink:0; width:30px; height:30px;
                                       display:inline-flex; align-items:center; justify-content:center;
                                       background:var(--surface2); border-radius:6px; font-size:14px;
                                       border:1px solid {{ $slp->evidence ? '#22c55e' : 'var(--border)' }}">
                             📎
                         </label>
+
+                        {{-- Nombre del archivo nuevo seleccionado (antes de guardar) --}}
+                        <span id="file-name-{{ $slp->id }}"
+                              style="display:none; font-size:10px; color:#f59e0b; flex-basis:100%;
+                                     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px"></span>
 
                         <button type="submit" class="btn btn-primary btn-sm"
                                 style="flex-shrink:0; padding:6px 10px; font-size:12px; white-space:nowrap">
@@ -175,50 +187,34 @@
 
 <script>
 document.querySelectorAll('input[type="file"][data-slp]').forEach(function (fileInput) {
-    var slpId     = fileInput.dataset.slp;
-    var doneOpt   = document.getElementById('done-opt-' + slpId);
-    var statusSel = document.getElementById('status-' + slpId);
-    var fileLabel = document.getElementById('file-label-' + slpId);
-
-    if (!doneOpt) return;
-
-    // Solo bloquear "Completado" si el proceso NO está ya completado y no tiene evidencia
-    var alreadyDone  = doneOpt.dataset.alreadyDone === '1';
-    var hasEvidence  = fileInput.dataset.hasEvidence === '1';
-
-    if (!alreadyDone && !hasEvidence) {
-        doneOpt.disabled = true;
-    }
+    const slpId    = fileInput.dataset.slp;
+    const fileLabel = document.getElementById('file-label-' + slpId);
+    const fileName  = document.getElementById('file-name-' + slpId);
 
     fileInput.addEventListener('change', function () {
         const file = this.files && this.files[0];
 
-        if (file) {
-            // Validación de tipo antes de llegar al servidor
-            const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-            if (!allowed.includes(file.type)) {
-                alert('Formato no aceptado: ' + (file.type || 'desconocido') + '.\nSolo se permiten JPG, PNG o WebP.\nSi la foto es HEIC (iPhone), conviértela primero en "Archivos" → compartir → JPEG.');
-                this.value = '';
-                return;
-            }
-
-            // Validación de tamaño: máx 10 MB
-            const maxMB = 10;
-            if (file.size > maxMB * 1024 * 1024) {
-                alert('La imagen pesa ' + (file.size / 1024 / 1024).toFixed(1) + ' MB y el límite es ' + maxMB + ' MB.\nReduce el tamaño o la calidad antes de subirla.');
-                this.value = '';
-                return;
-            }
-
-            doneOpt.disabled = false;
-            if (fileLabel) fileLabel.style.borderColor = '#f59e0b';
-        } else {
-            if (!alreadyDone && !hasEvidence) {
-                doneOpt.disabled = true;
-                if (statusSel && statusSel.value === 'done') statusSel.value = 'pending';
-                if (fileLabel) fileLabel.style.borderColor = '';
-            }
+        if (!file) {
+            if (fileLabel) fileLabel.style.borderColor = fileInput.dataset.hasEvidence === '1' ? '#22c55e' : '';
+            if (fileName)  { fileName.style.display = 'none'; fileName.textContent = ''; }
+            return;
         }
+
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(file.type)) {
+            alert('Formato no aceptado: ' + (file.type || 'desconocido') + '.\nSolo se permiten JPG, PNG o WebP.\nSi la foto es HEIC (iPhone), conviértela primero en "Archivos" → compartir → JPEG.');
+            this.value = '';
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            alert('La imagen pesa ' + (file.size / 1024 / 1024).toFixed(1) + ' MB y el límite es 10 MB.\nReduce el tamaño o la calidad antes de subirla.');
+            this.value = '';
+            return;
+        }
+
+        if (fileLabel) fileLabel.style.borderColor = '#f59e0b';
+        if (fileName)  { fileName.textContent = '📎 ' + file.name; fileName.style.display = 'inline-block'; }
     });
 });
 </script>

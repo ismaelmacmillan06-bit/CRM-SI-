@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Models\School;
 use Illuminate\Http\Request;
 use Smalot\PdfParser\Parser;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class StudentController extends Controller
 {
@@ -182,10 +183,80 @@ private function extractStudentsFromPdf(string $text): array
                          ->with('success', 'Alumno eliminado correctamente.');
     }
 
+    public function importarExcel(Request $request, School $school)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls|max:10240',
+            'level'      => 'nullable|string|max:100',
+            'grade'      => 'nullable|string|max:100',
+        ], [
+            'excel_file.mimes' => 'Solo se aceptan archivos Excel (.xlsx o .xls).',
+            'excel_file.max'   => 'El archivo no puede superar 10 MB.',
+        ]);
+
+        try {
+            $spreadsheet = IOFactory::load($request->file('excel_file')->getPathname());
+            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+
+            // Saltar la fila de encabezado (fila 0 del array)
+            array_shift($rows);
+
+            $level  = $request->level;
+            $grade  = $request->grade;
+            $count  = 0;
+            $omitidos = [];
+
+            foreach ($rows as $i => $row) {
+                $nombreCompleto = trim((string) ($row[0] ?? ''));
+                $usuario        = trim((string) ($row[1] ?? ''));
+                $contrasena     = trim((string) ($row[2] ?? ''));
+                // Columna D opcional: clase/grado por fila
+                $gradoFila      = isset($row[3]) ? trim((string) $row[3]) : null;
+
+                if ($nombreCompleto === '' || $usuario === '' || $contrasena === '') {
+                    continue; // Fila vacía o incompleta — saltar silenciosamente
+                }
+
+                // Dividir nombre completo: primera palabra = nombre, resto = apellidos
+                $partes   = preg_split('/\s+/', $nombreCompleto, 2);
+                $nombre   = $partes[0];
+                $apellido = $partes[1] ?? '';
+
+                // Evitar duplicados por username MEE
+                if ($school->students()->where('mee_username', $usuario)->exists()) {
+                    $omitidos[] = "Fila " . ($i + 2) . ": usuario «{$usuario}» ya existe — omitido.";
+                    continue;
+                }
+
+                $school->students()->create([
+                    'name'         => $nombre,
+                    'last_name'    => $apellido,
+                    'mee_username' => $usuario,
+                    'mee_password' => $contrasena,
+                    'level'        => $level,
+                    'grade'        => $gradoFila ?: $grade,
+                ]);
+                $count++;
+            }
+
+            $msg = "✅ Se registraron {$count} alumno(s) correctamente.";
+            if ($omitidos) {
+                $msg .= ' ' . count($omitidos) . ' omitido(s) por duplicado.';
+            }
+
+            return redirect()->route('schools.students.index', $school)
+                             ->with('success', $msg)
+                             ->with('excel_omitidos', $omitidos);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar el Excel: ' . $e->getMessage());
+        }
+    }
+
     public function destroyAll(School $school)
-{
-    $school->students()->delete();
-    return redirect()->route('schools.students.index', $school)
-                     ->with('success', 'Todos los alumnos fueron eliminados.');
-}
+    {
+        $school->students()->delete();
+        return redirect()->route('schools.students.index', $school)
+                         ->with('success', 'Todos los alumnos fueron eliminados.');
+    }
 }

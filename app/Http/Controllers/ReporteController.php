@@ -44,7 +44,7 @@ class ReporteController extends Controller
         $porZona['Sin zona'] = [];
 
         foreach ($schools as $school) {
-            $zona = Zonas::detectZona($school->city ?? '');
+            $zona = Zonas::detectZona($school->state ?? $school->city ?? '');
             $porZona[$zona][] = $school;
         }
 

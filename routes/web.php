@@ -39,6 +39,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     // Colegios
     Route::get('schools/plantilla',  [SchoolController::class, 'descargarPlantilla'])->name('schools.plantilla');
     Route::post('schools/importar',  [SchoolController::class, 'importarMasivo'])->name('schools.importar');
+    Route::delete('schools-borrar-todo', [SchoolController::class, 'destroyAll'])->name('schools.destroy-all');
     Route::resource('schools', SchoolController::class);
 
     // Docentes
@@ -70,6 +71,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.processes.index');
     Route::post('schools/{school}/processes/{schoolLevelProcess}', [SchoolLevelProcessController::class, 'update'])
          ->name('schools.processes.update');
+    Route::delete('schools/{school}/processes/{schoolLevelProcess}/evidence', [SchoolLevelProcessController::class, 'destroyEvidence'])
+         ->name('schools.processes.evidence.destroy');
 
     // Alumnos
     Route::resource('schools.students', StudentController::class)
@@ -82,6 +85,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     // Carga masiva PDF
     Route::post('schools/{school}/students/upload-pdf', [StudentController::class, 'uploadPdf'])
         ->name('schools.students.upload-pdf');
+    Route::post('schools/{school}/students/import-excel', [StudentController::class, 'importarExcel'])
+        ->name('schools.students.import-excel');
     
     // Bundles por colegio
     Route::get('schools/{school}/bundles', [SchoolBundleController::class, 'index'])

@@ -114,7 +114,15 @@ $tiposConfig = [
         </thead>
         <tbody>
             @forelse($logs as $log)
-            @php $cfg = $tiposConfig[$log->tipo] ?? ['label' => $log->tipo, 'badge' => 'badge-gray', 'icon' => '📝']; @endphp
+            @php
+                $cfg = $tiposConfig[$log->tipo] ?? ['label' => $log->tipo, 'badge' => 'badge-gray', 'icon' => '📝'];
+                $displayIcon = $log->icono ?: $cfg['icon'];
+                // Para procesos, ajustar color del badge según el ícono almacenado
+                if ($log->tipo === 'proceso') {
+                    if ($log->icono === '✅') $cfg['badge'] = 'badge-success';
+                    elseif ($log->icono === '↩️') $cfg['badge'] = 'badge-warning';
+                }
+            @endphp
             <tr>
                 <td style="font-size:12px; color:var(--text-muted); white-space:nowrap">
                     <div style="font-weight:600; color:var(--text)">
@@ -124,7 +132,7 @@ $tiposConfig = [
                 </td>
                 <td>
                     <span class="badge {{ $cfg['badge'] }}" style="font-size:11px">
-                        {{ $cfg['icon'] }} {{ $cfg['label'] }}
+                        {{ $displayIcon }} {{ $cfg['label'] }}
                     </span>
                 </td>
                 <td style="font-size:13px; line-height:1.5">

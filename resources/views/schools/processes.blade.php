@@ -119,7 +119,7 @@
 
                 {{-- Acción: solo visible para roles con escritura --}}
                 <td>
-                    @error('evidence_' . $slp->id)
+                    @error("evidence_{$slp->id}")
                         <div style="color:#e55; font-size:11px; margin-bottom:4px">{{ $message }}</div>
                     @enderror
 
@@ -136,8 +136,8 @@
                                 class="form-control"
                                 style="flex:1; min-width:0; padding:6px 6px; font-size:12px">
                             <option value="pending"     {{ $slp->status === 'pending'     ? 'selected' : '' }}>⏳ Pendiente</option>
-                            <option value="in_progress" {{ $slp->status === 'in_progress' ? 'selected' : '' }}>🔄 En progreso</option>
                             <option value="done"        {{ $slp->status === 'done'        ? 'selected' : '' }}>✅ Completado</option>
+                            <option value="in_progress" {{ $slp->status === 'in_progress' ? 'selected' : '' }}>🔄 En proceso</option>
                             <option value="reopened"    {{ $slp->status === 'reopened'    ? 'selected' : '' }}>🔁 Reapertura</option>
                         </select>
 
@@ -207,6 +207,12 @@ document.querySelectorAll('input[type="file"][data-slp]').forEach(function (file
             alert('La imagen pesa ' + (file.size / 1024 / 1024).toFixed(1) + ' MB y el límite es 10 MB.\nReduce el tamaño o la calidad antes de subirla.');
             this.value = '';
             return;
+        }
+
+        // Si el proceso sigue en Pendiente, avanzar automáticamente a Completado al subir evidencia
+        const statusSelect = document.getElementById('status-' + slpId);
+        if (statusSelect && statusSelect.value === 'pending') {
+            statusSelect.value = 'done';
         }
 
         if (fileLabel) fileLabel.style.borderColor = '#f59e0b';

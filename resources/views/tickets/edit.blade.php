@@ -145,6 +145,8 @@ function toggleRemove(checkbox) {
     if (checkbox.checked) {
         if (current) current.style.opacity = '0.4';
         zone.style.display = 'none';
+        const inp = document.getElementById('evidence-input');
+        if (inp) inp.value = '';
     } else {
         if (current) current.style.opacity = '1';
         zone.style.display = 'block';

@@ -45,6 +45,7 @@ class SchoolBundleController extends Controller
             'acquired_at'  => 'nullable|date',
         ]);
 
+        $agregados = 0;
         foreach ($request->bundle_ids as $bundleId) {
             $quantity = $request->quantities[$bundleId] ?? 1;
             // Evitar duplicados
@@ -53,11 +54,13 @@ class SchoolBundleController extends Controller
                     'quantity'    => $quantity,
                     'acquired_at' => $request->acquired_at,
                 ]);
+                $agregados++;
             }
         }
 
-        $total = count($request->bundle_ids);
-        ActivityLog::log('bundle', "{$total} bundle(s) agregados a {$school->name}", $school->id, '📚');
+        if ($agregados > 0) {
+            ActivityLog::log('bundle', "{$agregados} bundle(s) agregados a {$school->name}", $school->id, '📚');
+        }
 
         return redirect()->route('schools.bundles.index', $school)
                          ->with('success', 'Bundles agregados correctamente.');
@@ -124,7 +127,9 @@ class SchoolBundleController extends Controller
 
     public function destroy(School $school, Bundle $bundle)
     {
+        $nombre = $bundle->name;
         $school->bundles()->detach($bundle->id);
+        ActivityLog::log('bundle', "Bundle \"{$nombre}\" eliminado de {$school->name}", $school->id, '🗑️');
         return back()->with('success', 'Bundle eliminado correctamente.');
     }
 }

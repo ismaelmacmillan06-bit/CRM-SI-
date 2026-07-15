@@ -228,7 +228,7 @@ class ReporteController extends Controller
 
         $this->sheetTitle($ws2, "MacmillanSI — Directores ({$directorRoles->count()})", '7C3AED', 8, $generado);
 
-        $headers2 = ['Nombre', 'Apellidos', 'Email', 'Colegio', 'Ciudad', 'Rol', 'Materia', 'Consultor Digital'];
+        $headers2 = ['Nombre', 'Apellidos', 'Email', 'Colegio', 'Estado', 'Rol', 'Materia', 'Consultor Digital'];
         $this->writeHeaders($ws2, 4, $headers2, '7C3AED');
 
         $row = 5;
@@ -270,7 +270,7 @@ class ReporteController extends Controller
         ]);
         $ws3->mergeCells('A4:F4');
 
-        $headers3a = ['Colegio', 'Ciudad', 'Usuario MEE', 'Contraseña MEE', 'Consultor Digital', 'Estatus Colegio'];
+        $headers3a = ['Colegio', 'Estado', 'Usuario MEE', 'Contraseña MEE', 'Consultor Digital', 'Estatus Colegio'];
         $this->writeHeaders($ws3, 5, $headers3a, '059669');
 
         $row = 6;
@@ -323,7 +323,7 @@ class ReporteController extends Controller
 
         $this->sheetTitle($ws4, "MacmillanSI — Docentes ({$teachers->count()})", '1D4ED8', 10, $generado);
 
-        $headers4 = ['Nombre', 'Apellidos', 'Email', 'Colegio', 'Ciudad',
+        $headers4 = ['Nombre', 'Apellidos', 'Email', 'Colegio', 'Estado',
                      'Grado', 'Roles', 'Materia', 'Usuario MEE', 'Contraseña MEE'];
         $this->writeHeaders($ws4, 4, $headers4, '1D4ED8');
 

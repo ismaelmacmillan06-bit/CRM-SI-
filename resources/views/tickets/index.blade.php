@@ -97,7 +97,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="8" style="text-align:center; color:var(--text-muted); padding:40px">
+                <td colspan="9" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay tickets registrados para este colegio.
                     <a href="{{ route('schools.tickets.create', $school) }}">Registra el primero</a>
                 </td>

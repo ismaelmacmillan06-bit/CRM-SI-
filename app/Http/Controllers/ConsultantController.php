@@ -140,8 +140,8 @@ public function store(Request $request)
 
     public function destroy(Consultant $consultant)
     {
-        $nombre = $consultant->user->name ?? 'Consultor';
-        $consultant->user->delete();
+        $nombre = $consultant->user?->name ?? 'Consultor';
+        $consultant->user?->delete();
         ActivityLog::log('equipo', "Consultor \"{$nombre}\" eliminado", null, '🗑️');
         return redirect()->route('consultants.index')
                          ->with('success', 'Consultor eliminado correctamente.');

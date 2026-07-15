@@ -21,6 +21,7 @@ class StudentController extends Controller
 
         // Conteo de alumnos por nivel (solo niveles con alumnos registrados)
         $porNivel = $students->groupBy('level')
+            ->filter(fn($g, $k) => $k !== '')
             ->map(fn($g) => $g->count())
             ->sortKeys();
 

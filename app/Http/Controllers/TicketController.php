@@ -30,6 +30,7 @@ class TicketController extends Controller
             'description'   => 'required|string',
             'priority'      => 'required|in:low,medium,high',
             'consultant_id' => 'required|exists:consultants,id',
+            'medium'        => 'required|in:salesforce,whaticket,whatsapp',
             'evidence'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ], [
             'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
@@ -60,11 +61,13 @@ class TicketController extends Controller
     public function update(Request $request, Ticket $ticket)
     {
         $request->validate([
-            'title'       => 'required|string|max:255',
-            'description' => 'required|string',
-            'priority'    => 'required|in:low,medium,high',
-            'status'      => 'required|in:open,in_progress,closed',
-            'evidence'    => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'title'         => 'required|string|max:255',
+            'description'   => 'required|string',
+            'priority'      => 'required|in:low,medium,high',
+            'status'        => 'required|in:open,in_progress,closed',
+            'consultant_id' => 'nullable|exists:consultants,id',
+            'medium'        => 'required|in:salesforce,whaticket,whatsapp',
+            'evidence'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ], [
             'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
         ]);
@@ -85,6 +88,8 @@ class TicketController extends Controller
 
         if ($request->status === 'closed' && $ticket->status !== 'closed') {
             $data['resolved_at'] = now();
+        } elseif ($request->status !== 'closed' && $ticket->status === 'closed') {
+            $data['resolved_at'] = null;
         }
 
         $oldStatus = $ticket->status;
@@ -105,10 +110,12 @@ class TicketController extends Controller
     public function destroy(Ticket $ticket)
     {
         $school = $ticket->school;
+        $titulo = $ticket->title;
         if ($ticket->evidence) {
             Storage::disk('public')->delete($ticket->evidence);
         }
         $ticket->delete();
+        ActivityLog::log('ticket', "Ticket \"{$titulo}\" eliminado", $school->id, '🗑️');
         return redirect()->route('schools.tickets.index', $school)
                          ->with('success', 'Ticket eliminado correctamente.');
     }

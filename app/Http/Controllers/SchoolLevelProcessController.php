@@ -68,20 +68,22 @@ class SchoolLevelProcessController extends Controller
         $schoolLevelProcess->update($data);
         $schoolLevelProcess->load('process');
 
-        // Log del cambio de estado solo cuando realmente cambia
-        if ($oldStatus !== $request->status) {
-            $statusLabels = [
-                'pending'     => 'Pendiente',
-                'in_progress' => 'En proceso',
-                'done'        => 'Completado',
-                'reopened'    => 'Reabierto',
-            ];
-            $processName = $schoolLevelProcess->process->name ?? 'Proceso';
-            $de  = $statusLabels[$oldStatus]           ?? $oldStatus;
-            $a   = $statusLabels[$request->status]     ?? $request->status;
-            $ico = $request->status === 'done' ? '✅' : ($request->status === 'in_progress' ? '🔄' : '↩️');
+        $statusLabels = [
+            'pending'     => 'Pendiente',
+            'in_progress' => 'En proceso',
+            'done'        => 'Completado',
+            'reopened'    => 'Reabierto',
+        ];
+        $processName = $schoolLevelProcess->process->name ?? 'Proceso';
+        $ico = $request->status === 'done' ? '✅' : ($request->status === 'in_progress' ? '🔄' : '↩️');
 
+        if ($oldStatus !== $request->status) {
+            $de = $statusLabels[$oldStatus]       ?? $oldStatus;
+            $a  = $statusLabels[$request->status] ?? $request->status;
             ActivityLog::log('proceso', "\"$processName\" cambió de $de → $a", $school->id, $ico);
+        } else {
+            $label = $statusLabels[$request->status] ?? $request->status;
+            ActivityLog::log('proceso', "\"$processName\" actualizado ($label)", $school->id, $ico);
         }
 
         // Log especial si llega al 100%

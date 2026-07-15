@@ -14,10 +14,17 @@ class StudentController extends Controller
     public function index(School $school)
     {
         $students = $school->students()->orderBy('level')->orderBy('grade')->get();
-        // Solo los niveles registrados en el colegio para el dropdown de alta masiva
+
+        // Niveles configurados en el colegio (para dropdown de alta masiva)
         $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
             ->pluck('level.name')->filter()->sort()->values();
-        return view('students.index', compact('school', 'students', 'nivelesDelColegio'));
+
+        // Conteo de alumnos por nivel (solo niveles con alumnos registrados)
+        $porNivel = $students->groupBy('level')
+            ->map(fn($g) => $g->count())
+            ->sortKeys();
+
+        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel'));
     }
 
     public function create(School $school)

@@ -144,6 +144,44 @@
         </ul>
     </div>
 @endif
+{{-- Mini cards por nivel --}}
+@if($porNivel->isNotEmpty())
+<div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px">
+    @php
+        $nivelConfig = [
+            'Maternal'      => ['icon' => '🍼', 'color' => '#f59e0b', 'bg' => '#fffbeb', 'border' => '#fcd34d'],
+            'Preescolar'    => ['icon' => '🎨', 'color' => '#8b5cf6', 'bg' => '#f5f3ff', 'border' => '#c4b5fd'],
+            'Primaria'      => ['icon' => '📚', 'color' => '#2563eb', 'bg' => '#eff6ff', 'border' => '#93c5fd'],
+            'Secundaria'    => ['icon' => '🔬', 'color' => '#059669', 'bg' => '#ecfdf5', 'border' => '#6ee7b7'],
+            'Preparatoria'  => ['icon' => '🎓', 'color' => '#dc2626', 'bg' => '#fef2f2', 'border' => '#fca5a5'],
+            'Licenciatura'  => ['icon' => '🏛️', 'color' => '#0d1117', 'bg' => '#f8fafc', 'border' => '#cbd5e1'],
+        ];
+    @endphp
+    @foreach($porNivel as $nivel => $total)
+        @php
+            $cfg = $nivelConfig[$nivel] ?? ['icon' => '📋', 'color' => '#6b7280', 'bg' => '#f9fafb', 'border' => '#e5e7eb'];
+        @endphp
+        <div style="background:{{ $cfg['bg'] }}; border:1.5px solid {{ $cfg['border'] }}; border-radius:12px;
+                    padding:14px 20px; display:flex; align-items:center; gap:12px; min-width:160px; flex:1; max-width:220px">
+            <span style="font-size:26px; line-height:1">{{ $cfg['icon'] }}</span>
+            <div>
+                <div style="font-size:22px; font-weight:800; color:{{ $cfg['color'] }}; line-height:1">{{ $total }}</div>
+                <div style="font-size:12px; font-weight:600; color:{{ $cfg['color'] }}; opacity:.8; margin-top:2px">{{ $nivel }}</div>
+            </div>
+        </div>
+    @endforeach
+    {{-- Total general --}}
+    <div style="background:#0d1117; border:1.5px solid #1e293b; border-radius:12px;
+                padding:14px 20px; display:flex; align-items:center; gap:12px; min-width:160px; flex:1; max-width:220px">
+        <span style="font-size:26px; line-height:1">👨‍🎓</span>
+        <div>
+            <div style="font-size:22px; font-weight:800; color:#fff; line-height:1">{{ $students->count() }}</div>
+            <div style="font-size:12px; font-weight:600; color:#9ca3af; margin-top:2px">Total alumnos</div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Buscador --}}
 <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:16px 24px">

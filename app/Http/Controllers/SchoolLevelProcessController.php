@@ -81,9 +81,6 @@ class SchoolLevelProcessController extends Controller
             $de = $statusLabels[$oldStatus]       ?? $oldStatus;
             $a  = $statusLabels[$request->status] ?? $request->status;
             ActivityLog::log('proceso', "\"$processName\" cambió de $de → $a", $school->id, $ico);
-        } else {
-            $label = $statusLabels[$request->status] ?? $request->status;
-            ActivityLog::log('proceso', "\"$processName\" actualizado ($label)", $school->id, $ico);
         }
 
         // Log especial si llega al 100%

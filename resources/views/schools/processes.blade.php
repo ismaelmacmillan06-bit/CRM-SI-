@@ -7,10 +7,6 @@
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
 </div>
 
-@if(session('success'))
-    <div class="alert alert-success" style="margin-bottom:16px">{{ session('success') }}</div>
-@endif
-
 @foreach($school->schoolLevels as $schoolLevel)
 <div class="card" style="margin-bottom:24px">
     <div class="card-header">

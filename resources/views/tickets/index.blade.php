@@ -21,6 +21,7 @@
         <th>Prioridad</th>
         <th>Status</th>
         <th>Consultor</th>
+        <th>Evidencia</th>
         <th>Creado</th>
         <th>Resuelto</th>
         <th>Acciones</th>
@@ -66,6 +67,16 @@
                     @endif
                 </td>
                 <td style="font-size:13px">{{ $ticket->consultant->user->name ?? '—' }}</td>
+                <td>
+                    @if($ticket->evidence)
+                        <a href="{{ Storage::url($ticket->evidence) }}" target="_blank" title="Ver evidencia">
+                            <img src="{{ Storage::url($ticket->evidence) }}" alt="evidencia"
+                                 style="height:40px; width:40px; object-fit:cover; border-radius:4px; border:1px solid var(--border)">
+                        </a>
+                    @else
+                        <span style="color:var(--text-muted); font-size:12px">—</span>
+                    @endif
+                </td>
                 <td style="font-size:13px; color:var(--text-muted)">
                     {{ $ticket->created_at->format('d/m/Y') }}
                 </td>
@@ -76,6 +87,7 @@
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-secondary btn-sm">Editar</a>
                         <form method="POST" action="{{ route('tickets.destroy', $ticket) }}"
+                              id="form-ticket-{{ $ticket->id }}"
                               onsubmit="return confirm('¿Eliminar este ticket?')">
                             @csrf @method('DELETE')
                             <button class="btn btn-danger btn-sm">Eliminar</button>

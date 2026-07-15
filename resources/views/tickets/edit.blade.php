@@ -10,7 +10,8 @@
             <a href="{{ route('schools.tickets.index', $ticket->school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('tickets.update', $ticket) }}">
+            <form method="POST" action="{{ route('tickets.update', $ticket) }}"
+                  enctype="multipart/form-data">
                 @csrf @method('PUT')
 
                 <div class="grid-2">
@@ -61,6 +62,42 @@
                     </div>
                 </div>
 
+                {{-- Evidencia --}}
+                <div class="form-group">
+                    <label class="form-label">Foto de evidencia <span style="color:var(--text-muted); font-size:12px">(opcional · JPG, PNG, WEBP · máx. 5 MB)</span></label>
+
+                    @if($ticket->evidence)
+                        <div id="current-evidence" style="margin-bottom:12px">
+                            <a href="{{ Storage::url($ticket->evidence) }}" target="_blank">
+                                <img src="{{ Storage::url($ticket->evidence) }}" alt="Evidencia actual"
+                                     style="max-height:160px; border-radius:6px; border:1px solid var(--border)">
+                            </a>
+                            <div style="margin-top:6px; display:flex; align-items:center; gap:10px">
+                                <small style="color:var(--text-muted)">Imagen actual</small>
+                                <label style="display:flex; align-items:center; gap:4px; font-size:13px; cursor:pointer; color:var(--danger)">
+                                    <input type="checkbox" name="remove_evidence" value="1"
+                                           onchange="toggleRemove(this)"> Eliminar imagen
+                                </label>
+                            </div>
+                        </div>
+                    @endif
+
+                    <div id="evidence-drop-zone" style="border:2px dashed var(--border); border-radius:8px; padding:20px; text-align:center; cursor:pointer; transition:border-color .2s"
+                         onclick="document.getElementById('evidence-input').click()"
+                         ondragover="event.preventDefault(); this.style.borderColor='var(--primary)'"
+                         ondragleave="this.style.borderColor='var(--border)'"
+                         ondrop="handleDrop(event)">
+                        <div id="evidence-placeholder" style="color:var(--text-muted); font-size:14px">
+                            📸 {{ $ticket->evidence ? 'Reemplazar imagen — haz clic o arrastra' : 'Haz clic o arrastra una imagen aquí' }}
+                        </div>
+                        <img id="evidence-preview" src="" alt="preview" style="display:none; max-height:180px; max-width:100%; border-radius:6px; margin-top:8px">
+                        <div id="evidence-name" style="display:none; font-size:12px; color:var(--text-muted); margin-top:6px"></div>
+                    </div>
+                    <input type="file" id="evidence-input" name="evidence" accept="image/*"
+                           style="display:none" onchange="previewEvidence(this.files[0])">
+                    @error('evidence')<small style="color:var(--danger)">{{ $message }}</small>@enderror
+                </div>
+
                 <div style="display:flex; gap:10px; justify-content:flex-end">
                     <a href="{{ route('schools.tickets.index', $ticket->school) }}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary">Guardar cambios</button>
@@ -69,4 +106,49 @@
         </div>
     </div>
 </div>
+<script>
+function previewEvidence(file) {
+    if (!file) return;
+    const zone = document.getElementById('evidence-drop-zone');
+    const placeholder = document.getElementById('evidence-placeholder');
+    const preview = document.getElementById('evidence-preview');
+    const nameEl = document.getElementById('evidence-name');
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        nameEl.textContent = file.name;
+        nameEl.style.display = 'block';
+        zone.style.borderColor = 'var(--primary)';
+    };
+    reader.readAsDataURL(file);
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('evidence-drop-zone').style.borderColor = 'var(--border)';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const input = document.getElementById('evidence-input');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        previewEvidence(file);
+    }
+}
+
+function toggleRemove(checkbox) {
+    const zone = document.getElementById('evidence-drop-zone');
+    const current = document.getElementById('current-evidence');
+    if (checkbox.checked) {
+        if (current) current.style.opacity = '0.4';
+        zone.style.display = 'none';
+    } else {
+        if (current) current.style.opacity = '1';
+        zone.style.display = 'block';
+    }
+}
+</script>
 @endsection

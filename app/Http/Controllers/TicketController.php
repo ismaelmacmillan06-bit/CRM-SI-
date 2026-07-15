@@ -7,6 +7,7 @@ use App\Models\Ticket;
 use App\Models\School;
 use App\Models\Consultant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class TicketController extends Controller
 {
@@ -29,9 +30,18 @@ class TicketController extends Controller
             'description'   => 'required|string',
             'priority'      => 'required|in:low,medium,high',
             'consultant_id' => 'required|exists:consultants,id',
+            'evidence'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+        ], [
+            'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
         ]);
 
-        $ticket = $school->tickets()->create($request->only(['title', 'description', 'priority', 'consultant_id']));
+        $data = $request->only(['title', 'description', 'priority', 'consultant_id', 'medium']);
+
+        if ($request->hasFile('evidence')) {
+            $data['evidence'] = $request->file('evidence')->store('tickets', 'public');
+        }
+
+        $ticket = $school->tickets()->create($data);
 
         $prioridades = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
         $prio = $prioridades[$request->priority] ?? $request->priority;
@@ -54,9 +64,24 @@ class TicketController extends Controller
             'description' => 'required|string',
             'priority'    => 'required|in:low,medium,high',
             'status'      => 'required|in:open,in_progress,closed',
+            'evidence'    => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+        ], [
+            'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
         ]);
 
-        $data = $request->only(['title', 'description', 'priority', 'status', 'consultant_id']);
+        $data = $request->only(['title', 'description', 'priority', 'status', 'consultant_id', 'medium']);
+
+        if ($request->hasFile('evidence')) {
+            if ($ticket->evidence) {
+                Storage::disk('public')->delete($ticket->evidence);
+            }
+            $data['evidence'] = $request->file('evidence')->store('tickets', 'public');
+        } elseif ($request->boolean('remove_evidence')) {
+            if ($ticket->evidence) {
+                Storage::disk('public')->delete($ticket->evidence);
+            }
+            $data['evidence'] = null;
+        }
 
         if ($request->status === 'closed' && $ticket->status !== 'closed') {
             $data['resolved_at'] = now();
@@ -80,6 +105,9 @@ class TicketController extends Controller
     public function destroy(Ticket $ticket)
     {
         $school = $ticket->school;
+        if ($ticket->evidence) {
+            Storage::disk('public')->delete($ticket->evidence);
+        }
         $ticket->delete();
         return redirect()->route('schools.tickets.index', $school)
                          ->with('success', 'Ticket eliminado correctamente.');

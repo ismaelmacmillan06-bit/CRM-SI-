@@ -344,7 +344,7 @@ function statRow(string $color, string $label, $value): string {
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
          data-series="{{ $schoolSeries }}"
-         style="transition: all 0.2s; display:flex; flex-direction:column;">
+         style="transition: all 0.2s; display:flex; flex-direction:column; min-height:280px;">
         <div class="card-header" style="padding:16px 20px">
             <div>
                 <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px">

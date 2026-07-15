@@ -54,4 +54,18 @@ step "Ajustando permisos..."
 chmod -R 775 storage bootstrap/cache
 ok "Permisos OK"
 
+# 6. Reiniciar PHP-FPM para limpiar opcache
+step "Limpiando opcache PHP..."
+if systemctl restart php8.3-fpm 2>/dev/null; then
+  ok "PHP 8.3 FPM reiniciado"
+elif systemctl restart php8.2-fpm 2>/dev/null; then
+  ok "PHP 8.2 FPM reiniciado"
+elif service php8.3-fpm restart 2>/dev/null; then
+  ok "PHP 8.3 FPM reiniciado (service)"
+elif service php8.2-fpm restart 2>/dev/null; then
+  ok "PHP 8.2 FPM reiniciado (service)"
+else
+  warn "No se pudo reiniciar PHP-FPM — el opcache puede servir código viejo hasta que expire"
+fi
+
 echo -e "\n${GREEN}${BOLD}✅ Deploy completado exitosamente.${RESET}\n"

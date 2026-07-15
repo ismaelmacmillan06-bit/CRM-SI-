@@ -203,9 +203,12 @@
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('students.edit', $student) }}" class="btn btn-secondary btn-sm">Editar</a>
                         <form method="POST" action="{{ route('students.destroy', $student) }}"
-                              onsubmit="return confirm('¿Eliminar este alumno?')">
+                              id="form-eliminar-alumno-{{ $student->id }}">
                             @csrf @method('DELETE')
-                            <button class="btn btn-danger btn-sm">Eliminar</button>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="confirmarEliminar('Eliminar alumno', '¿Deseas eliminar a {{ addslashes($student->name) }} {{ addslashes($student->last_name) }}? Esta acción no se puede deshacer.', 'form-eliminar-alumno-{{ $student->id }}')">
+                                Eliminar
+                            </button>
                         </form>
                     </div>
                     @endhasanyrole

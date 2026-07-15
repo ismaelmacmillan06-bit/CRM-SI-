@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\TareaSI;
 use App\Models\TareaColegio;
@@ -49,6 +50,8 @@ class TareaController extends Controller
 
         TareaColegio::insert($rows);
 
+        ActivityLog::log('tarea', "Tarea \"{$tarea->titulo}\" creada para {$schoolIds->count()} colegios", null, '✅');
+
         return redirect()->route('tareas.index', ['tarea_id' => $tarea->id])
             ->with('success', "Tarea \"{$tarea->titulo}\" creada para {$schoolIds->count()} colegios.");
     }
@@ -67,7 +70,9 @@ class TareaController extends Controller
 
     public function destroy(TareaSI $tarea)
     {
+        $titulo = $tarea->titulo;
         $tarea->delete();
+        ActivityLog::log('tarea', "Tarea \"{$titulo}\" eliminada", null, '🗑️');
         return redirect()->route('tareas.index')->with('success', 'Tarea eliminada.');
     }
 }

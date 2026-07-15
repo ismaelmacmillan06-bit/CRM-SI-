@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Consultant;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -54,6 +55,8 @@ public function store(Request $request)
     }
 
     Consultant::create($consultantData);
+
+    ActivityLog::log('equipo', "Consultor \"{$request->name}\" registrado", null, '👤');
 
     return redirect()->route('consultants.index')
                      ->with('success', 'Consultor registrado correctamente.');
@@ -137,7 +140,9 @@ public function store(Request $request)
 
     public function destroy(Consultant $consultant)
     {
+        $nombre = $consultant->user->name ?? 'Consultor';
         $consultant->user->delete();
+        ActivityLog::log('equipo', "Consultor \"{$nombre}\" eliminado", null, '🗑️');
         return redirect()->route('consultants.index')
                          ->with('success', 'Consultor eliminado correctamente.');
     }

@@ -56,6 +56,9 @@ class SchoolBundleController extends Controller
             }
         }
 
+        $total = count($request->bundle_ids);
+        ActivityLog::log('bundle', "{$total} bundle(s) agregados a {$school->name}", $school->id, '📚');
+
         return redirect()->route('schools.bundles.index', $school)
                          ->with('success', 'Bundles agregados correctamente.');
     }

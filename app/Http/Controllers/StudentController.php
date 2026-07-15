@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Student;
 use App\Models\School;
 use Illuminate\Http\Request;
@@ -41,6 +42,8 @@ class StudentController extends Controller
         ]);
 
         $school->students()->create($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
+
+        ActivityLog::log('alumno', "Alumno \"{$request->name} {$request->last_name}\" registrado en {$school->name}", $school->id, '👨‍🎓');
 
         return redirect()->route('schools.students.index', $school)
                          ->with('success', 'Alumno registrado correctamente.');
@@ -85,6 +88,10 @@ class StudentController extends Controller
                     ]);
                     $count++;
                 }
+            }
+
+            if ($count > 0) {
+                ActivityLog::log('alumno', "Importación PDF: {$count} alumno(s) registrados en {$school->name}", $school->id, '📄');
             }
 
             return redirect()->route('schools.students.index', $school)
@@ -178,7 +185,9 @@ private function extractStudentsFromPdf(string $text): array
     public function destroy(Student $student)
     {
         $school = $student->school;
+        $nombre = "{$student->name} {$student->last_name}";
         $student->delete();
+        ActivityLog::log('alumno', "Alumno \"{$nombre}\" eliminado de {$school->name}", $school->id, '🗑️');
         return redirect()->route('schools.students.index', $school)
                          ->with('success', 'Alumno eliminado correctamente.');
     }
@@ -244,6 +253,10 @@ private function extractStudentsFromPdf(string $text): array
                 $msg .= ' ' . count($omitidos) . ' omitido(s) por duplicado.';
             }
 
+            if ($count > 0) {
+                ActivityLog::log('alumno', "Importación Excel: {$count} alumno(s) registrados en {$school->name}", $school->id, '📊');
+            }
+
             return redirect()->route('schools.students.index', $school)
                              ->with('success', $msg)
                              ->with('excel_omitidos', $omitidos);
@@ -256,6 +269,7 @@ private function extractStudentsFromPdf(string $text): array
     public function destroyAll(School $school)
     {
         $school->students()->delete();
+        ActivityLog::log('alumno', "Todos los alumnos de {$school->name} fueron eliminados", $school->id, '🗑️');
         return redirect()->route('schools.students.index', $school)
                          ->with('success', 'Todos los alumnos fueron eliminados.');
     }

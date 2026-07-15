@@ -47,6 +47,8 @@ class TeacherController extends Controller
             }
         }
 
+        ActivityLog::log('docente', "Docente \"{$request->name} {$request->last_name}\" registrado en {$school->name}", $school->id, '👨‍🏫');
+
         return redirect()->route('schools.teachers.index', $school)
                          ->with('success', 'Docente registrado correctamente.');
     }
@@ -88,7 +90,9 @@ class TeacherController extends Controller
     public function destroy(Teacher $teacher)
     {
         $school = $teacher->school;
+        $nombre = "{$teacher->name} {$teacher->last_name}";
         $teacher->delete();
+        ActivityLog::log('docente', "Docente \"{$nombre}\" eliminado de {$school->name}", $school->id, '🗑️');
         return redirect()->route('schools.teachers.index', $school)
                          ->with('success', 'Docente eliminado correctamente.');
     }

@@ -10,6 +10,7 @@ use App\Models\Process;
 use App\Models\SchoolLevel;
 use App\Models\SchoolLevelProcess;
 use Illuminate\Http\Request;
+use App\Models\ActivityLog;
 use App\Models\MeeAdmin;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -123,6 +124,8 @@ foreach ($roles as $role => $consultantId) {
             }
         }
 
+        ActivityLog::log('colegio', "Colegio \"{$school->name}\" registrado", $school->id, '🏫');
+
         return redirect()->route('schools.index')
             ->with('success', 'Colegio registrado correctamente.');
     }
@@ -233,13 +236,17 @@ foreach ($roles as $role => $consultantId) {
             }
         }
 
+        ActivityLog::log('colegio', "Colegio \"{$school->name}\" actualizado", $school->id, '✏️');
+
         return redirect()->route('schools.index')
             ->with('success', 'Colegio actualizado correctamente.');
 
     }
     public function destroy(School $school)
     {
+        $nombre = $school->name;
         $school->delete();
+        ActivityLog::log('colegio', "Colegio \"{$nombre}\" eliminado", null, '🗑️');
         return redirect()->route('schools.index')
             ->with('success', 'Colegio eliminado correctamente.');
     }
@@ -248,6 +255,7 @@ foreach ($roles as $role => $consultantId) {
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);
         School::query()->delete();
+        ActivityLog::log('colegio', 'Todos los colegios fueron eliminados', null, '🗑️');
         return redirect()->route('schools.index')
             ->with('success', 'Todos los colegios han sido eliminados.');
     }

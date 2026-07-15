@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Comunicado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -47,6 +48,8 @@ class ComunicadoController extends Controller
 
         Comunicado::create($data);
 
+        ActivityLog::log('comunicado', "Comunicado \"{$request->titulo}\" publicado", null, '📢');
+
         return redirect()->route('tablero.index')->with('success', 'Comunicado publicado correctamente.');
     }
 
@@ -58,7 +61,10 @@ class ComunicadoController extends Controller
             Storage::disk('public')->delete($comunicado->archivo);
         }
 
+        $titulo = $comunicado->titulo;
         $comunicado->delete();
+
+        ActivityLog::log('comunicado', "Comunicado \"{$titulo}\" eliminado", null, '🗑️');
 
         return redirect()->route('tablero.index')->with('success', 'Comunicado eliminado.');
     }

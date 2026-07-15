@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\Bundle;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -36,7 +37,9 @@ class BundleController extends Controller
             'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario',
         ]);
 
-        Bundle::create($request->all());
+        $bundle = Bundle::create($request->all());
+
+        ActivityLog::log('bundle', "Bundle \"{$bundle->name}\" registrado en catálogo", null, '📚');
 
         return redirect()->route('bundles.index')
                          ->with('success', 'Bundle registrado correctamente.');
@@ -195,7 +198,9 @@ class BundleController extends Controller
 
     public function destroy(Bundle $bundle)
     {
+        $nombre = $bundle->name;
         $bundle->delete();
+        ActivityLog::log('bundle', "Bundle \"{$nombre}\" eliminado del catálogo", null, '🗑️');
         return redirect()->route('bundles.index')
                          ->with('success', 'Bundle eliminado correctamente.');
     }

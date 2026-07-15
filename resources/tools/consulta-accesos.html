@@ -436,7 +436,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>__TITLE__ · Accesos</title>
 <style>
-  :root{--dark:#0d1117;--red:#c8102e;--red-d:#a50d24;--red-soft:#fff0f2;--bg:#f3f4f6;--card:#ffffff;--ink:#111827;--muted:#6b7280;--border:#e5e7eb;--ok:#059669;--wa:#25D366;--wa-d:#128C7E;}
+  :root{--dark:#0d1117;--red:#c8102e;--red-d:#a50d24;--red-soft:#fff0f2;--blue:#2563eb;--blue-d:#1e40af;--bg:#f3f4f6;--card:#ffffff;--ink:#111827;--muted:#6b7280;--border:#e5e7eb;--ok:#059669;--wa:#25D366;--wa-d:#128C7E;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45;padding-bottom:30px;}
   header{position:sticky;top:0;z-index:10;background:var(--dark);color:#fff;padding:16px 16px 14px;box-shadow:0 4px 16px rgba(0,0,0,.4);}
@@ -472,10 +472,14 @@
   .copy:active{background:#ffd7dc;}
   .btn-row{display:flex;flex-direction:column;gap:8px;margin-top:3px;}
   .clink{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-weight:700;font-size:14px;padding:11px;border-radius:11px;}
-  .clink-mee{background:var(--red);color:#fff;}
-  .clink-wa{background:linear-gradient(135deg,var(--wa),var(--wa-d));color:#fff;}
-  .clink-sv{background:#f9fafb;color:#6b7280;border:1px solid var(--border);font-size:13px;padding:9px;}
-  .clink-sv span{font-size:11px;background:var(--border);color:#6b7280;padding:2px 7px;border-radius:99px;font-weight:600;}
+  .clink-mee{background:linear-gradient(135deg,var(--red),var(--red-d));color:#fff;box-shadow:0 4px 14px rgba(200,16,46,.35);}
+  .clink-mee:active{box-shadow:none;}
+  .clink-wa{background:linear-gradient(135deg,var(--wa),var(--wa-d));color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.35);}
+  .clink-wa:active{box-shadow:none;}
+  .clink-sv{background:#f3f4f6;color:#9ca3af;border:1px solid var(--border);font-size:13px;padding:9px;cursor:default;}
+  .clink-sv span{font-size:11px;background:#e5e7eb;color:#9ca3af;padding:2px 7px;border-radius:99px;font-weight:600;letter-spacing:.02em;}
+  .clink-sv-active{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.35);}
+  .clink-sv-active:active{box-shadow:none;}
   .empty{text-align:center;color:var(--muted);padding:50px 20px;}
   .empty .e{font-size:40px;margin-bottom:8px;}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:50;transition:.25s;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.3);}
@@ -552,9 +556,11 @@
     h+='<div class="btn-row">';
     h+='<a class="clink clink-mee" href="'+MEE_URL+'" target="_blank" rel="noopener">Entrar a MEE ↗</a>';
     if(SERVICIOS_URL){
-      h+='<a class="clink clink-sv" href="'+SERVICIOS_URL+'" target="_blank" rel="noopener">Entrar a Servicios Alumno ↗</a>';
+      h+='<a class="clink clink-sv-active" href="'+SERVICIOS_URL+'" target="_blank" rel="noopener">'+
+         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'+
+         'Servicios Alumnos ↗</a>';
     }else{
-      h+='<div class="clink clink-sv" style="cursor:default;">Entrar a Servicios Alumno <span>Próximamente</span></div>';
+      h+='<div class="clink clink-sv">Servicios Alumnos <span>Próximamente</span></div>';
     }
     if(CONSULTOR_NAME && CONSULTOR_PHONE){
       var waMsg=encodeURIComponent("Hola "+CONSULTOR_NAME+" me podrias ayudar por favor a restaurar la contraseña de este usuario "+esc(d.username||d.name)+".");

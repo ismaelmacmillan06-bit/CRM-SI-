@@ -124,7 +124,7 @@ class ReporteController extends Controller
                 $niveles = $school->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
 
                 $sheet->setCellValue("A{$row}", $school->name);
-                $sheet->setCellValue("B{$row}", $school->city ?? '—');
+                $sheet->setCellValue("B{$row}", $school->state ?? $school->city ?? '—');
                 $sheet->setCellValue("C{$row}", ucfirst($school->status));
                 $sheet->setCellValue("D{$row}", $consultor);
                 $sheet->setCellValue("E{$row}", $pct);
@@ -208,7 +208,7 @@ class ReporteController extends Controller
             $niveles = $s->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
 
             $ws1->fromArray([
-                $s->name, $s->city ?? '—', ucfirst($s->status),
+                $s->name, $s->state ?? $s->city ?? '—', ucfirst($s->status),
                 $digital, $eca, $elt, $ventas, $niveles, $pct, $s->students->count(),
             ], null, "A{$row}");
 
@@ -240,7 +240,7 @@ class ReporteController extends Controller
 
             $ws2->fromArray([
                 $t->name, $t->last_name, $t->email ?? '—',
-                $school?->name ?? '—', $school?->city ?? '—',
+                $school?->name ?? '—', $school?->state ?? $school?->city ?? '—',
                 $rolLabel, strtoupper($t->subject ?? '—'), $digital,
             ], null, "A{$row}");
 
@@ -279,7 +279,7 @@ class ReporteController extends Controller
             $digital = $school?->schoolConsultants?->where('role','digital')->first()?->consultant->user->name ?? '—';
 
             $ws3->fromArray([
-                $school?->name ?? '—', $school?->city ?? '—',
+                $school?->name ?? '—', $school?->state ?? $school?->city ?? '—',
                 $ma->username, $ma->password_plain,
                 $digital, ucfirst($school?->status ?? '—'),
             ], null, "A{$row}");
@@ -333,7 +333,7 @@ class ReporteController extends Controller
 
             $ws4->fromArray([
                 $t->name, $t->last_name, $t->email ?? '—',
-                $t->school?->name ?? '—', $t->school?->city ?? '—',
+                $t->school?->name ?? '—', $t->school?->state ?? $t->school?->city ?? '—',
                 $t->grade ?? '—', $roles ?: '—', strtoupper($t->subject ?? '—'),
                 $t->mee_username ?? '—', $t->mee_password ?? '—',
             ], null, "A{$row}");

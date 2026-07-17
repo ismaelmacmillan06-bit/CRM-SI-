@@ -45,7 +45,7 @@
     <div style="margin-top:auto; display:flex; flex-direction:column; gap:12px">
 
         @if($comunicado->enlace)
-            <a href="{{ $comunicado->enlace }}" target="_blank" rel="noopener noreferrer" class="adjunto-link" style="background:var(--accent); color:#fff; border-color:var(--accent)">
+            <a href="{{ $comunicado->enlace }}" target="_blank" rel="noopener noreferrer" class="adjunto-link" style="background:var(--accent); color:#fff; border-color:var(--accent); justify-content:center; width:100%">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                     <polyline points="15,3 21,3 21,9"/>

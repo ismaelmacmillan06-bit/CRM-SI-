@@ -49,12 +49,17 @@ php artisan route:cache
 php artisan view:cache
 ok "Caché regenerada"
 
-# 5. Permisos
+# 5. Storage link
+step "Verificando enlace de storage..."
+php artisan storage:link --force 2>/dev/null || true
+ok "Storage link OK"
+
+# 6. Permisos
 step "Ajustando permisos..."
 chmod -R 775 storage bootstrap/cache
 ok "Permisos OK"
 
-# 6. Reiniciar PHP-FPM para limpiar opcache
+# 7. Reiniciar PHP-FPM para limpiar opcache
 step "Limpiando opcache PHP..."
 if systemctl restart php8.3-fpm 2>/dev/null; then
   ok "PHP 8.3 FPM reiniciado"

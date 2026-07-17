@@ -9,7 +9,7 @@ class Comunicado extends Model
 {
     protected $fillable = [
         'titulo', 'descripcion', 'archivo', 'archivo_nombre',
-        'archivo_tipo', 'fecha_termino', 'user_id',
+        'archivo_tipo', 'enlace', 'enlace_texto', 'fecha_termino', 'user_id',
     ];
 
     protected $casts = ['fecha_termino' => 'date'];

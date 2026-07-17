@@ -1,10 +1,27 @@
-<div class="comunicado-card {{ $tipo === 'pasado' ? 'pasado' : '' }}">
+<div class="comunicado-card {{ $tipo === 'pasado' ? 'pasado' : '' }}" style="position:relative">
+
+    {{-- Botón ver --}}
+    <button class="btn-ver-comunicado" title="Ver completo"
+        data-titulo="{{ $comunicado->titulo }}"
+        data-descripcion="{{ $comunicado->descripcion }}"
+        data-enlace="{{ $comunicado->enlace }}"
+        data-enlace-texto="{{ $comunicado->enlace_texto }}"
+        data-archivo-url="{{ $comunicado->archivo ? asset('storage/' . $comunicado->archivo) : '' }}"
+        data-archivo-tipo="{{ $comunicado->archivo_tipo }}"
+        data-archivo-nombre="{{ $comunicado->archivo_nombre }}"
+        data-autor="{{ $comunicado->user->name ?? '—' }}"
+        data-fecha="{{ $comunicado->created_at->format('d/m/Y H:i') }}"
+        onclick="verComunicado(this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        </svg>
+    </button>
 
     {{-- Título --}}
-    <div class="comunicado-titulo">{{ $comunicado->titulo }}</div>
+    <div class="comunicado-titulo" style="padding-right:36px">{{ $comunicado->titulo }}</div>
 
-    {{-- Descripción --}}
-    <div class="comunicado-desc">{{ $comunicado->descripcion }}</div>
+    {{-- Descripción (truncada en card) --}}
+    <div class="comunicado-desc" style="display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden">{{ $comunicado->descripcion }}</div>
 
     {{-- Adjunto --}}
     @if($comunicado->archivo)
@@ -24,8 +41,22 @@
         @endif
     @endif
 
-    {{-- Footer --}}
-    <div class="comunicado-footer">
+    {{-- Enlace + Footer siempre al fondo juntos --}}
+    <div style="margin-top:auto; display:flex; flex-direction:column; gap:12px">
+
+        @if($comunicado->enlace)
+            <a href="{{ $comunicado->enlace }}" target="_blank" rel="noopener noreferrer" class="adjunto-link" style="background:var(--accent); color:#fff; border-color:var(--accent)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15,3 21,3 21,9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                {{ $comunicado->enlace_texto ?: 'Abrir enlace' }}
+            </a>
+        @endif
+
+        {{-- Footer --}}
+        <div class="comunicado-footer" style="margin-top:0">
         <div style="display:flex; flex-direction:column; gap:3px">
             <span>
                 <strong style="color:var(--text)">{{ $comunicado->user->name ?? '—' }}</strong>
@@ -65,5 +96,7 @@
                 </button>
             </form>
         @endif
-    </div>
+        </div>{{-- fin footer --}}
+
+    </div>{{-- fin bloque fondo --}}
 </div>

@@ -99,6 +99,60 @@
     }
     .btn-eliminar:hover { background:#b91c1c; color:#fff; }
 
+    /* ── Botón ojo ── */
+    .btn-ver-comunicado {
+        position:absolute; top:14px; right:14px;
+        width:30px; height:30px; border-radius:8px;
+        border:1px solid var(--border); background:var(--surface2);
+        display:grid; place-items:center; cursor:pointer;
+        color:var(--text-muted); transition:background .15s, color .15s, border-color .15s;
+    }
+    .btn-ver-comunicado:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* ── Modal viewer ── */
+    .viewer-backdrop {
+        display:none; position:fixed; inset:0;
+        background:rgba(24,19,17,.6); z-index:600;
+        backdrop-filter:blur(4px);
+        align-items:center; justify-content:center;
+        padding:20px;
+    }
+    .viewer-backdrop.open { display:flex; }
+    .viewer-modal {
+        background:var(--surface); border-radius:18px;
+        width:100%; max-width:620px; max-height:90vh;
+        overflow-y:auto; padding:36px;
+        box-shadow:0 32px 80px -16px rgba(24,19,17,.38);
+        position:relative;
+        animation: viewerIn .18s ease;
+    }
+    @keyframes viewerIn {
+        from { opacity:0; transform:scale(.96) translateY(8px); }
+        to   { opacity:1; transform:scale(1)  translateY(0); }
+    }
+    .viewer-close {
+        position:absolute; top:16px; right:16px;
+        width:32px; height:32px; border-radius:8px;
+        border:none; background:var(--surface2); cursor:pointer;
+        display:grid; place-items:center; color:var(--text-muted);
+        transition:background .15s;
+    }
+    .viewer-close:hover { background:var(--border); color:var(--text); }
+    .viewer-titulo {
+        font-family:'Bricolage Grotesque',sans-serif;
+        font-size:22px; font-weight:700; color:var(--text);
+        line-height:1.25; margin-bottom:16px; padding-right:36px;
+    }
+    .viewer-desc {
+        font-size:15px; color:var(--text); line-height:1.7;
+        white-space:pre-line; margin-bottom:20px;
+    }
+    .viewer-meta {
+        font-size:12px; color:var(--text-muted);
+        padding-top:16px; border-top:1px solid var(--border);
+        margin-top:8px;
+    }
+
     /* ── Empty state ── */
     .empty-state {
         text-align:center; padding:60px 20px; color:var(--text-muted);
@@ -220,6 +274,20 @@
     @endif
 </div>
 
+{{-- ══════════════ MODAL VIEWER ══════════════ --}}
+<div class="viewer-backdrop" id="viewerBackdrop" onclick="cerrarViewerFuera(event)">
+    <div class="viewer-modal" id="viewerModal">
+        <button class="viewer-close" onclick="cerrarViewer()" aria-label="Cerrar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="viewer-titulo" id="viewerTitulo"></div>
+        <div class="viewer-desc" id="viewerDesc"></div>
+        <div id="viewerEnlace"></div>
+        <div id="viewerArchivo" style="margin-top:12px"></div>
+        <div class="viewer-meta" id="viewerMeta"></div>
+    </div>
+</div>
+
 {{-- ══════════════ MODAL NUEVO COMUNICADO ══════════════ --}}
 @if(auth()->user()->hasRole('admin'))
 <div class="modal-backdrop" id="modalBackdrop" onclick="cerrarModalFuera(event)">
@@ -263,6 +331,18 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label">Enlace <small style="font-weight:400; color:var(--text-muted)">(opcional — agrega un botón de acceso directo)</small></label>
+                <input type="url" name="enlace" class="form-control"
+                       placeholder="https://sharepoint.com/..."
+                       value="{{ old('enlace') }}">
+                @error('enlace')<small style="color:var(--danger)">{{ $message }}</small>@enderror
+                <input type="text" name="enlace_texto" class="form-control" style="margin-top:8px"
+                       placeholder="Texto del botón (ej: Ver lista ELT) — opcional"
+                       maxlength="100"
+                       value="{{ old('enlace_texto') }}">
+            </div>
+
+            <div class="form-group">
                 <label class="form-label">Fecha de término <small style="font-weight:400; color:var(--text-muted)">(opcional — sin fecha permanece activo)</small></label>
                 <input type="date" name="fecha_termino" class="form-control"
                        min="{{ now()->addDay()->format('Y-m-d') }}"
@@ -300,7 +380,63 @@
     function cerrarModalFuera(e) {
         if (e.target === document.getElementById('modalBackdrop')) cerrarModal();
     }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModal(); });
+    // Escape manejado en el viewer
+
+    // ── Viewer de comunicado ──
+    function verComunicado(btn) {
+        document.getElementById('viewerTitulo').textContent  = btn.dataset.titulo;
+        document.getElementById('viewerDesc').textContent    = btn.dataset.descripcion;
+        document.getElementById('viewerMeta').textContent    = '✏️ ' + btn.dataset.autor + '  ·  ' + btn.dataset.fecha;
+
+        // Enlace
+        const enlaceBox = document.getElementById('viewerEnlace');
+        if (btn.dataset.enlace) {
+            enlaceBox.innerHTML = `<a href="${btn.dataset.enlace}" target="_blank" rel="noopener noreferrer"
+                style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;
+                       background:var(--accent);color:#fff;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                ${btn.dataset.enlaceTexto || 'Abrir enlace'}
+            </a>`;
+        } else {
+            enlaceBox.innerHTML = '';
+        }
+
+        // Archivo
+        const archivoBox = document.getElementById('viewerArchivo');
+        if (btn.dataset.archivoUrl) {
+            if (btn.dataset.archivoTipo === 'image') {
+                archivoBox.innerHTML = `<img src="${btn.dataset.archivoUrl}" alt="${btn.dataset.archivoNombre}"
+                    style="width:100%;border-radius:12px;border:1px solid var(--border)">`;
+            } else {
+                archivoBox.innerHTML = `<a href="${btn.dataset.archivoUrl}" target="_blank"
+                    style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;
+                           background:var(--surface2);border:1px solid var(--border);color:var(--text);
+                           font-size:13px;font-weight:500;text-decoration:none">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                    </svg>
+                    ${btn.dataset.archivoNombre}
+                </a>`;
+            }
+        } else {
+            archivoBox.innerHTML = '';
+        }
+
+        document.getElementById('viewerBackdrop').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function cerrarViewer() {
+        document.getElementById('viewerBackdrop').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+    function cerrarViewerFuera(e) {
+        if (e.target === document.getElementById('viewerBackdrop')) cerrarViewer();
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModal(); cerrarViewer(); } });
 
     // ── Upload label ──
     function mostrarNombre(input) {

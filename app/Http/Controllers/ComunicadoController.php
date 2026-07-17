@@ -24,17 +24,22 @@ class ComunicadoController extends Controller
             'titulo'        => 'required|string|max:255',
             'descripcion'   => 'required|string',
             'archivo'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'enlace'        => 'nullable|url|max:2048',
+            'enlace_texto'  => 'nullable|string|max:100',
             'fecha_termino' => 'nullable|date|after:today',
         ], [
             'titulo.required'      => 'El título es obligatorio.',
             'descripcion.required' => 'La descripción es obligatoria.',
             'archivo.mimes'        => 'Solo se permiten PDF, JPG o PNG (máx. 5 MB).',
+            'enlace.url'           => 'El enlace debe ser una URL válida (ej: https://...).',
             'fecha_termino.after'  => 'La fecha de término debe ser posterior a hoy.',
         ]);
 
         $data = [
             'titulo'        => $request->titulo,
             'descripcion'   => $request->descripcion,
+            'enlace'        => $request->enlace ?: null,
+            'enlace_texto'  => $request->enlace_texto ?: null,
             'fecha_termino' => $request->fecha_termino ?: null,
             'user_id'       => auth()->id(),
         ];

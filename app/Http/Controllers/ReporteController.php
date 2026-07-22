@@ -833,8 +833,8 @@ class ReporteController extends Controller
         // ══════════════════════════════════════════════════════════════════
         $ws6 = $spreadsheet->createSheet(5);
         $ws6->setTitle('Visitas');
-        $this->sheetTitle($ws6, "Visitas — {$school->name} ({$totalVisitas})", '7C3AED', 7, $generado);
-        $this->writeHeaders($ws6, 4, ['Fecha Programada', 'Fecha Real', 'Status', 'Consultor', 'Notas', 'Resumen', 'Próxima Visita'], '7C3AED');
+        $this->sheetTitle($ws6, "Visitas — {$school->name} ({$totalVisitas})", '7C3AED', 8, $generado);
+        $this->writeHeaders($ws6, 4, ['Fecha Programada', 'Fecha Real', 'Status', 'Consultor', 'Notas', 'Resumen', 'Próxima Visita', 'Evidencia'], '7C3AED');
 
         $row = 5;
         foreach ($school->visits->sortByDesc('scheduled_date') as $i => $v) {
@@ -852,10 +852,19 @@ class ReporteController extends Controller
                 $v->summary ?? '—',
                 $v->next_visit_date ? \Carbon\Carbon::parse($v->next_visit_date)->format('d/m/Y') : '—',
             ], null, "A{$row}");
-            if ($i % 2) $this->stripeRow($ws6, $row, 7);
+
+            $hasImg = false;
+            if ($v->evidence) {
+                $hasImg = $this->embedOrLink($ws6, "H{$row}", $v->evidence);
+            } else {
+                $ws6->setCellValue("H{$row}", '—');
+            }
+
+            if ($i % 2) $this->stripeRow($ws6, $row, 8);
+            if ($hasImg) $ws6->getRowDimension($row)->setRowHeight(55);
             $row++;
         }
-        $this->setWidths($ws6, [18, 14, 16, 26, 40, 40, 18]);
+        $this->setWidths($ws6, [18, 14, 16, 26, 40, 40, 18, 40]);
 
         // ══════════════════════════════════════════════════════════════════
         // HOJA 7: BUNDLES

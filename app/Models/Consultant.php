@@ -16,7 +16,9 @@ class Consultant extends Model
 
     public function schools()
     {
-        return $this->hasMany(School::class);
+        return $this->belongsToMany(School::class, 'school_consultants')
+                    ->withPivot('role')
+                    ->withTimestamps();
     }
 
     public function schoolConsultants()

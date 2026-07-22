@@ -111,6 +111,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('reportes/zonas',      [ReporteController::class, 'reporteZonas']      )->name('reportes.zonas');
      Route::get('reportes/general',    [ReporteController::class, 'reporteGeneral']    )->name('reportes.general');
      Route::get('reportes/resurtidos', [ReporteController::class, 'reporteResurtidos'] )->name('reportes.resurtidos');
+     Route::get('schools/{school}/reporte-master', [ReporteController::class, 'reporteMaster'])->name('schools.reporte-master');
 
      // Bitácora
      Route::get('bitacora', [BitacoraController::class, 'index'])->name('bitacora.index');

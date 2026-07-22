@@ -10,6 +10,9 @@ use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\Teacher;
 use App\Models\TeacherRole;
+use App\Models\Visit;
+use App\Models\Ticket;
+use App\Models\Student;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -543,6 +546,327 @@ class ReporteController extends Controller
 
         $filename = 'reporte-resurtidos-' . now()->format('Y-m-d') . '.xlsx';
         $tempFile = tempnam(sys_get_temp_dir(), 'crm_');
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Report Master — reporte completo de un colegio (7 hojas)
+    // ─────────────────────────────────────────────────────────────────────
+    public function reporteMaster(School $school)
+    {
+        $school->load([
+            'schoolConsultants.consultant.user',
+            'schoolLevels.level',
+            'schoolLevels.processes.process',
+            'teachers.roles',
+            'students',
+            'tickets',
+            'visits.consultant.user',
+            'bundles',
+            'meeAdmins',
+        ]);
+
+        $generado  = now()->format('d/m/Y H:i');
+        $RED       = 'C0392B';
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+
+        // ── Stats generales ──────────────────────────────────────────────
+        $totalProcesos = 0; $doneProcesos = 0;
+        foreach ($school->schoolLevels as $sl) {
+            $totalProcesos += $sl->processes->count();
+            $doneProcesos  += $sl->processes->where('status', 'done')->count();
+        }
+        $pctProcesos = $totalProcesos > 0 ? round(($doneProcesos / $totalProcesos) * 100) : 0;
+
+        $totalTickets    = $school->tickets->count();
+        $abiertos        = $school->tickets->where('status', 'abierto')->count();
+        $enProceso       = $school->tickets->where('status', 'en_proceso')->count();
+        $resueltos       = $school->tickets->where('status', 'resuelto')->count();
+        $totalVisitas    = $school->visits->count();
+        $visitasTerminadas = $school->visits->where('status', 'terminada')->count();
+        $totalDocentes   = $school->teachers->count();
+        $totalAlumnos    = $school->students->count();
+        $totalBundles    = $school->bundles->count();
+
+        $digital = $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—';
+        $eca     = $school->schoolConsultants->where('role','eca')->first()?->consultant->user->name ?? '—';
+        $elt     = $school->schoolConsultants->where('role','elt')->first()?->consultant->user->name ?? '—';
+        $ventas  = $school->schoolConsultants->where('role','ventas')->first()?->consultant->user->name ?? '—';
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 1: RESUMEN
+        // ══════════════════════════════════════════════════════════════════
+        $ws = $spreadsheet->createSheet(0);
+        $ws->setTitle('Resumen');
+
+        // Título
+        $ws->setCellValue('A1', '📋 REPORT MASTER — ' . strtoupper($school->name));
+        $ws->setCellValue('A2', 'Generado el ' . $generado . '   |   Nexus ID: ' . ($school->nexus_id ?? '—'));
+        $ws->mergeCells('A1:F1');
+        $ws->mergeCells('A2:F2');
+        $ws->getStyle('A1')->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 16, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $RED]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $ws->getStyle('A2')->applyFromArray([
+            'font' => ['size' => 10, 'italic' => true, 'color' => ['rgb' => '555555']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FFF5F5']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $ws->getRowDimension(1)->setRowHeight(36);
+        $ws->getRowDimension(2)->setRowHeight(18);
+
+        // ── Información del colegio ──
+        $row = 4;
+        $ws->setCellValue("A{$row}", 'INFORMACIÓN DEL COLEGIO');
+        $ws->mergeCells("A{$row}:F{$row}");
+        $ws->getStyle("A{$row}:F{$row}")->applyFromArray([
+            'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $RED]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $ws->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        $infoRows = [
+            ['Estado / Ciudad', $school->state ?? $school->city ?? '—', 'Estatus', ucfirst($school->status ?? '—'), 'Teléfono', $school->phone ?? '—'],
+            ['Email', $school->email ?? '—', 'Consultor Digital', $digital, 'Consultor ECA', $eca],
+            ['Consultor ELT', $elt, 'Rep. Ventas', $ventas, 'Dirección', $school->address ?? '—'],
+        ];
+        foreach ($infoRows as $r) {
+            $ws->fromArray($r, null, "A{$row}");
+            $ws->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('555555');
+            $ws->getStyle("C{$row}")->getFont()->setBold(true)->getColor()->setRGB('555555');
+            $ws->getStyle("E{$row}")->getFont()->setBold(true)->getColor()->setRGB('555555');
+            $ws->getStyle("A{$row}:F{$row}")->applyFromArray([
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF2F2']],
+            ]);
+            $row++;
+        }
+
+        // ── Tarjetas de resumen ──
+        $row++;
+        $ws->setCellValue("A{$row}", 'RESUMEN GENERAL');
+        $ws->mergeCells("A{$row}:F{$row}");
+        $ws->getStyle("A{$row}:F{$row}")->applyFromArray([
+            'font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $RED]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $ws->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        $this->writeHeaders($ws, $row, ['Sección', 'Total', 'Detalle', '', '', ''], $RED);
+        $ws->mergeCells("C{$row}:F{$row}");
+        $row++;
+
+        $statsCards = [
+            ['⚙️ Acciones de Arranque', "{$doneProcesos} / {$totalProcesos}", "Completadas: {$doneProcesos}  |  Pendientes: " . ($totalProcesos - $doneProcesos) . "  |  Progreso: {$pctProcesos}%"],
+            ['👨‍🏫 Docentes',            $totalDocentes,   'Docentes registrados en el sistema'],
+            ['👨‍🎓 Alumnos SI',           $totalAlumnos,    'Alumnos registrados en MEE'],
+            ['🎫 Tickets',               $totalTickets,    "Abiertos: {$abiertos}  |  En proceso: {$enProceso}  |  Resueltos: {$resueltos}"],
+            ['📅 Visitas',               $totalVisitas,    "Realizadas: {$visitasTerminadas}  |  Pendientes: " . ($totalVisitas - $visitasTerminadas)],
+            ['📚 Bundles',               $totalBundles,    'Bundles asignados al colegio'],
+        ];
+
+        foreach ($statsCards as $i => $card) {
+            $ws->setCellValue("A{$row}", $card[0]);
+            $ws->setCellValue("B{$row}", $card[1]);
+            $ws->setCellValue("C{$row}", $card[2]);
+            $ws->mergeCells("C{$row}:F{$row}");
+            $bg = $i % 2 === 0 ? 'FFFFFF' : 'F9F9F9';
+            $ws->getStyle("A{$row}:F{$row}")->applyFromArray([
+                'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+            ]);
+            $ws->getStyle("A{$row}")->getFont()->setBold(true);
+            $ws->getStyle("B{$row}")->getFont()->setBold(true)->setSize(13);
+            $ws->getStyle("B{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $ws->getRowDimension($row)->setRowHeight(20);
+            $row++;
+        }
+
+        $this->setWidths($ws, [28, 16, 60, 1, 1, 1]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 2: ACCIONES DE ARRANQUE
+        // ══════════════════════════════════════════════════════════════════
+        $ws2 = $spreadsheet->createSheet(1);
+        $ws2->setTitle('Acciones de Arranque');
+        $this->sheetTitle($ws2, "Acciones de Arranque — {$school->name}", $RED, 7, $generado);
+
+        $row = 4;
+        foreach ($school->schoolLevels as $sl) {
+            $levelName = $sl->level->name ?? 'Nivel';
+            $doneL = $sl->processes->where('status','done')->count();
+            $totalL = $sl->processes->count();
+
+            $ws2->setCellValue("A{$row}", strtoupper($levelName) . "   ({$doneL}/{$totalL} completados)");
+            $ws2->mergeCells("A{$row}:G{$row}");
+            $ws2->getStyle("A{$row}:G{$row}")->applyFromArray([
+                'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '7F1D1D']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+            ]);
+            $ws2->getRowDimension($row)->setRowHeight(20);
+            $row++;
+
+            $this->writeHeaders($ws2, $row, ['#', 'Proceso', 'Status', 'Completado Por', 'Fecha', 'Notas', 'Evidencia'], $RED);
+            $row++;
+
+            foreach ($sl->processes->sortBy('process.order') as $idx => $slp) {
+                $status = match($slp->status) {
+                    'done'        => '✅ Completado',
+                    'in_progress' => '🔄 En proceso',
+                    'reopened'    => '🔁 Reabierto',
+                    default       => '⏳ Pendiente',
+                };
+                $ws2->fromArray([
+                    $slp->process->order ?? ($idx + 1),
+                    $slp->process->name ?? '—',
+                    $status,
+                    $slp->completed_by ?? '—',
+                    $slp->completed_at ? \Carbon\Carbon::parse($slp->completed_at)->format('d/m/Y') : '—',
+                    $slp->notes ?? '—',
+                    $slp->evidence ? url('storage/' . $slp->evidence) : '—',
+                ], null, "A{$row}");
+
+                $bg = $slp->status === 'done' ? 'F0FFF4' : ($idx % 2 === 0 ? 'FFFFFF' : 'F9F9F9');
+                $ws2->getStyle("A{$row}:G{$row}")->applyFromArray([
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
+                ]);
+                $row++;
+            }
+            $row++;
+        }
+        $this->setWidths($ws2, [5, 36, 18, 22, 14, 40, 40]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 3: DOCENTES
+        // ══════════════════════════════════════════════════════════════════
+        $ws3 = $spreadsheet->createSheet(2);
+        $ws3->setTitle('Docentes');
+        $this->sheetTitle($ws3, "Docentes — {$school->name} ({$totalDocentes})", '1D4ED8', 8, $generado);
+        $this->writeHeaders($ws3, 4, ['Nombre', 'Apellidos', 'Email', 'Grado', 'Materia', 'Roles', 'Usuario MEE', 'Contraseña MEE'], '1D4ED8');
+
+        $row = 5;
+        foreach ($school->teachers->sortBy('name') as $i => $t) {
+            $roles = $t->roles->map(fn($r) => Teacher::ROLES[$r->role] ?? $r->role)->join(', ');
+            $ws3->fromArray([
+                $t->name, $t->last_name ?? '—', $t->email ?? '—',
+                $t->grade ?? '—', strtoupper($t->subject ?? '—'), $roles ?: '—',
+                $t->mee_username ?? '—', $t->mee_password ?? '—',
+            ], null, "A{$row}");
+            if ($i % 2) $this->stripeRow($ws3, $row, 8);
+            $row++;
+        }
+        $this->setWidths($ws3, [22, 22, 30, 12, 12, 32, 22, 22]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 4: ALUMNOS
+        // ══════════════════════════════════════════════════════════════════
+        $ws4 = $spreadsheet->createSheet(3);
+        $ws4->setTitle('Alumnos');
+        $this->sheetTitle($ws4, "Alumnos — {$school->name} ({$totalAlumnos})", '059669', 6, $generado);
+        $this->writeHeaders($ws4, 4, ['Nombre', 'Apellidos', 'Nivel', 'Grado', 'Usuario MEE', 'Contraseña MEE'], '059669');
+
+        $row = 5;
+        foreach ($school->students->sortBy(['level','name']) as $i => $s) {
+            $ws4->fromArray([
+                $s->name, $s->last_name ?? '—', ucfirst($s->level ?? '—'),
+                $s->grade ?? '—', $s->mee_username ?? '—', $s->mee_password ?? '—',
+            ], null, "A{$row}");
+            if ($i % 2) $this->stripeRow($ws4, $row, 6);
+            $row++;
+        }
+        $this->setWidths($ws4, [22, 22, 18, 12, 24, 24]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 5: TICKETS
+        // ══════════════════════════════════════════════════════════════════
+        $ws5 = $spreadsheet->createSheet(4);
+        $ws5->setTitle('Tickets');
+        $this->sheetTitle($ws5, "Tickets — {$school->name} ({$totalTickets})", 'D97706', 7, $generado);
+        $this->writeHeaders($ws5, 4, ['Título', 'Descripción', 'Status', 'Prioridad', 'Medio', 'Fecha', 'Evidencia'], 'D97706');
+
+        $row = 5;
+        foreach ($school->tickets->sortByDesc('created_at') as $i => $t) {
+            $status = match($t->status) {
+                'abierto'    => '🔴 Abierto',
+                'en_proceso' => '🟡 En proceso',
+                'resuelto'   => '🟢 Resuelto',
+                default      => $t->status,
+            };
+            $ws5->fromArray([
+                $t->title, $t->description ?? '—', $status,
+                ucfirst($t->priority ?? '—'), ucfirst($t->medium ?? '—'),
+                $t->created_at->format('d/m/Y'),
+                $t->evidence ? url('storage/' . $t->evidence) : '—',
+            ], null, "A{$row}");
+            if ($i % 2) $this->stripeRow($ws5, $row, 7);
+            $row++;
+        }
+        $this->setWidths($ws5, [30, 50, 16, 14, 16, 14, 40]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 6: VISITAS
+        // ══════════════════════════════════════════════════════════════════
+        $ws6 = $spreadsheet->createSheet(5);
+        $ws6->setTitle('Visitas');
+        $this->sheetTitle($ws6, "Visitas — {$school->name} ({$totalVisitas})", '7C3AED', 7, $generado);
+        $this->writeHeaders($ws6, 4, ['Fecha Programada', 'Fecha Real', 'Status', 'Consultor', 'Notas', 'Resumen', 'Próxima Visita'], '7C3AED');
+
+        $row = 5;
+        foreach ($school->visits->sortByDesc('scheduled_date') as $i => $v) {
+            $statusV = match($v->status) {
+                'terminada' => '✅ Terminada',
+                'en_curso'  => '🔄 En curso',
+                default     => '⏳ Pendiente',
+            };
+            $ws6->fromArray([
+                $v->scheduled_date ? \Carbon\Carbon::parse($v->scheduled_date)->format('d/m/Y') : '—',
+                $v->visit_date     ? \Carbon\Carbon::parse($v->visit_date)->format('d/m/Y') : '—',
+                $statusV,
+                $v->consultant?->user->name ?? '—',
+                $v->notes ?? '—',
+                $v->summary ?? '—',
+                $v->next_visit_date ? \Carbon\Carbon::parse($v->next_visit_date)->format('d/m/Y') : '—',
+            ], null, "A{$row}");
+            if ($i % 2) $this->stripeRow($ws6, $row, 7);
+            $row++;
+        }
+        $this->setWidths($ws6, [18, 14, 16, 26, 40, 40, 18]);
+
+        // ══════════════════════════════════════════════════════════════════
+        // HOJA 7: BUNDLES
+        // ══════════════════════════════════════════════════════════════════
+        $ws7 = $spreadsheet->createSheet(6);
+        $ws7->setTitle('Bundles');
+        $this->sheetTitle($ws7, "Bundles — {$school->name} ({$totalBundles})", '0E7490', 7, $generado);
+        $this->writeHeaders($ws7, 4, ['Título', 'Serie', 'Tipo', 'Nivel', 'Grado', 'Rol', 'Cantidad'], '0E7490');
+
+        $row = 5;
+        foreach ($school->bundles->sortBy(['level','grade']) as $i => $b) {
+            $ws7->fromArray([
+                $b->name, $b->serie ?? '—', strtoupper($b->type ?? '—'),
+                ucfirst($b->level ?? '—'), $b->grade ?? '—',
+                ucfirst($b->role ?? '—'), $b->pivot->quantity ?? '—',
+            ], null, "A{$row}");
+            if ($i % 2) $this->stripeRow($ws7, $row, 7);
+            $row++;
+        }
+        $this->setWidths($ws7, [50, 28, 10, 16, 10, 14, 12]);
+
+        // ── Exportar ─────────────────────────────────────────────────────
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $filename = 'report-master-' . \Str::slug($school->name) . '-' . now()->format('Y-m-d') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'crm_master_');
         (new Xlsx($spreadsheet))->save($tempFile);
 
         return response()->download($tempFile, $filename, [

@@ -29,8 +29,25 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Roles de solo lectura: bloquear cualquier petición que modifique datos
-        if ($user->hasAnyRole(['consultor_eca', 'consultor_elt', 'representante_ventas'])) {
+        // ECA y ELT: solo lectura y solo sección Colegios
+        if ($user->hasAnyRole(['consultor_eca', 'consultor_elt'])) {
+            if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
+            }
+            $rutasPermitidas = ['dashboard', 'schools.*'];
+            if (!$request->routeIs($rutasPermitidas)) {
+                return redirect()->route('schools.index')
+                    ->with('error_acceso', 'Solo tienes acceso a la sección de Colegios.');
+            }
+            // No pueden generar el Report Master
+            if ($request->routeIs('schools.reporte-master')) {
+                abort(403, 'No tienes permisos para generar este reporte.');
+            }
+            return $next($request);
+        }
+
+        // Ventas: solo lectura en todo el sistema
+        if ($user->hasRole('representante_ventas')) {
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }

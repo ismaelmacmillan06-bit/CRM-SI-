@@ -18,7 +18,8 @@ class Consultant extends Model
     {
         return $this->belongsToMany(School::class, 'school_consultants')
                     ->withPivot('role')
-                    ->withTimestamps();
+                    ->withTimestamps()
+                    ->distinct();
     }
 
     public function schoolConsultants()

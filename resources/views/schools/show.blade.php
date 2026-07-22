@@ -14,11 +14,13 @@
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Visitas</a>
     <a href="{{ route('schools.students.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🎓 Alumnos</a>
     <a href="{{ route('schools.bundles.index', $school) }}" class="btn btn-secondary btn-sm">📚 Bundles</a>
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.reporte-master', $school) }}"
        class="btn btn-sm"
        style="background:#C0392B; color:#fff; border-color:#C0392B; font-weight:700; letter-spacing:.5px">
         📊 REPORT MASTER
     </a>
+    @endhasanyrole
 </div>
 
 <div class="grid-2" style="margin-bottom:24px">

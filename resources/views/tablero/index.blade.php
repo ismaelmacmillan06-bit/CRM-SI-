@@ -383,47 +383,48 @@
     // Escape manejado en el viewer
 
     // ── Viewer de comunicado ──
-    function verComunicado(btn) {
-        document.getElementById('viewerTitulo').textContent  = btn.dataset.titulo;
-        document.getElementById('viewerDesc').textContent    = btn.dataset.descripcion;
-        document.getElementById('viewerMeta').textContent    = '✏️ ' + btn.dataset.autor + '  ·  ' + btn.dataset.fecha;
+    const svgLink = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+    const svgPdf  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>';
 
-        // Enlace
+    function verComunicado(btn) {
+        document.getElementById('viewerTitulo').textContent = btn.dataset.titulo;
+        document.getElementById('viewerDesc').textContent   = btn.dataset.descripcion;
+        document.getElementById('viewerMeta').textContent   = '✏️ ' + btn.dataset.autor + '  ·  ' + btn.dataset.fecha;
+
+        // Enlace — construcción segura con DOM (evita XSS en enlace_texto)
         const enlaceBox = document.getElementById('viewerEnlace');
+        enlaceBox.innerHTML = '';
         if (btn.dataset.enlace) {
-            enlaceBox.innerHTML = `<a href="${btn.dataset.enlace}" target="_blank" rel="noopener noreferrer"
-                style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;
-                       background:var(--accent);color:#fff;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                    <polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-                ${btn.dataset.enlaceTexto || 'Abrir enlace'}
-            </a>`;
-        } else {
-            enlaceBox.innerHTML = '';
+            const a = document.createElement('a');
+            a.href   = btn.dataset.enlace;
+            a.target = '_blank';
+            a.rel    = 'noopener noreferrer';
+            a.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;text-decoration:none;margin-bottom:16px';
+            a.innerHTML = svgLink; // SVG estático, no datos de usuario
+            a.appendChild(document.createTextNode(btn.dataset.enlaceTexto || 'Abrir enlace'));
+            enlaceBox.appendChild(a);
         }
 
-        // Archivo
+        // Archivo — construcción segura con DOM (evita XSS en archivo_nombre)
         const archivoBox = document.getElementById('viewerArchivo');
+        archivoBox.innerHTML = '';
         if (btn.dataset.archivoUrl) {
+            archivoBox.style.marginTop = '12px';
             if (btn.dataset.archivoTipo === 'image') {
-                archivoBox.innerHTML = `<img src="${btn.dataset.archivoUrl}" alt="${btn.dataset.archivoNombre}"
-                    style="width:100%;border-radius:12px;border:1px solid var(--border)">`;
+                const img = document.createElement('img');
+                img.src   = btn.dataset.archivoUrl;
+                img.alt   = btn.dataset.archivoNombre;
+                img.style.cssText = 'width:100%;border-radius:12px;border:1px solid var(--border)';
+                archivoBox.appendChild(img);
             } else {
-                archivoBox.innerHTML = `<a href="${btn.dataset.archivoUrl}" target="_blank"
-                    style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;
-                           background:var(--surface2);border:1px solid var(--border);color:var(--text);
-                           font-size:13px;font-weight:500;text-decoration:none">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                    </svg>
-                    ${btn.dataset.archivoNombre}
-                </a>`;
+                const a = document.createElement('a');
+                a.href   = btn.dataset.archivoUrl;
+                a.target = '_blank';
+                a.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:500;text-decoration:none';
+                a.innerHTML = svgPdf; // SVG estático
+                a.appendChild(document.createTextNode(btn.dataset.archivoNombre));
+                archivoBox.appendChild(a);
             }
-        } else {
-            archivoBox.innerHTML = '';
         }
 
         document.getElementById('viewerBackdrop').classList.add('open');
@@ -436,7 +437,14 @@
     function cerrarViewerFuera(e) {
         if (e.target === document.getElementById('viewerBackdrop')) cerrarViewer();
     }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarModal(); cerrarViewer(); } });
+    // Escape: modalBackdrop solo existe para admin — null-safe
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            const mb = document.getElementById('modalBackdrop');
+            if (mb) { mb.classList.remove('open'); document.body.style.overflow = ''; }
+            cerrarViewer();
+        }
+    });
 
     // ── Upload label ──
     function mostrarNombre(input) {

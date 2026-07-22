@@ -449,6 +449,7 @@
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span> Dashboard
         </a>
+        @unlessrole('consultor_eca|consultor_elt')
         <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
             <span class="nav-icon">✅</span> Tareas SI
         </a>
@@ -458,19 +459,24 @@
         <a href="{{ route('bitacora.index') }}" class="nav-item {{ request()->routeIs('bitacora.*') ? 'active' : '' }}">
             <span class="nav-icon">📋</span> Bitácora
         </a>
+        @endunlessrole
         <div class="nav-label">Gestión</div>
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios
         </a>
+        @unlessrole('consultor_eca|consultor_elt')
         <a href="{{ route('consultants.index') }}" class="nav-item {{ request()->routeIs('consultants.*') ? 'active' : '' }}">
             <span class="nav-icon">👥</span> Equipo SI
         </a>
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI
         </a>
+        @hasanyrole('admin|consultor_digital')
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
+        @endhasanyrole
+        @endunlessrole
     </nav>
     <div class="sidebar-footer">
         <div class="user-info">

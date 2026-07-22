@@ -558,6 +558,8 @@ class ReporteController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function reporteMaster(School $school)
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+
         $school->load([
             'schoolConsultants.consultant.user',
             'schoolLevels.level',
@@ -567,7 +569,6 @@ class ReporteController extends Controller
             'tickets',
             'visits.consultant.user',
             'bundles',
-            'meeAdmins',
         ]);
 
         $generado  = now()->format('d/m/Y H:i');
@@ -762,7 +763,7 @@ class ReporteController extends Controller
         $this->writeHeaders($ws3, 4, ['Nombre', 'Apellidos', 'Email', 'Grado', 'Materia', 'Roles', 'Usuario MEE', 'Contraseña MEE'], '1D4ED8');
 
         $row = 5;
-        foreach ($school->teachers->sortBy('name') as $i => $t) {
+        foreach ($school->teachers->sortBy('name')->values() as $i => $t) {
             $roles = $t->roles->map(fn($r) => Teacher::ROLES[$r->role] ?? $r->role)->join(', ');
             $ws3->fromArray([
                 $t->name, $t->last_name ?? '—', $t->email ?? '—',
@@ -783,7 +784,7 @@ class ReporteController extends Controller
         $this->writeHeaders($ws4, 4, ['Nombre', 'Apellidos', 'Nivel', 'Grado', 'Usuario MEE', 'Contraseña MEE'], '059669');
 
         $row = 5;
-        foreach ($school->students->sortBy(['level','name']) as $i => $s) {
+        foreach ($school->students->sortBy(['level','name'])->values() as $i => $s) {
             $ws4->fromArray([
                 $s->name, $s->last_name ?? '—', ucfirst($s->level ?? '—'),
                 $s->grade ?? '—', $s->mee_username ?? '—', $s->mee_password ?? '—',
@@ -802,7 +803,7 @@ class ReporteController extends Controller
         $this->writeHeaders($ws5, 4, ['Título', 'Descripción', 'Status', 'Prioridad', 'Medio', 'Fecha', 'Evidencia'], 'D97706');
 
         $row = 5;
-        foreach ($school->tickets->sortByDesc('created_at') as $i => $t) {
+        foreach ($school->tickets->sortByDesc('created_at')->values() as $i => $t) {
             $status = match($t->status) {
                 'abierto'    => '🔴 Abierto',
                 'en_proceso' => '🟡 En proceso',
@@ -875,7 +876,7 @@ class ReporteController extends Controller
         $this->writeHeaders($ws7, 4, ['Título', 'Serie', 'Tipo', 'Nivel', 'Grado', 'Rol', 'Cantidad'], '0E7490');
 
         $row = 5;
-        foreach ($school->bundles->sortBy(['level','grade']) as $i => $b) {
+        foreach ($school->bundles->sortBy(['level','grade'])->values() as $i => $b) {
             $ws7->fromArray([
                 $b->name, $b->serie ?? '—', strtoupper($b->type ?? '—'),
                 ucfirst($b->level ?? '—'), $b->grade ?? '—',
@@ -891,7 +892,12 @@ class ReporteController extends Controller
 
         $filename = 'report-master-' . \Str::slug($school->name) . '-' . now()->format('Y-m-d') . '.xlsx';
         $tempFile = tempnam(sys_get_temp_dir(), 'crm_master_');
-        (new Xlsx($spreadsheet))->save($tempFile);
+        try {
+            (new Xlsx($spreadsheet))->save($tempFile);
+        } catch (\Throwable $e) {
+            @unlink($tempFile);
+            throw $e;
+        }
 
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -917,7 +923,7 @@ class ReporteController extends Controller
                 $drawing->setOffsetY(4);
                 $drawing->setWorksheet($ws);
                 return true;
-            } catch (\Exception) {
+            } catch (\Throwable) {
                 // Si falla la imagen, cae al enlace
             }
         }

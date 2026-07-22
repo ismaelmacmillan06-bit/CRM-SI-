@@ -16,6 +16,23 @@
             <span class="badge badge-info">{{ ucfirst($consultant->user->getRoleNames()->first()) }}</span>
         </div>
         <div class="card-body">
+            {{-- Foto --}}
+            @if($consultant->photo)
+                <div style="display:flex; justify-content:center; margin-bottom:20px">
+                    <img src="{{ asset('storage/' . $consultant->photo) }}"
+                         alt="{{ $consultant->user->name }}"
+                         style="width:100px; height:100px; border-radius:50%; object-fit:cover;
+                                border:3px solid var(--border); box-shadow:0 2px 8px rgba(0,0,0,.1)">
+                </div>
+            @else
+                <div style="display:flex; justify-content:center; margin-bottom:20px">
+                    <div style="width:100px; height:100px; border-radius:50%;
+                                background:var(--accent); display:grid; place-items:center;
+                                font-size:36px; font-weight:700; color:#fff">
+                        {{ strtoupper(substr($consultant->user->name, 0, 1)) }}
+                    </div>
+                </div>
+            @endif
             <table style="width:100%; font-size:14px; border-collapse:collapse">
                 <tr>
                     <td style="padding:8px 0; color:var(--text-muted); width:40%">Nombre</td>

@@ -733,13 +733,20 @@ class ReporteController extends Controller
                     $slp->completed_by ?? '—',
                     $slp->completed_at ? \Carbon\Carbon::parse($slp->completed_at)->format('d/m/Y') : '—',
                     $slp->notes ?? '—',
-                    $slp->evidence ? url('storage/' . $slp->evidence) : '—',
                 ], null, "A{$row}");
+
+                $hasImg = false;
+                if ($slp->evidence) {
+                    $hasImg = $this->embedOrLink($ws2, "G{$row}", $slp->evidence);
+                } else {
+                    $ws2->setCellValue("G{$row}", '—');
+                }
 
                 $bg = $slp->status === 'done' ? 'F0FFF4' : ($idx % 2 === 0 ? 'FFFFFF' : 'F9F9F9');
                 $ws2->getStyle("A{$row}:G{$row}")->applyFromArray([
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $bg]],
                 ]);
+                if ($hasImg) $ws2->getRowDimension($row)->setRowHeight(55);
                 $row++;
             }
             $row++;
@@ -806,9 +813,17 @@ class ReporteController extends Controller
                 $t->title, $t->description ?? '—', $status,
                 ucfirst($t->priority ?? '—'), ucfirst($t->medium ?? '—'),
                 $t->created_at->format('d/m/Y'),
-                $t->evidence ? url('storage/' . $t->evidence) : '—',
             ], null, "A{$row}");
+
+            $hasImg = false;
+            if ($t->evidence) {
+                $hasImg = $this->embedOrLink($ws5, "G{$row}", $t->evidence);
+            } else {
+                $ws5->setCellValue("G{$row}", '—');
+            }
+
             if ($i % 2) $this->stripeRow($ws5, $row, 7);
+            if ($hasImg) $ws5->getRowDimension($row)->setRowHeight(55);
             $row++;
         }
         $this->setWidths($ws5, [30, 50, 16, 14, 16, 14, 40]);
@@ -872,6 +887,33 @@ class ReporteController extends Controller
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
+    }
+
+    // ── Helper: incrustar imagen o poner URL según tipo de archivo ─────────
+    private function embedOrLink(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, string $cell, string $storagePath): bool
+    {
+        $fullPath = storage_path('app/public/' . $storagePath);
+        if (!file_exists($fullPath)) {
+            $ws->setCellValue($cell, url('storage/' . $storagePath));
+            return false;
+        }
+        $ext = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'])) {
+            try {
+                $drawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
+                $drawing->setPath($fullPath);
+                $drawing->setHeight(60);
+                $drawing->setCoordinates($cell);
+                $drawing->setOffsetX(4);
+                $drawing->setOffsetY(4);
+                $drawing->setWorksheet($ws);
+                return true;
+            } catch (\Exception) {
+                // Si falla la imagen, cae al enlace
+            }
+        }
+        $ws->setCellValue($cell, url('storage/' . $storagePath));
+        return false;
     }
 
     // ── Helpers de estilo ─────────────────────────────────────────────────

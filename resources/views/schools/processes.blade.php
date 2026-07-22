@@ -7,7 +7,7 @@
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
 </div>
 
-@foreach($school->schoolLevels as $schoolLevel)
+@forelse($school->schoolLevels as $schoolLevel)
 <div class="card" style="margin-bottom:24px">
     <div class="card-header">
         <span class="card-title">🎓 {{ $schoolLevel->level->name }}</span>
@@ -179,7 +179,16 @@
     </table>
     </div>
 </div>
-@endforeach
+@empty
+<div class="card" style="padding:48px; text-align:center; color:var(--text-muted)">
+    <div style="font-size:40px; margin-bottom:12px">🏫</div>
+    <p style="font-size:16px; font-weight:600; margin:0 0 6px">Sin niveles seleccionados</p>
+    <p style="font-size:13px; margin:0">
+        Este colegio aún no tiene niveles asignados.<br>
+        Ve a <a href="{{ route('schools.edit', $school) }}" style="color:var(--accent)">Editar colegio</a> para agregarlos.
+    </p>
+</div>
+@endforelse
 
 <script>
 document.querySelectorAll('input[type="file"][data-slp]').forEach(function (fileInput) {

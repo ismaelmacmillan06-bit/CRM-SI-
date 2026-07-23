@@ -26,6 +26,7 @@
                             <option value="Entrelineas"   {{ old('type') == 'Entrelineas'   ? 'selected' : '' }}>Entrelineas</option>
                             <option value="Palabrario"    {{ old('type') == 'Palabrario'    ? 'selected' : '' }}>Palabrario</option>
                             <option value="Complemento"   {{ old('type') == 'Complemento'   ? 'selected' : '' }}>Complemento</option>
+                            <option value="Frances"       {{ old('type') == 'Frances'       ? 'selected' : '' }}>Francés</option>
                         </select>
                         @error('type')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>

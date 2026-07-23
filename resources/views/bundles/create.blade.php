@@ -27,6 +27,10 @@
                             <option value="Palabrario"    {{ old('type') == 'Palabrario'    ? 'selected' : '' }}>Palabrario</option>
                             <option value="Complemento"   {{ old('type') == 'Complemento'   ? 'selected' : '' }}>Complemento</option>
                             <option value="Frances"       {{ old('type') == 'Frances'       ? 'selected' : '' }}>Francés</option>
+                            <option value="Ecosistemas"   {{ old('type') == 'Ecosistemas'   ? 'selected' : '' }}>Ecosistemas</option>
+                            <option value="Praxis"        {{ old('type') == 'Praxis'        ? 'selected' : '' }}>Praxis</option>
+                            <option value="Ekos"          {{ old('type') == 'Ekos'          ? 'selected' : '' }}>Ekos</option>
+                            <option value="Carrousel"     {{ old('type') == 'Carrousel'     ? 'selected' : '' }}>Carrousel</option>
                         </select>
                         @error('type')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>

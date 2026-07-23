@@ -34,7 +34,7 @@ class BundleController extends Controller
             'grade' => 'nullable|string|max:50',
             'level' => 'nullable|string|max:100',
             'role'  => 'required|in:student,teacher',
-            'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario,Frances',
+            'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario,Frances,Ecosistemas,Praxis,Ekos,Carrousel',
         ]);
 
         $bundle = Bundle::create($request->all());
@@ -65,7 +65,7 @@ class BundleController extends Controller
         }
 
         $sheet        = $spreadsheet->getActiveSheet();
-        $tiposValidos = ['ELT', 'Plan Lector', 'Imagina', 'Wikids', 'Pienso Contigo', 'Complemento', 'Entrelineas', 'Palabrario', 'Frances'];
+        $tiposValidos = ['ELT', 'Plan Lector', 'Imagina', 'Wikids', 'Pienso Contigo', 'Complemento', 'Entrelineas', 'Palabrario', 'Frances', 'Ecosistemas', 'Praxis', 'Ekos', 'Carrousel'];
         $agregados    = 0;
         $duplicados   = 0;
         $omitidos     = [];
@@ -158,7 +158,7 @@ class BundleController extends Controller
         $sheet->getStyle('A6')->getFont()->setItalic(true)->getColor()->setRGB('999999');
 
         $sheet->setCellValue('A8', 'Roles válidos: Alumno | Docente');
-        $sheet->setCellValue('A9', 'Tipos válidos: ELT | Plan Lector | Imagina | Wikids | Pienso Contigo | Complemento | Entrelineas | Palabrario | Frances');
+        $sheet->setCellValue('A9', 'Tipos válidos: ELT | Plan Lector | Imagina | Wikids | Pienso Contigo | Complemento | Entrelineas | Palabrario | Frances | Ecosistemas | Praxis | Ekos | Carrousel');
         $sheet->setCellValue('A10', 'Niveles válidos: Preescolar | Primaria | Secundaria | Preparatoria (dejar vacío si no aplica)');
 
         foreach (['A' => 50, 'B' => 85, 'C' => 12, 'D' => 16, 'E' => 18, 'F' => 22] as $col => $w) {
@@ -187,7 +187,7 @@ class BundleController extends Controller
             'grade' => 'nullable|string|max:50',
             'level' => 'nullable|string|max:100',
             'role'  => 'required|in:student,teacher',
-            'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario,Frances',
+            'type'  => 'required|in:ELT,Plan Lector,Imagina,Wikids,Pienso Contigo,Complemento,Entrelineas,Palabrario,Frances,Ecosistemas,Praxis,Ekos,Carrousel',
         ]);
 
         $bundle->update($request->all());

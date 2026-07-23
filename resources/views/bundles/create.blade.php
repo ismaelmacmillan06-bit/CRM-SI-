@@ -23,6 +23,9 @@
                             <option value="Imagina"       {{ old('type') == 'Imagina'       ? 'selected' : '' }}>Imagina</option>
                             <option value="Wikids"        {{ old('type') == 'Wikids'        ? 'selected' : '' }}>Wikids</option>
                             <option value="Pienso Contigo"{{ old('type') == 'Pienso Contigo'? 'selected' : '' }}>Pienso Contigo</option>
+                            <option value="Entrelineas"   {{ old('type') == 'Entrelineas'   ? 'selected' : '' }}>Entrelineas</option>
+                            <option value="Palabrario"    {{ old('type') == 'Palabrario'    ? 'selected' : '' }}>Palabrario</option>
+                            <option value="Complemento"   {{ old('type') == 'Complemento'   ? 'selected' : '' }}>Complemento</option>
                         </select>
                         @error('type')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>

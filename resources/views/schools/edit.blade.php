@@ -101,22 +101,6 @@
                     <textarea name="notes" class="form-control" rows="3">{{ old('notes', $school->notes) }}</textarea>
                 </div>
 
-                <div class="form-group">
-                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer;
-                                  padding:12px 16px; border:1px solid var(--border); border-radius:8px;
-                                  {{ old('custom_passwords', $school->custom_passwords) ? 'border-color:var(--accent); background:#fff5f6;' : '' }}">
-                        <input type="checkbox" name="custom_passwords" value="1"
-                               {{ old('custom_passwords', $school->custom_passwords) ? 'checked' : '' }}
-                               style="accent-color:var(--accent); width:16px; height:16px">
-                        <span>
-                            <span style="font-weight:600; font-size:14px">Usuarios y contraseñas personalizadas</span>
-                            <span style="display:block; font-size:12px; color:var(--text-muted); margin-top:1px">
-                                Este colegio cuenta con el servicio de credenciales personalizadas en MEE
-                            </span>
-                        </span>
-                    </label>
-                </div>
-
                 {{-- Servicios contables --}}
                 @if($serviceTypes->isNotEmpty())
                 <div class="form-group">

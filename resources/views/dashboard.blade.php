@@ -118,18 +118,6 @@ function statRow(string $color, string $label, $value): string {
         </div>
     </div>
 
-    {{-- Contraseñas personalizadas --}}
-    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
-                border-left:4px solid #0891b2; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:8px">Personalización Colegio</div>
-        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
-                    color:var(--text); line-height:1">{{ number_format($colegiosCustomPasswords) }}</div>
-        <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.5">
-            Usuarios y contraseñas personalizadas
-        </div>
-    </div>
-
     {{-- Resurtidos --}}
     <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
                 border-left:4px solid #f97316; box-shadow:0 1px 4px rgba(0,0,0,0.06)">

@@ -72,9 +72,6 @@ class DashboardController extends Controller
         $colegiosProspecto = $schoolScopeId(School::where('status', 'prospecto'))->count();
         $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
-        // Colegios con usuarios y contraseñas personalizadas
-        $colegiosCustomPasswords = $schoolScopeId(School::where('custom_passwords', true))->count();
-
         // Colegios entregados: tienen al menos un proceso y todos están en 'done'
         $colegiosEntregados = $schoolScopeId(
             School::whereHas('schoolLevels.processes')
@@ -154,7 +151,7 @@ class DashboardController extends Controller
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
             'seriesDisponibles', 'totalResurtidos',
-            'colegiosCustomPasswords', 'colegiosEntregados',
+            'colegiosEntregados',
             'colegiosPorNivel', 'colegiosPorServicio'
         ));
     }

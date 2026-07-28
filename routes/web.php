@@ -97,6 +97,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.bundles.import');
     Route::delete('schools/{school}/bundles/{bundle}', [SchoolBundleController::class, 'destroy'])
          ->name('schools.bundles.destroy');
+    Route::delete('schools/{school}/bundles', [SchoolBundleController::class, 'destroyAll'])
+         ->name('schools.bundles.destroy-all');
     Route::post('schools/{school}/bundles/{bundle}/resurtido', [BundleResurtidoController::class, 'store'])
          ->name('schools.bundles.resurtido');
     Route::get('api/bundles-by-series', [SchoolBundleController::class, 'getBundlesBySeries'])

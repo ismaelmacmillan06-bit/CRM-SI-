@@ -16,6 +16,22 @@
             onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">
         📥 Importación masiva Excel
     </button>
+    @if($schoolBundles->isNotEmpty())
+    <form method="POST" action="{{ route('schools.bundles.destroy-all', $school) }}"
+          id="form-delete-all" style="margin:0">
+        @csrf @method('DELETE')
+        <button type="button"
+                onclick="confirmarEliminarTodos()"
+                style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+                       background:#fff5f5; color:#dc2626; border:1px solid #fecaca;
+                       border-radius:8px; font-size:13px; font-weight:500; cursor:pointer;
+                       transition:all 0.2s"
+                onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+                onmouseout="this.style.background='#fff5f5';this.style.color='#dc2626'">
+            🗑️ Eliminar todos los bundles
+        </button>
+    </form>
+    @endif
 </div>
 
 {{-- Modal importación masiva --}}
@@ -444,6 +460,13 @@ function verHistorial(bundleId, nombre) {
     });
     document.getElementById('historial-tbody').innerHTML = html;
     document.getElementById('modal-historial').style.display = 'flex';
+}
+
+function confirmarEliminarTodos() {
+    const total = {{ $schoolBundles->count() }};
+    if (confirm(`¿Estás seguro de que deseas eliminar los ${total} bundle(s) de este colegio?\n\nEsta acción no se puede deshacer.`)) {
+        document.getElementById('form-delete-all').submit();
+    }
 }
 </script>
 

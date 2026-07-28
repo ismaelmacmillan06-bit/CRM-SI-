@@ -132,4 +132,13 @@ class SchoolBundleController extends Controller
         ActivityLog::log('bundle', "Bundle \"{$nombre}\" eliminado de {$school->name}", $school->id, '🗑️');
         return back()->with('success', 'Bundle eliminado correctamente.');
     }
+
+    public function destroyAll(School $school)
+    {
+        $total = $school->bundles()->count();
+        $school->bundles()->detach();
+        ActivityLog::log('bundle', "Todos los bundles ({$total}) eliminados de {$school->name}", $school->id, '🗑️');
+        return redirect()->route('schools.bundles.index', $school)
+                         ->with('success', "Se eliminaron {$total} bundle(s) del colegio.");
+    }
 }

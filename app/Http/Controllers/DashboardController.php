@@ -13,6 +13,8 @@ use App\Models\Consultant;
 use App\Models\SchoolConsultant;
 use App\Models\Ticket;
 use App\Models\Visit;
+use App\Models\Level;
+use App\Models\SchoolServiceType;
 
 class DashboardController extends Controller
 {
@@ -106,6 +108,27 @@ class DashboardController extends Controller
             ? BundleResurtido::whereIn('school_id', $schoolIds)->count()
             : BundleResurtido::count();
 
+        // Colegios por nivel educativo
+        $levels = Level::orderBy('id')->get();
+        $colegiosPorNivel = $levels->map(function ($level) use ($schoolIds) {
+            $q = \DB::table('school_level')->where('level_id', $level->id);
+            if ($schoolIds) $q->whereIn('school_id', $schoolIds);
+            return ['name' => $level->name, 'total' => $q->count()];
+        });
+
+        // Colegios por servicio contable
+        $serviceTypes = SchoolServiceType::active()->get();
+        $colegiosPorServicio = $serviceTypes->map(function ($type) use ($schoolIds) {
+            $q = \DB::table('school_service')->where('school_service_type_id', $type->id);
+            if ($schoolIds) $q->whereIn('school_id', $schoolIds);
+            return [
+                'name'  => $type->name,
+                'icon'  => $type->icon,
+                'color' => $type->color,
+                'total' => $q->count(),
+            ];
+        });
+
         // Series de bundles adoptadas por colegios (para filtro en dashboard)
         $seriesDisponibles = Bundle::select('serie')
             ->whereHas('schools', fn($q) => $schoolIds ? $q->whereIn('schools.id', $schoolIds) : $q)
@@ -131,7 +154,8 @@ class DashboardController extends Controller
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
             'seriesDisponibles', 'totalResurtidos',
-            'colegiosCustomPasswords', 'colegiosEntregados'
+            'colegiosCustomPasswords', 'colegiosEntregados',
+            'colegiosPorNivel', 'colegiosPorServicio'
         ));
     }
 }

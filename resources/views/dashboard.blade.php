@@ -155,6 +155,81 @@ function statRow(string $color, string $label, $value): string {
 
 </div>
 
+{{-- ── Cards: Colegios por Nivel y por Servicio ── --}}
+@if($colegiosPorNivel->isNotEmpty() || $colegiosPorServicio->isNotEmpty())
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; margin-bottom:24px">
+
+    {{-- Colegios por Nivel --}}
+    @if($colegiosPorNivel->isNotEmpty())
+    <div style="background:var(--surface); border-radius:12px; padding:20px 22px; border:1px solid var(--border);
+                box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px">
+            <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted)">
+                🏫 Colegios por Nivel
+            </div>
+            <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
+        </div>
+        @php $nivelColors = ['#f59e0b','#8b5cf6','#3b82f6','#22c55e','#ef4444','#0ea5e9','#10b981']; @endphp
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px">
+            @foreach($colegiosPorNivel as $i => $nivel)
+            @php $color = $nivelColors[$i % count($nivelColors)]; @endphp
+            <div style="border:1px solid {{ $color }}40; border-top:3px solid {{ $color }};
+                        border-radius:10px; padding:12px 14px; background:{{ $color }}0d">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
+                            color:{{ $color }}; line-height:1">{{ $nivel['total'] }}</div>
+                <div style="font-size:12px; font-weight:600; color:var(--text); margin-top:4px">{{ $nivel['name'] }}</div>
+                @if($totalSchools > 0)
+                <div style="font-size:11px; color:var(--text-muted); margin-top:2px">
+                    {{ round($nivel['total'] / $totalSchools * 100) }}% de {{ $totalSchools }}
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- Colegios por Servicio --}}
+    @if($colegiosPorServicio->isNotEmpty())
+    <div style="background:var(--surface); border-radius:12px; padding:20px 22px; border:1px solid var(--border);
+                box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px">
+            <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted)">
+                📦 Colegios por Servicio
+            </div>
+            <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px">
+            @foreach($colegiosPorServicio as $srv)
+            <div style="border:1px solid {{ $srv['color'] }}40; border-top:3px solid {{ $srv['color'] }};
+                        border-radius:10px; padding:12px 14px; background:{{ $srv['color'] }}0d">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
+                            color:{{ $srv['color'] }}; line-height:1">{{ $srv['total'] }}</div>
+                <div style="font-size:12px; margin-top:4px">
+                    {{ $srv['icon'] }} <span style="font-weight:600; color:var(--text)">{{ $srv['name'] }}</span>
+                </div>
+                @if($totalSchools > 0)
+                <div style="font-size:11px; color:var(--text-muted); margin-top:2px">
+                    {{ round($srv['total'] / $totalSchools * 100) }}% de {{ $totalSchools }}
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+        @if(auth()->user()->hasRole('admin'))
+        <div style="margin-top:12px; text-align:right">
+            <a href="{{ route('configuracion.servicios.index') }}"
+               style="font-size:11.5px; color:var(--accent); text-decoration:none; font-weight:500">
+                ⚙️ Gestionar servicios →
+            </a>
+        </div>
+        @endif
+    </div>
+    @endif
+
+</div>
+@endif
+
 {{-- Visitas pendientes alert --}}
 @if($visitasPendientes > 0)
 <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;

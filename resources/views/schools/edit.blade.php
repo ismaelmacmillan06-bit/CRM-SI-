@@ -117,6 +117,38 @@
                     </label>
                 </div>
 
+                {{-- Servicios contables --}}
+                @if($serviceTypes->isNotEmpty())
+                <div class="form-group">
+                    <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px">
+                        📦 Servicios adicionales
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px">
+                        @foreach($serviceTypes as $stype)
+                        @php $checked = in_array($stype->id, old('services', $selectedServices)); @endphp
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;
+                                      padding:10px 14px; border:1px solid var(--border); border-radius:8px;
+                                      transition:all 0.15s;
+                                      {{ $checked ? 'border-color:'.$stype->color.'; background:'.$stype->color.'18;' : '' }}">
+                            <input type="checkbox" name="services[]" value="{{ $stype->id }}"
+                                   {{ $checked ? 'checked' : '' }}
+                                   style="accent-color:{{ $stype->color }}; width:15px; height:15px">
+                            <span style="font-size:16px">{{ $stype->icon }}</span>
+                            <span style="font-weight:600; font-size:13.5px">{{ $stype->name }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                    @if(auth()->user()->hasRole('admin'))
+                    <div style="margin-top:8px">
+                        <a href="{{ route('configuracion.servicios.index') }}"
+                           style="font-size:11.5px; color:var(--accent); text-decoration:none; font-weight:500">
+                            ⚙️ Gestionar servicios →
+                        </a>
+                    </div>
+                    @endif
+                </div>
+                @endif
+
                 {{-- Responsables del colegio --}}
                 <div style="margin-bottom:20px">
                     <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:15px; font-weight:600;

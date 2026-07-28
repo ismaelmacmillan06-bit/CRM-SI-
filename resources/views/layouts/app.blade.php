@@ -476,6 +476,11 @@
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
         @endhasanyrole
+        @hasrole('admin')
+        <a href="{{ route('configuracion.servicios.index') }}" class="nav-item {{ request()->routeIs('configuracion.*') ? 'active' : '' }}">
+            <span class="nav-icon">⚙️</span> Configuración
+        </a>
+        @endhasrole
         @endunlessrole
     </nav>
     <div class="sidebar-footer">

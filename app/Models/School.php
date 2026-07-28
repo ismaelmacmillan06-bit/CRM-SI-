@@ -68,6 +68,12 @@ public function bundles()
                 ->withTimestamps();
 }
 
+public function services()
+{
+    return $this->belongsToMany(SchoolServiceType::class, 'school_service', 'school_id', 'school_service_type_id')
+                ->withTimestamps();
+}
+
 
 public function schoolConsultants()
 {

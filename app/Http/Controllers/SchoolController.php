@@ -12,6 +12,7 @@ use App\Models\SchoolLevelProcess;
 use Illuminate\Http\Request;
 use App\Models\ActivityLog;
 use App\Models\MeeAdmin;
+use App\Models\SchoolServiceType;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -149,9 +150,13 @@ foreach ($roles as $role => $consultantId) {
 
     $responsables = $school->schoolConsultants->keyBy('role');
 
+    $serviceTypes    = SchoolServiceType::active()->get();
+    $selectedServices = $school->services->pluck('id')->toArray();
+
     return view('schools.edit', compact(
         'school', 'consultants', 'levels', 'selectedLevels',
-        'digitales', 'ecas', 'elts', 'representantes', 'responsables'
+        'digitales', 'ecas', 'elts', 'representantes', 'responsables',
+        'serviceTypes', 'selectedServices'
     ));
 }
 
@@ -235,6 +240,9 @@ foreach ($roles as $role => $consultantId) {
                 }
             }
         }
+
+        // Sincronizar servicios contables
+        $school->services()->sync($request->input('services', []));
 
         ActivityLog::log('colegio', "Colegio \"{$school->name}\" actualizado", $school->id, '✏️');
 

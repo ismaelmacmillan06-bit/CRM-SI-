@@ -158,7 +158,7 @@ function statRow(string $color, string $label, $value): string {
             <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
         </div>
         @php $nivelColors = ['#f59e0b','#8b5cf6','#3b82f6','#22c55e','#ef4444','#0ea5e9','#10b981']; @endphp
-        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
             @foreach($colegiosPorNivel as $i => $nivel)
             @php $color = $nivelColors[$i % count($nivelColors)]; @endphp
             <div style="border:1px solid {{ $color }}40; border-top:3px solid {{ $color }};
@@ -187,7 +187,7 @@ function statRow(string $color, string $label, $value): string {
             </div>
             <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
         </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px">
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
             @foreach($colegiosPorServicio as $srvIdx => $srv)
             <div style="border:1px solid {{ $srv['color'] }}40; border-top:3px solid {{ $srv['color'] }};
                         border-radius:10px; padding:12px 14px; background:{{ $srv['color'] }}0d;

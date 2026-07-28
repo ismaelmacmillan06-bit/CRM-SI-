@@ -21,7 +21,7 @@
           id="form-delete-all" style="margin:0">
         @csrf @method('DELETE')
         <button type="button"
-                onclick="confirmarEliminarTodos()"
+                onclick="document.getElementById('modal-delete-all').style.display='flex'"
                 style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
                        background:#fff5f5; color:#dc2626; border:1px solid #fecaca;
                        border-radius:8px; font-size:13px; font-weight:500; cursor:pointer;
@@ -33,6 +33,45 @@
     </form>
     @endif
 </div>
+
+{{-- Modal confirmación eliminar todos --}}
+@if($schoolBundles->isNotEmpty())
+<div id="modal-delete-all" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:999; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:460px; max-width:100%;
+                box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="text-align:center; margin-bottom:24px">
+            <div style="width:56px; height:56px; border-radius:50%; background:#fff5f5;
+                        display:flex; align-items:center; justify-content:center;
+                        margin:0 auto 16px; font-size:26px">
+                🗑️
+            </div>
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px;
+                       font-weight:700; margin:0 0 8px; color:#111">
+                ¿Eliminar todos los bundles?
+            </h3>
+            <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.6">
+                Se eliminarán los <strong>{{ $schoolBundles->count() }} bundle(s)</strong>
+                de <strong>{{ $school->name }}</strong>.<br>
+                Esta acción no se puede deshacer.
+            </p>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center">
+            <button type="button"
+                    onclick="document.getElementById('modal-delete-all').style.display='none'"
+                    class="btn btn-secondary">
+                Cancelar
+            </button>
+            <button type="button"
+                    onclick="document.getElementById('form-delete-all').submit()"
+                    style="padding:10px 24px; background:#dc2626; color:#fff; border:none;
+                           border-radius:8px; font-size:14px; font-weight:600; cursor:pointer">
+                Sí, eliminar todos
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- Modal importación masiva --}}
 <div id="modal-import" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
@@ -462,12 +501,7 @@ function verHistorial(bundleId, nombre) {
     document.getElementById('modal-historial').style.display = 'flex';
 }
 
-function confirmarEliminarTodos() {
-    const total = {{ $schoolBundles->count() }};
-    if (confirm(`¿Estás seguro de que deseas eliminar los ${total} bundle(s) de este colegio?\n\nEsta acción no se puede deshacer.`)) {
-        document.getElementById('form-delete-all').submit();
-    }
-}
+
 </script>
 
 @endsection

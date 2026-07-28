@@ -131,6 +131,7 @@
   .card .ccreds{display:grid;grid-template-columns:1fr;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;margin-bottom:11px;}
   .card .ccreds.two{grid-template-columns:1fr 1fr;}
   .card .ccreds.two .cfield + .cfield{border-left:1px solid var(--line-2);}
+  .card .ccreds:not(.two) .cfield + .cfield{border-top:1px solid var(--line-2);}
   .card .cfield{padding:8px 11px;min-width:0;}
   .card .crow{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
   .card .cval{display:block;font-family:'Spline Sans',monospace;font-weight:700;font-size:15px;color:var(--ink);word-break:break-all;letter-spacing:.01em;margin-top:2px;line-height:1.15;font-variant-ligatures:none;}
@@ -379,7 +380,7 @@
       <span class="scissors">✂</span>
       <div class="chead">${logoMarkup()}<span class="tag">Acceso</span></div>
       <div class="cname">${esc(p.name||"—")}</div>
-      <div class="ccreds two">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
+      <div class="ccreds">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
       ${linkBand()}
     </div>`;
   }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\Zonas;
 use App\Models\BundleResurtido;
+use App\Models\SchoolServiceType;
 use App\Models\Consultant;
 use App\Models\MeeAdmin;
 use App\Models\School;
@@ -392,52 +393,67 @@ class ReporteController extends Controller
 
         $this->setWidths($ws5, [38,22,16,26,26,26,26,30,12,24]);
 
-        // ── HOJA 6: PERSONALIZACIÓN COLEGIO ──────────────────────────────
-        $personalizados = School::with([
-            'schoolConsultants.consultant.user',
-            'schoolLevels.level',
-            'schoolLevels.processes',
-            'students',
-            'meeAdmins',
-        ])->where('custom_passwords', true)
-          ->orderBy('name')
-          ->get();
+        // ── HOJA 6: SERVICIOS ADICIONALES ────────────────────────────────
+        $serviceTypes = SchoolServiceType::active()->with(['schools' => function ($q) {
+            $q->with(['schoolConsultants.consultant.user', 'schoolLevels.level'])
+              ->withCount('students')
+              ->orderBy('name');
+        }])->get();
 
         $ws6 = $spreadsheet->createSheet(5);
-        $ws6->setTitle('Personalización Colegio');
+        $ws6->setTitle('Servicios Adicionales');
 
-        $this->sheetTitle($ws6, "MacmillanSI — Personalización Colegio ({$personalizados->count()})", '0891B2', 10, $generado);
+        $this->sheetTitle($ws6, 'MacmillanSI — Servicios Adicionales por Colegio', '0891B2', 8, $generado);
 
-        $headers6 = ['Nombre', 'Estado', 'Nexus ID', 'Estatus', 'Consultor Digital',
-                     'Consultor ECA', 'Consultor ELT', 'Niveles', 'Progreso %', 'Alumnos SI'];
-        $this->writeHeaders($ws6, 4, $headers6, '0891B2');
+        $row = 4;
+        foreach ($serviceTypes as $serviceType) {
+            $srvSchools = $serviceType->schools;
+            $hexColor   = ltrim($serviceType->color, '#');
 
-        $row = 5;
-        foreach ($personalizados as $i => $s) {
-            $cons    = $s->schoolConsultants;
-            $digital = $cons->where('role','digital')->first()?->consultant->user->name ?? '—';
-            $eca     = $cons->where('role','eca')    ->first()?->consultant->user->name ?? '—';
-            $elt     = $cons->where('role','elt')    ->first()?->consultant->user->name ?? '—';
-            $niveles = $s->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
-
-            $totalP = 0; $doneP = 0;
-            foreach ($s->schoolLevels as $sl) {
-                $totalP += $sl->processes->count();
-                $doneP  += $sl->processes->where('status','done')->count();
-            }
-            $pct = $totalP > 0 ? round(($doneP / $totalP) * 100) . '%' : '0%';
-
-            $ws6->fromArray([
-                $s->name, $s->state ?? $s->city ?? '—', $s->nexus_id ?? '—',
-                ucfirst($s->status), $digital, $eca, $elt,
-                $niveles, $pct, $s->students->count(),
-            ], null, "A{$row}");
-
-            if ($i % 2) $this->stripeRow($ws6, $row, 10);
+            // Cabecera de sección por servicio
+            $ws6->setCellValue("A{$row}", strtoupper($serviceType->name) . '   (' . $srvSchools->count() . ' colegios)');
+            $ws6->mergeCells("A{$row}:H{$row}");
+            $ws6->getStyle("A{$row}:H{$row}")->applyFromArray([
+                'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $hexColor]],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+            ]);
+            $ws6->getRowDimension($row)->setRowHeight(22);
             $row++;
+
+            if ($srvSchools->isEmpty()) {
+                $ws6->setCellValue("A{$row}", 'Sin colegios con este servicio');
+                $ws6->mergeCells("A{$row}:H{$row}");
+                $ws6->getStyle("A{$row}")->getFont()->setItalic(true)->getColor()->setRGB('999999');
+                $row += 2;
+                continue;
+            }
+
+            $this->writeHeaders($ws6, $row, [
+                'Nombre', 'Estado', 'Nexus ID', 'Estatus',
+                'Consultor Digital', 'Consultor ECA', 'Niveles', 'Alumnos SI',
+            ], $hexColor);
+            $row++;
+
+            foreach ($srvSchools as $i => $s) {
+                $cons    = $s->schoolConsultants;
+                $digital = $cons->where('role', 'digital')->first()?->consultant->user->name ?? '—';
+                $eca     = $cons->where('role', 'eca')->first()?->consultant->user->name ?? '—';
+                $niveles = $s->schoolLevels->map(fn($sl) => $sl->level->name ?? '')->filter()->join(', ');
+
+                $ws6->fromArray([
+                    $s->name, $s->state ?? $s->city ?? '—', $s->nexus_id ?? '—',
+                    ucfirst($s->status), $digital, $eca, $niveles, $s->students_count ?? 0,
+                ], null, "A{$row}");
+
+                if ($i % 2) $this->stripeRow($ws6, $row, 8);
+                $row++;
+            }
+
+            $row++; // fila vacía entre servicios
         }
 
-        $this->setWidths($ws6, [38,22,16,14,26,26,26,30,12,12]);
+        $this->setWidths($ws6, [38, 22, 16, 14, 26, 26, 30, 12]);
 
         // ── Exportar ─────────────────────────────────────────────────────
         $spreadsheet->setActiveSheetIndex(0);

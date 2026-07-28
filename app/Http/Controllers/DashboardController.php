@@ -116,13 +116,21 @@ class DashboardController extends Controller
         // Colegios por servicio contable
         $serviceTypes = SchoolServiceType::active()->get();
         $colegiosPorServicio = $serviceTypes->map(function ($type) use ($schoolIds) {
-            $q = \DB::table('school_service')->where('school_service_type_id', $type->id);
-            if ($schoolIds) $q->whereIn('school_id', $schoolIds);
+            $ids = \DB::table('school_service')
+                ->where('school_service_type_id', $type->id)
+                ->when($schoolIds, fn($q) => $q->whereIn('school_id', $schoolIds))
+                ->pluck('school_id');
+
+            $schoolsForType = School::whereIn('id', $ids)
+                ->orderBy('name')
+                ->get(['id', 'name', 'state', 'city']);
+
             return [
-                'name'  => $type->name,
-                'icon'  => $type->icon,
-                'color' => $type->color,
-                'total' => $q->count(),
+                'name'    => $type->name,
+                'icon'    => $type->icon,
+                'color'   => $type->color,
+                'total'   => $schoolsForType->count(),
+                'schools' => $schoolsForType,
             ];
         });
 

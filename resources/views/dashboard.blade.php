@@ -145,7 +145,7 @@ function statRow(string $color, string $label, $value): string {
 
 {{-- Botón Reporte General --}}
 <div style="display:flex; justify-content:flex-end; margin-bottom:20px">
-    <a href="{{ route('reportes.general') }}"
+    <a href="#" onclick="iniciarDescargaReporte(event)"
        style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
               background:#1d4ed8; color:#fff; border-radius:9px; text-decoration:none;
               font-size:13px; font-weight:600; transition:background 0.2s;
@@ -773,6 +773,81 @@ function limpiarFiltros() {
 
 document.getElementById('buscador-colegios').addEventListener('input', aplicarFiltros);
 document.getElementById('filtro-series').addEventListener('change', aplicarFiltros);
+</script>
+
+{{-- ── Overlay: Generando Reporte ── --}}
+<div id="reporte-overlay"
+     style="display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+            align-items:center; justify-content:center">
+
+    <div style="background:var(--surface); border-radius:20px; padding:44px 52px;
+                text-align:center; box-shadow:0 30px 70px rgba(0,0,0,0.4);
+                max-width:380px; width:90%; animation:reporteFadeIn .25s ease">
+
+        <div style="width:60px; height:60px; border:5px solid var(--border);
+                    border-top-color:#1d4ed8; border-radius:50%;
+                    margin:0 auto 28px; animation:reporteSpin .85s linear infinite"></div>
+
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:20px;
+                    font-weight:700; color:var(--text); margin-bottom:10px; line-height:1.2">
+            Generando Reporte Completo
+        </div>
+
+        <div style="font-size:14px; color:var(--text-muted); margin-bottom:20px">
+            Un momento por favor<span id="reporte-dots"></span>
+        </div>
+
+        <div style="font-size:12px; color:var(--text-muted); opacity:.6;
+                    border-top:1px solid var(--border); padding-top:16px; line-height:1.6">
+            Este proceso puede tardar 1–3 minutos<br>dependiendo del número de alumnos registrados.
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes reporteSpin  { to { transform: rotate(360deg); } }
+@keyframes reporteFadeIn { from { opacity:0; transform:scale(.96); } to { opacity:1; transform:scale(1); } }
+</style>
+
+<script>
+(function () {
+    var overlay  = document.getElementById('reporte-overlay');
+    var dotsEl   = document.getElementById('reporte-dots');
+    var dotTimer = setInterval(function () {
+        var n = ((dotsEl.textContent.length + 1) % 4);
+        dotsEl.textContent = '.'.repeat(n);
+    }, 500);
+
+    window.iniciarDescargaReporte = function (e) {
+        e.preventDefault();
+
+        // Borrar cookie anterior por si quedó de una descarga previa
+        document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+
+        // Mostrar overlay
+        overlay.style.display = 'flex';
+
+        // Lanzar la descarga
+        window.location.href = '{{ route("reportes.general") }}';
+
+        // Polling: el servidor pone download_complete=1 al terminar
+        var pollId = setInterval(function () {
+            if (document.cookie.indexOf('download_complete=1') !== -1) {
+                clearInterval(pollId);
+                clearTimeout(safetyId);
+                overlay.style.display = 'none';
+                document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+            }
+        }, 600);
+
+        // Seguridad: ocultar a los 5 min aunque falle
+        var safetyId = setTimeout(function () {
+            clearInterval(pollId);
+            overlay.style.display = 'none';
+        }, 300000);
+    };
+})();
 </script>
 
 @endsection

@@ -588,9 +588,12 @@ class ReporteController extends Controller
 
         (new Xlsx($spreadsheet))->save($tempFile);
 
+        // Cookie no-httpOnly para que el JS del overlay detecte que el reporte terminó
+        $doneCookie = cookie('download_complete', '1', 1, '/', null, false, false);
+
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        ])->deleteFileAfterSend(true)->cookie($doneCookie);
     }
 
     // ─────────────────────────────────────────────────────────────────────

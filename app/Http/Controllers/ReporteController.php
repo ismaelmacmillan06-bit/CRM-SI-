@@ -588,16 +588,9 @@ class ReporteController extends Controller
 
         (new Xlsx($spreadsheet))->save($tempFile);
 
-        $response = response()->download($tempFile, $filename, [
+        return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
-
-        // BinaryFileResponse no admite ->cookie(); se añade directo al header de Symfony
-        $response->headers->setCookie(
-            \Symfony\Component\HttpFoundation\Cookie::create('download_complete', '1', time() + 60, '/', null, false, false)
-        );
-
-        return $response;
     }
 
     // ─────────────────────────────────────────────────────────────────────

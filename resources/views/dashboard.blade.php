@@ -143,174 +143,60 @@ function statRow(string $color, string $label, $value): string {
 
 </div>
 
-{{-- ── Cards: Colegios por Nivel y por Servicio ── --}}
-@if($colegiosPorNivel->isNotEmpty() || $colegiosPorServicio->isNotEmpty())
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; margin-bottom:24px">
+{{-- Botón Reporte General --}}
+<div style="display:flex; justify-content:flex-end; margin-bottom:20px">
+    <a href="{{ route('reportes.general') }}"
+       style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
+              background:#1d4ed8; color:#fff; border-radius:9px; text-decoration:none;
+              font-size:13px; font-weight:600; transition:background 0.2s;
+              box-shadow:0 2px 6px rgba(29,78,216,0.3)"
+       onmouseover="this.style.background='#1e40af'"
+       onmouseout="this.style.background='#1d4ed8'">
+        📊 Exportar Reporte
+    </a>
+</div>
 
-    {{-- Colegios por Nivel --}}
-    @if($colegiosPorNivel->isNotEmpty())
-    <div style="background:var(--surface); border-radius:12px; padding:20px 22px; border:1px solid var(--border);
-                box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px">
-            <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted)">
-                🏫 Colegios por Nivel
-            </div>
-            <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
-        </div>
-        @php $nivelColors = ['#f59e0b','#8b5cf6','#3b82f6','#22c55e','#ef4444','#0ea5e9','#10b981']; @endphp
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
-            @foreach($colegiosPorNivel as $i => $nivel)
-            @php $color = $nivelColors[$i % count($nivelColors)]; @endphp
-            <div style="border:1px solid {{ $color }}40; border-top:3px solid {{ $color }};
-                        border-radius:10px; padding:12px 14px; background:{{ $color }}0d">
-                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
-                            color:{{ $color }}; line-height:1">{{ $nivel['total'] }}</div>
-                <div style="font-size:12px; font-weight:600; color:var(--text); margin-top:4px">{{ $nivel['name'] }}</div>
-                @if($totalSchools > 0)
-                <div style="font-size:11px; color:var(--text-muted); margin-top:2px">
-                    {{ round($nivel['total'] / $totalSchools * 100) }}% de {{ $totalSchools }}
-                </div>
-                @endif
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
-    {{-- Colegios por Servicio --}}
-    @if($colegiosPorServicio->isNotEmpty())
-    <div style="background:var(--surface); border-radius:12px; padding:20px 22px; border:1px solid var(--border);
-                box-shadow:0 1px 4px rgba(0,0,0,0.06)">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px">
-            <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted)">
-                📦 Colegios por Servicio
-            </div>
-            <span style="font-size:11px; color:var(--text-muted)">de {{ $totalSchools }}</span>
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px">
-            @foreach($colegiosPorServicio as $srvIdx => $srv)
-            <div style="border:1px solid {{ $srv['color'] }}40; border-top:3px solid {{ $srv['color'] }};
-                        border-radius:10px; padding:12px 14px; background:{{ $srv['color'] }}0d;
-                        display:flex; flex-direction:column">
-                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
-                            color:{{ $srv['color'] }}; line-height:1">{{ $srv['total'] }}</div>
-                <div style="font-size:12px; margin-top:4px; flex:1">
-                    {{ $srv['icon'] }} <span style="font-weight:600; color:var(--text)">{{ $srv['name'] }}</span>
-                </div>
-                @if($totalSchools > 0)
-                <div style="font-size:11px; color:var(--text-muted); margin-top:2px">
-                    {{ round($srv['total'] / $totalSchools * 100) }}% de {{ $totalSchools }}
-                </div>
-                @endif
-                @if($srv['total'] > 0)
-                <button onclick="abrirModalServicio({{ $srvIdx }})"
-                        style="margin-top:8px; background:none; border:none; cursor:pointer; padding:0;
-                               display:flex; align-items:center; gap:4px; color:{{ $srv['color'] }};
-                               font-size:11px; font-weight:600; opacity:0.8; transition:opacity 0.15s"
-                        onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
-                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
-                    </svg>
-                    Ver colegios
-                </button>
-                @endif
-            </div>
-            @endforeach
-        </div>
-        @if(auth()->user()->hasRole('admin'))
-        <div style="margin-top:12px; text-align:right">
-            <a href="{{ route('configuracion.servicios.index') }}"
-               style="font-size:11.5px; color:var(--accent); text-decoration:none; font-weight:500">
-                ⚙️ Gestionar servicios →
-            </a>
-        </div>
-        @endif
-    </div>
-
-    {{-- Modales: un modal por servicio --}}
-    @foreach($colegiosPorServicio as $srvIdx => $srv)
-    @if($srv['total'] > 0)
-    <div id="modal-servicio-{{ $srvIdx }}"
-         style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
-                background:rgba(0,0,0,0.45); padding:20px">
-        <div style="background:var(--surface); border-radius:14px; width:100%; max-width:520px;
-                    max-height:80vh; display:flex; flex-direction:column;
-                    box-shadow:0 20px 60px rgba(0,0,0,0.25)">
-            {{-- Header --}}
-            <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);
-                        display:flex; align-items:center; gap:10px; flex-shrink:0">
-                <span style="font-size:22px">{{ $srv['icon'] }}</span>
-                <div style="flex:1">
-                    <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px;
-                                font-weight:700; color:var(--text)">{{ $srv['name'] }}</div>
-                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
-                        {{ $srv['total'] }} {{ $srv['total'] === 1 ? 'colegio' : 'colegios' }} con este servicio
-                    </div>
-                </div>
-                <button onclick="cerrarModalServicio({{ $srvIdx }})"
-                        style="background:none; border:none; cursor:pointer; font-size:20px;
-                               color:var(--text-muted); line-height:1; padding:4px">×</button>
-            </div>
-            {{-- Lista --}}
-            <div style="overflow-y:auto; padding:16px 24px 20px; flex:1">
-                @foreach($srv['schools'] as $sch)
-                <a href="{{ route('schools.show', $sch->id) }}"
-                   style="display:flex; align-items:center; gap:10px; padding:10px 12px;
-                          border-radius:8px; text-decoration:none; transition:background 0.12s;
-                          border-bottom:1px solid var(--border)"
-                   onmouseover="this.style.background='{{ $srv['color'] }}18'"
-                   onmouseout="this.style.background='transparent'">
-                    <span style="width:8px; height:8px; border-radius:50%; background:{{ $srv['color'] }};
-                                 flex-shrink:0"></span>
-                    <span style="font-size:13.5px; font-weight:600; color:var(--text); flex:1">
-                        {{ $sch->name }}
-                    </span>
-                    @if($sch->state || $sch->city)
-                    <span style="font-size:11.5px; color:var(--text-muted)">
-                        {{ $sch->state ?? $sch->city }}
-                    </span>
-                    @endif
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="{{ $srv['color'] }}" viewBox="0 0 16 16" style="flex-shrink:0;opacity:0.6">
-                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
-                    </svg>
-                </a>
-                @endforeach
-            </div>
-        </div>
-    </div>
-    @endif
-    @endforeach
-
-    <script>
-    function abrirModalServicio(idx) {
-        var m = document.getElementById('modal-servicio-' + idx);
-        if (!m) return;
-        m.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-    function cerrarModalServicio(idx) {
-        var m = document.getElementById('modal-servicio-' + idx);
-        if (m) m.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            document.querySelectorAll('[id^="modal-servicio-"]').forEach(function(m) {
-                m.style.display = 'none';
-            });
-            document.body.style.overflow = '';
-        }
+{{-- ── Colegios por Nivel (full width, mismo orden y colores que Alumnos SI) ── --}}
+@if($colegiosPorNivel->isNotEmpty())
+@php
+    $nivelColorMap = [
+        'maternal'     => '#f59e0b',
+        'preescolar'   => '#8b5cf6',
+        'primaria'     => '#3b82f6',
+        'secundaria'   => '#10b981',
+        'preparatoria' => '#E2231A',
+        'licenciatura' => '#0ea5e9',
+    ];
+    $nivelOrden = ['maternal','preescolar','primaria','secundaria','preparatoria','licenciatura'];
+    $colegiosPorNivelOrdenados = $colegiosPorNivel->sortBy(function($n) use ($nivelOrden) {
+        $idx = array_search(strtolower($n['name']), $nivelOrden);
+        return $idx === false ? 99 : $idx;
     });
-    document.addEventListener('click', function(e) {
-        if (e.target.matches('[id^="modal-servicio-"]')) {
-            e.target.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-    });
-    </script>
-    @endif
-
+@endphp
+<div style="margin-bottom:24px">
+    <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
+            🏫 Colegios por Nivel
+        </span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px">
+        @foreach($colegiosPorNivelOrdenados as $nivel)
+        @php $color = $nivelColorMap[strtolower($nivel['name'])] ?? '#94a3b8'; @endphp
+        <div style="background:var(--surface); border-radius:14px; padding:18px 20px;
+                    border-top:3px solid {{ $color }}; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+            <div style="font-size:11px; font-weight:600; letter-spacing:.5px;
+                         text-transform:uppercase; color:var(--text-muted); margin-bottom:8px">
+                {{ $nivel['name'] }}
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:30px; font-weight:700;
+                        color:{{ $color }}; line-height:1">{{ $nivel['total'] }}</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:6px">
+                {{ $totalSchools > 0 ? round($nivel['total'] / $totalSchools * 100) : 0 }}% colegios
+            </div>
+        </div>
+        @endforeach
+    </div>
 </div>
 @endif
 
@@ -328,19 +214,6 @@ function statRow(string $color, string $label, $value): string {
 </div>
 @endif
 
-
-{{-- Botón Reporte General --}}
-<div style="display:flex; justify-content:flex-end; margin-bottom:20px; margin-top:-8px">
-    <a href="{{ route('reportes.general') }}"
-       style="display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
-              background:#1d4ed8; color:#fff; border-radius:9px; text-decoration:none;
-              font-size:13px; font-weight:600; transition:background 0.2s;
-              box-shadow:0 2px 6px rgba(29,78,216,0.3)"
-       onmouseover="this.style.background='#1e40af'"
-       onmouseout="this.style.background='#1d4ed8'">
-        📊 Exportar Reporte
-    </a>
-</div>
 
 {{--Cards para alumnos SI --}}
 @php
@@ -383,6 +256,156 @@ function statRow(string $color, string $label, $value): string {
     </div>
 </div>
 
+
+{{-- ── Colegios por Servicio (full width, 2 cols si >5) ── --}}
+@if($colegiosPorServicio->isNotEmpty())
+@php $dosColumnas = $colegiosPorServicio->count() > 5; @endphp
+<div style="margin-bottom:24px">
+    <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px; flex-wrap:wrap">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
+            📦 Colegios por Servicio
+        </span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
+        @if(auth()->user()->hasRole('admin'))
+        <a href="{{ route('configuracion.servicios.index') }}"
+           style="margin-left:auto; font-size:11.5px; color:var(--accent); text-decoration:none; font-weight:500">
+            ⚙️ Gestionar servicios →
+        </a>
+        @endif
+    </div>
+
+    <div style="background:var(--surface); border-radius:14px; padding:6px 20px;
+                border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div style="{{ $dosColumnas ? 'display:grid; grid-template-columns:repeat(2,1fr); gap:0 40px;' : '' }}">
+            @foreach($colegiosPorServicio as $srvIdx => $srv)
+            @php $pct = $totalSchools > 0 ? round($srv['total'] / $totalSchools * 100) : 0; @endphp
+            <div style="display:flex; align-items:center; gap:10px; padding:10px 0;
+                        border-bottom:1px solid var(--border){{ $loop->last && !$dosColumnas ? ';border-bottom:none' : '' }}">
+
+                {{-- Dot --}}
+                <span style="width:9px; height:9px; border-radius:50%; background:{{ $srv['color'] }};
+                             flex-shrink:0; box-shadow:0 0 0 2px {{ $srv['color'] }}28"></span>
+
+                {{-- Icono --}}
+                <span style="font-size:15px; line-height:1; flex-shrink:0">{{ $srv['icon'] }}</span>
+
+                {{-- Nombre --}}
+                <span style="flex:1; font-size:13px; font-weight:600; color:var(--text);
+                             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0"
+                      title="{{ $srv['name'] }}">{{ $srv['name'] }}</span>
+
+                {{-- Barra --}}
+                <div style="width:80px; height:5px; border-radius:99px; background:var(--border);
+                            flex-shrink:0; overflow:hidden">
+                    <div style="width:{{ $pct }}%; height:100%; border-radius:99px;
+                                background:{{ $srv['color'] }}; transition:width .4s ease"></div>
+                </div>
+
+                {{-- % --}}
+                <span style="font-size:11px; color:var(--text-muted); width:30px; text-align:right;
+                             flex-shrink:0; font-variant-numeric:tabular-nums">{{ $pct }}%</span>
+
+                {{-- Conteo --}}
+                <span style="font-size:15px; font-weight:800; color:{{ $srv['color'] }};
+                             min-width:22px; text-align:right; flex-shrink:0;
+                             font-variant-numeric:tabular-nums">{{ $srv['total'] }}</span>
+
+                {{-- Ojo --}}
+                @if($srv['total'] > 0)
+                <button onclick="abrirModalServicio({{ $srvIdx }})"
+                        title="Ver colegios"
+                        style="background:none; border:none; cursor:pointer; padding:4px;
+                               color:{{ $srv['color'] }}; opacity:0.5; transition:opacity .15s;
+                               line-height:0; flex-shrink:0; border-radius:6px"
+                        onmouseover="this.style.opacity='1';this.style.background='{{ $srv['color'] }}18'"
+                        onmouseout="this.style.opacity='0.5';this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                </button>
+                @else
+                <span style="width:23px; flex-shrink:0"></span>
+                @endif
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+{{-- Modales por servicio --}}
+@foreach($colegiosPorServicio as $srvIdx => $srv)
+@if($srv['total'] > 0)
+<div id="modal-servicio-{{ $srvIdx }}"
+     style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
+            background:rgba(0,0,0,0.45); padding:20px">
+    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:520px;
+                max-height:80vh; display:flex; flex-direction:column;
+                box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+        <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);
+                    display:flex; align-items:center; gap:10px; flex-shrink:0">
+            <span style="font-size:22px">{{ $srv['icon'] }}</span>
+            <div style="flex:1">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px;
+                            font-weight:700; color:var(--text)">{{ $srv['name'] }}</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                    {{ $srv['total'] }} {{ $srv['total'] === 1 ? 'colegio' : 'colegios' }} con este servicio
+                </div>
+            </div>
+            <button onclick="cerrarModalServicio({{ $srvIdx }})"
+                    style="background:none; border:none; cursor:pointer; font-size:20px;
+                           color:var(--text-muted); line-height:1; padding:4px">×</button>
+        </div>
+        <div style="overflow-y:auto; padding:16px 24px 20px; flex:1">
+            @foreach($srv['schools'] as $sch)
+            <a href="{{ route('schools.show', $sch->id) }}"
+               style="display:flex; align-items:center; gap:10px; padding:10px 12px;
+                      border-radius:8px; text-decoration:none; transition:background 0.12s;
+                      border-bottom:1px solid var(--border)"
+               onmouseover="this.style.background='{{ $srv['color'] }}18'"
+               onmouseout="this.style.background='transparent'">
+                <span style="width:8px; height:8px; border-radius:50%; background:{{ $srv['color'] }}; flex-shrink:0"></span>
+                <span style="font-size:13.5px; font-weight:600; color:var(--text); flex:1">{{ $sch->name }}</span>
+                @if($sch->state || $sch->city)
+                <span style="font-size:11.5px; color:var(--text-muted)">{{ $sch->state ?? $sch->city }}</span>
+                @endif
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="{{ $srv['color'] }}" viewBox="0 0 16 16" style="flex-shrink:0;opacity:0.6">
+                    <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+            </a>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
+@endforeach
+
+<script>
+function abrirModalServicio(idx) {
+    var m = document.getElementById('modal-servicio-' + idx);
+    if (!m) return;
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModalServicio(idx) {
+    var m = document.getElementById('modal-servicio-' + idx);
+    if (m) m.style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('[id^="modal-servicio-"]').forEach(function(m) { m.style.display = 'none'; });
+        document.body.style.overflow = '';
+    }
+});
+document.addEventListener('click', function(e) {
+    if (e.target.matches('[id^="modal-servicio-"]')) {
+        e.target.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+});
+</script>
+@endif
 
 {{-- Mapa + Panel derecho --}}
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:16px; margin-bottom:24px">

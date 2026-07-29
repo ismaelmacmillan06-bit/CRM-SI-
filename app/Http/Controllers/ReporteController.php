@@ -588,12 +588,16 @@ class ReporteController extends Controller
 
         (new Xlsx($spreadsheet))->save($tempFile);
 
-        // Cookie no-httpOnly para que el JS del overlay detecte que el reporte terminó
-        $doneCookie = cookie('download_complete', '1', 1, '/', null, false, false);
-
-        return response()->download($tempFile, $filename, [
+        $response = response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true)->cookie($doneCookie);
+        ])->deleteFileAfterSend(true);
+
+        // BinaryFileResponse no admite ->cookie(); se añade directo al header de Symfony
+        $response->headers->setCookie(
+            \Symfony\Component\HttpFoundation\Cookie::create('download_complete', '1', time() + 60, '/', null, false, false)
+        );
+
+        return $response;
     }
 
     // ─────────────────────────────────────────────────────────────────────

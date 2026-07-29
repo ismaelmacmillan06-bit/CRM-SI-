@@ -822,29 +822,35 @@ document.getElementById('filtro-series').addEventListener('change', aplicarFiltr
     window.iniciarDescargaReporte = function (e) {
         e.preventDefault();
 
-        // Borrar cookie anterior por si quedó de una descarga previa
+        // Borrar cookie anterior
         document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
 
         // Mostrar overlay
         overlay.style.display = 'flex';
 
-        // Lanzar la descarga
-        window.location.href = '{{ route("reportes.general") }}';
+        // Iframe oculto: la descarga corre en segundo plano y el JS de esta
+        // página nunca se interrumpe (window.location.href puede matar el setInterval)
+        var iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = '{{ route("reportes.general") }}';
+        document.body.appendChild(iframe);
 
-        // Polling: el servidor pone download_complete=1 al terminar
+        // Polling: detectar la cookie que pone el servidor al terminar
         var pollId = setInterval(function () {
             if (document.cookie.indexOf('download_complete=1') !== -1) {
                 clearInterval(pollId);
                 clearTimeout(safetyId);
                 overlay.style.display = 'none';
                 document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+                if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
             }
-        }, 600);
+        }, 800);
 
         // Seguridad: ocultar a los 5 min aunque falle
         var safetyId = setTimeout(function () {
             clearInterval(pollId);
             overlay.style.display = 'none';
+            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
         }, 300000);
     };
 })();

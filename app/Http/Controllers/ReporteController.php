@@ -222,12 +222,133 @@ class ReporteController extends Controller
 
         $this->setWidths($ws1, [38,22,12,26,26,26,26,30,12,12]);
 
-        // ── HOJA 2: DIRECTORES ───────────────────────────────────────────
+        // ── HOJA 2: ALUMNOS SI ────────────────────────────────────────────
+        $allStudents = Student::with('school')
+            ->orderBy('level')->orderBy('name')->get();
+        $totalStudentsGlobal = $allStudents->count();
+
+        $wsA = $spreadsheet->createSheet(1);
+        $wsA->setTitle('Alumnos SI');
+
+        $this->sheetTitle($wsA, "MacmillanSI — Alumnos SI ({$totalStudentsGlobal})", '059669', 8, $generado);
+
+        $nivelOrden  = ['maternal', 'preescolar', 'primaria', 'secundaria', 'preparatoria', 'licenciatura'];
+        $nivelColorsXls = [
+            'maternal'     => 'F59E0B',
+            'preescolar'   => '8B5CF6',
+            'primaria'     => '3B82F6',
+            'secundaria'   => '10B981',
+            'preparatoria' => 'E2231A',
+            'licenciatura' => '0EA5E9',
+        ];
+        $conteoNiveles = $allStudents
+            ->groupBy(fn($s) => strtolower(trim($s->level ?? '')))
+            ->map->count();
+
+        $row = 4;
+
+        // — Resumen por nivel —
+        $wsA->setCellValue("A{$row}", 'RESUMEN POR NIVEL');
+        $wsA->mergeCells("A{$row}:H{$row}");
+        $wsA->getStyle("A{$row}:H{$row}")->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '059669']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $wsA->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        foreach (['Nivel', 'Total Alumnos', '% del Total'] as $ci => $h) {
+            $wsA->setCellValue(chr(65 + $ci) . $row, $h);
+        }
+        $wsA->getStyle("A{$row}:C{$row}")->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '047857']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $wsA->getRowDimension($row)->setRowHeight(18);
+        $row++;
+
+        foreach ($nivelOrden as $nivel) {
+            $total = $conteoNiveles[$nivel] ?? 0;
+            $pct   = $totalStudentsGlobal > 0
+                ? round($total / $totalStudentsGlobal * 100, 1) . '%'
+                : '0%';
+            $color = $nivelColorsXls[$nivel] ?? '94A3B8';
+
+            $wsA->setCellValue("A{$row}", ucfirst($nivel));
+            $wsA->setCellValue("B{$row}", $total);
+            $wsA->setCellValue("C{$row}", $pct);
+            $wsA->getStyle("A{$row}")->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+            ]);
+            $wsA->getStyle("B{$row}:C{$row}")->applyFromArray([
+                'font'      => ['bold' => true],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F9FAFB']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
+            $wsA->getStyle("B{$row}")->getFont()->setSize(13);
+            $wsA->getRowDimension($row)->setRowHeight(20);
+            $row++;
+        }
+
+        // Fila total
+        $wsA->setCellValue("A{$row}", 'TOTAL');
+        $wsA->setCellValue("B{$row}", $totalStudentsGlobal);
+        $wsA->setCellValue("C{$row}", '100%');
+        $wsA->getStyle("A{$row}:C{$row}")->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '064E3B']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+        $wsA->getStyle("A{$row}")->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT)->setIndent(1);
+        $wsA->getRowDimension($row)->setRowHeight(22);
+        $row += 2;
+
+        // — Lista completa de alumnos —
+        $wsA->setCellValue("A{$row}", 'LISTA COMPLETA DE ALUMNOS');
+        $wsA->mergeCells("A{$row}:H{$row}");
+        $wsA->getStyle("A{$row}:H{$row}")->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '059669']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+        ]);
+        $wsA->getRowDimension($row)->setRowHeight(20);
+        $row++;
+
+        $this->writeHeaders($wsA, $row, [
+            'Nombre', 'Apellidos', 'Nivel', 'Grado',
+            'Colegio', 'Estado', 'Usuario MEE', 'Contraseña MEE',
+        ], '059669');
+        $row++;
+
+        foreach ($allStudents as $i => $s) {
+            $wsA->fromArray([
+                $s->name,
+                $s->last_name ?? '—',
+                ucfirst($s->level ?? '—'),
+                $s->grade ?? '—',
+                $s->school?->name ?? '—',
+                $s->school?->state ?? $s->school?->city ?? '—',
+                $s->mee_username ?? '—',
+                $s->mee_password ?? '—',
+            ], null, "A{$row}");
+
+            if ($i % 2) $this->stripeRow($wsA, $row, 8);
+            $row++;
+        }
+
+        $this->setWidths($wsA, [22, 22, 16, 10, 34, 20, 22, 22]);
+
+        // ── HOJA 3: DIRECTORES ───────────────────────────────────────────
         $directorRoles = TeacherRole::whereIn('role', ['director_general','director_nivel'])
             ->with(['teacher.school.schoolConsultants.consultant.user'])
             ->get();
 
-        $ws2 = $spreadsheet->createSheet(1);
+        $ws2 = $spreadsheet->createSheet(2);
         $ws2->setTitle('Directores');
 
         $this->sheetTitle($ws2, "MacmillanSI — Directores ({$directorRoles->count()})", '7C3AED', 8, $generado);
@@ -255,7 +376,7 @@ class ReporteController extends Controller
         $this->setWidths($ws2, [22,22,30,34,20,22,14,26]);
 
         // ── HOJA 3: ADMINS MEE ───────────────────────────────────────────
-        $ws3 = $spreadsheet->createSheet(2);
+        $ws3 = $spreadsheet->createSheet(3);
         $ws3->setTitle('Admins MEE');
 
         $meeAdmins    = MeeAdmin::with('school')->orderBy('school_id')->get();
@@ -322,7 +443,7 @@ class ReporteController extends Controller
         // ── HOJA 4: DOCENTES ─────────────────────────────────────────────
         $teachers = Teacher::with(['school','roles'])->orderBy('school_id')->orderBy('name')->get();
 
-        $ws4 = $spreadsheet->createSheet(3);
+        $ws4 = $spreadsheet->createSheet(4);
         $ws4->setTitle('Docentes');
 
         $this->sheetTitle($ws4, "MacmillanSI — Docentes ({$teachers->count()})", '1D4ED8', 10, $generado);
@@ -362,7 +483,7 @@ class ReporteController extends Controller
           ->orderBy('name')
           ->get();
 
-        $ws5 = $spreadsheet->createSheet(4);
+        $ws5 = $spreadsheet->createSheet(5);
         $ws5->setTitle('Colegios Entregados');
 
         $this->sheetTitle($ws5, "MacmillanSI — Colegios Entregados ({$entregados->count()})", '16A34A', 10, $generado);
@@ -400,7 +521,7 @@ class ReporteController extends Controller
               ->orderBy('name');
         }])->get();
 
-        $ws6 = $spreadsheet->createSheet(5);
+        $ws6 = $spreadsheet->createSheet(6);
         $ws6->setTitle('Servicios Adicionales');
 
         $this->sheetTitle($ws6, 'MacmillanSI — Servicios Adicionales por Colegio', '0891B2', 8, $generado);

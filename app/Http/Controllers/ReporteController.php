@@ -172,18 +172,21 @@ class ReporteController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function reporteGeneral()
     {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         $spreadsheet = new Spreadsheet();
         $spreadsheet->removeSheetByIndex(0); // quitar hoja vacía por defecto
 
         $generado = now()->format('d/m/Y H:i');
 
         // ── HOJA 1: COLEGIOS ─────────────────────────────────────────────
-        $schools = School::with([
-            'schoolConsultants.consultant.user',
-            'schoolLevels.level',
-            'schoolLevels.processes',
-            'students',
-        ])->orderBy('name')->get();
+        $schools = School::withCount('students')
+            ->with([
+                'schoolConsultants.consultant.user',
+                'schoolLevels.level',
+                'schoolLevels.processes',
+            ])->orderBy('name')->get();
 
         $ws1 = $spreadsheet->createSheet(0);
         $ws1->setTitle('Colegios');
@@ -213,7 +216,7 @@ class ReporteController extends Controller
 
             $ws1->fromArray([
                 $s->name, $s->state ?? $s->city ?? '—', ucfirst($s->status),
-                $digital, $eca, $elt, $ventas, $niveles, $pct, $s->students->count(),
+                $digital, $eca, $elt, $ventas, $niveles, $pct, $s->students_count,
             ], null, "A{$row}");
 
             if ($i % 2) $this->stripeRow($ws1, $row, 10);
@@ -223,9 +226,12 @@ class ReporteController extends Controller
         $this->setWidths($ws1, [38,22,12,26,26,26,26,30,12,12]);
 
         // ── HOJA 2: ALUMNOS SI ────────────────────────────────────────────
-        $allStudents = Student::with('school')
-            ->orderBy('level')->orderBy('name')->get();
-        $totalStudentsGlobal = $allStudents->count();
+        // Aggregate query: un solo SELECT COUNT GROUP BY — sin cargar modelos Eloquent
+        $conteoNiveles = \DB::table('students')
+            ->selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
+            ->groupBy('lvl')
+            ->pluck('total', 'lvl');
+        $totalStudentsGlobal = $conteoNiveles->sum();
 
         $wsA = $spreadsheet->createSheet(1);
         $wsA->setTitle('Alumnos SI');
@@ -241,9 +247,6 @@ class ReporteController extends Controller
             'preparatoria' => 'E2231A',
             'licenciatura' => '0EA5E9',
         ];
-        $conteoNiveles = $allStudents
-            ->groupBy(fn($s) => strtolower(trim($s->level ?? '')))
-            ->map->count();
 
         $row = 4;
 
@@ -325,7 +328,8 @@ class ReporteController extends Controller
         ], '059669');
         $row++;
 
-        foreach ($allStudents as $i => $s) {
+        // lazy(500): procesa 500 registros por query en lugar de cargar 50k de golpe
+        foreach (Student::with('school')->orderBy('level')->orderBy('name')->lazy(500) as $i => $s) {
             $wsA->fromArray([
                 $s->name,
                 $s->last_name ?? '—',
@@ -470,13 +474,13 @@ class ReporteController extends Controller
         $this->setWidths($ws4, [22,22,30,32,20,14,36,10,22,22]);
 
         // ── HOJA 5: COLEGIOS ENTREGADOS ──────────────────────────────────
-        $entregados = School::with([
-            'schoolConsultants.consultant.user',
-            'schoolLevels.level',
-            'schoolLevels.processes',
-            'students',
-            'meeAdmins',
-        ])->whereHas('schoolLevels.processes')
+        $entregados = School::withCount('students')
+            ->with([
+                'schoolConsultants.consultant.user',
+                'schoolLevels.level',
+                'schoolLevels.processes',
+                'meeAdmins',
+            ])->whereHas('schoolLevels.processes')
           ->whereDoesntHave('schoolLevels', fn($q) =>
               $q->whereHas('processes', fn($q2) => $q2->where('status', '!=', 'done'))
           )
@@ -505,7 +509,7 @@ class ReporteController extends Controller
             $ws5->fromArray([
                 $s->name, $s->state ?? $s->city ?? '—', $s->nexus_id ?? '—',
                 $digital, $eca, $elt, $ventas, $niveles,
-                $s->students->count(), $meeAdmin,
+                $s->students_count, $meeAdmin,
             ], null, "A{$row}");
 
             if ($i % 2) $this->stripeRow($ws5, $row, 10);

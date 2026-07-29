@@ -812,46 +812,43 @@ document.getElementById('filtro-series').addEventListener('change', aplicarFiltr
 
 <script>
 (function () {
-    var overlay  = document.getElementById('reporte-overlay');
-    var dotsEl   = document.getElementById('reporte-dots');
-    var dotTimer = setInterval(function () {
-        var n = ((dotsEl.textContent.length + 1) % 4);
-        dotsEl.textContent = '.'.repeat(n);
+    var overlay = document.getElementById('reporte-overlay');
+    var dotsEl  = document.getElementById('reporte-dots');
+
+    setInterval(function () {
+        dotsEl.textContent = '.'.repeat((dotsEl.textContent.length + 1) % 4);
     }, 500);
 
     window.iniciarDescargaReporte = function (e) {
         e.preventDefault();
-
-        // Borrar cookie anterior
-        document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
-
-        // Mostrar overlay
         overlay.style.display = 'flex';
 
-        // Iframe oculto: la descarga corre en segundo plano y el JS de esta
-        // página nunca se interrumpe (window.location.href puede matar el setInterval)
-        var iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = '{{ route("reportes.general") }}';
-        document.body.appendChild(iframe);
-
-        // Polling: detectar la cookie que pone el servidor al terminar
-        var pollId = setInterval(function () {
-            if (document.cookie.indexOf('download_complete=1') !== -1) {
-                clearInterval(pollId);
-                clearTimeout(safetyId);
+        // fetch() espera en segundo plano mientras el servidor genera el Excel.
+        // Cuando termina, recibimos el blob, disparamos la descarga y cerramos el overlay.
+        // No depende de cookies ni de iframes (que Chrome bloquea por SameSite).
+        fetch('{{ route("reportes.general") }}')
+            .then(function (res) {
+                if (!res.ok) throw new Error('error');
+                var cd   = res.headers.get('Content-Disposition') || '';
+                var m    = cd.match(/filename[^;=\n]*=['"]?([^'"\n;]+)/);
+                var name = m ? m[1] : 'reporte-general.xlsx';
+                return res.blob().then(function (blob) { return { blob: blob, name: name }; });
+            })
+            .then(function (data) {
+                var url = URL.createObjectURL(data.blob);
+                var a   = document.createElement('a');
+                a.href  = url;
+                a.download = data.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
                 overlay.style.display = 'none';
-                document.cookie = 'download_complete=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
-                if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-            }
-        }, 800);
-
-        // Seguridad: ocultar a los 5 min aunque falle
-        var safetyId = setTimeout(function () {
-            clearInterval(pollId);
-            overlay.style.display = 'none';
-            if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-        }, 300000);
+            })
+            .catch(function () {
+                overlay.style.display = 'none';
+                alert('Error al generar el reporte. Intenta de nuevo.');
+            });
     };
 })();
 </script>

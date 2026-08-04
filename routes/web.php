@@ -19,6 +19,7 @@ use App\Http\Controllers\TareaController;
 use App\Http\Controllers\ComunicadoController;
 use App\Http\Controllers\HerramientasController;
 use App\Http\Controllers\SchoolServiceTypeController;
+use App\Http\Controllers\SsaController;
 
 
 Route::get('/', function () {
@@ -150,6 +151,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::post('tareas', [TareaController::class, 'store'])->name('tareas.store');
      Route::patch('tareas/{tarea}/colegios/{school}', [TareaController::class, 'updateStatus'])->name('tareas.update-status');
      Route::delete('tareas/{tarea}', [TareaController::class, 'destroy'])->name('tareas.destroy');
+
+     // Calendario SSA
+     Route::get('ssa',                           [SsaController::class, 'index'])  ->name('ssa.index');
+     Route::post('ssa',                          [SsaController::class, 'store'])  ->name('ssa.store');
+     Route::patch('ssa/{ssaCapacitacion}',       [SsaController::class, 'update']) ->name('ssa.update');
+     Route::delete('ssa/{ssaCapacitacion}',      [SsaController::class, 'destroy'])->name('ssa.destroy');
 });
 
 

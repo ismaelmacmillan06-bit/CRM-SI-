@@ -29,15 +29,19 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // ECA y ELT: solo lectura y solo sección Colegios
+        // ECA y ELT: lectura en Colegios/Dashboard + acceso completo a SSA
         if ($user->hasAnyRole(['consultor_eca', 'consultor_elt'])) {
+            // SSA: escritura permitida
+            if ($request->routeIs('ssa.*')) {
+                return $next($request);
+            }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
             $rutasPermitidas = ['dashboard', 'schools.*'];
             if (!$request->routeIs($rutasPermitidas)) {
-                return redirect()->route('schools.index')
-                    ->with('error_acceso', 'Solo tienes acceso a la sección de Colegios.');
+                return redirect()->route('ssa.index')
+                    ->with('error_acceso', 'Solo tienes acceso a la sección de Colegios y Calendario SSA.');
             }
             // No pueden generar el Report Master
             if ($request->routeIs('schools.reporte-master')) {
@@ -46,8 +50,11 @@ class VerificarAccesoRol
             return $next($request);
         }
 
-        // Ventas: solo lectura en todo el sistema
+        // Ventas: lectura en todo el sistema + escritura en SSA
         if ($user->hasRole('representante_ventas')) {
+            if ($request->routeIs('ssa.*')) {
+                return $next($request);
+            }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }

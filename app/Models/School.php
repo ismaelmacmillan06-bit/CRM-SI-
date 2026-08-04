@@ -56,6 +56,11 @@ class School extends Model
     return $this->hasMany(MeeAdmin::class);
 }
 
+public function ssaCapacitaciones()
+{
+    return $this->hasMany(\App\Models\SsaCapacitacion::class);
+}
+
 public function students()
 {
     return $this->hasMany(Student::class);

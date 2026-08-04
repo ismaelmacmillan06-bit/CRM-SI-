@@ -132,6 +132,11 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        <a href="https://adminservices.macmillaneducacion.com/" target="_blank" rel="noopener"
+                           class="btn btn-sm"
+                           style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
+                            🔗 Admin Servicios
+                        </a>
                         <form method="POST" action="{{ route('teachers.destroy', $teacher) }}"
                               onsubmit="return confirm('¿Eliminar este docente?')">
                             @csrf @method('DELETE')

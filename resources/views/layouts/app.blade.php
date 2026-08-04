@@ -464,6 +464,11 @@
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios
         </a>
+        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas')
+        <a href="{{ route('ssa.index') }}" class="nav-item {{ request()->routeIs('ssa.*') ? 'active' : '' }}">
+            <span class="nav-icon">📅</span> Calendario SSA
+        </a>
+        @endhasanyrole
         @unlessrole('consultor_eca|consultor_elt')
         <a href="{{ route('consultants.index') }}" class="nav-item {{ request()->routeIs('consultants.*') ? 'active' : '' }}">
             <span class="nav-icon">👥</span> Equipo SI

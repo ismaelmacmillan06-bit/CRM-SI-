@@ -260,6 +260,66 @@ function statRow(string $color, string $label, $value): string {
 {{-- ── Colegios por Servicio (full width, 2 cols si >5) ── --}}
 @if($colegiosPorServicio->isNotEmpty())
 @php $dosColumnas = $colegiosPorServicio->count() > 5; @endphp
+<style>
+    .srv-grid { }
+    .srv-grid.dos-cols {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 40px;
+    }
+    .srv-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: nowrap;
+    }
+    .srv-row.last-single { border-bottom: none; }
+    .srv-name {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+    .srv-bar-wrap {
+        width: 80px;
+        height: 5px;
+        border-radius: 99px;
+        background: var(--border);
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+    .srv-pct {
+        font-size: 11px;
+        color: var(--text-muted);
+        width: 30px;
+        text-align: right;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+    }
+    .srv-total {
+        font-size: 15px;
+        font-weight: 800;
+        min-width: 22px;
+        text-align: right;
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 640px) {
+        .srv-grid.dos-cols {
+            grid-template-columns: 1fr;
+        }
+        .srv-row { gap: 7px; }
+        .srv-bar-wrap { width: 52px; }
+        .srv-pct { width: 26px; }
+        .srv-total { font-size: 14px; }
+    }
+</style>
 <div style="margin-bottom:24px">
     <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px; flex-wrap:wrap">
         <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
@@ -276,11 +336,10 @@ function statRow(string $color, string $label, $value): string {
 
     <div style="background:var(--surface); border-radius:14px; padding:6px 20px;
                 border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-        <div style="{{ $dosColumnas ? 'display:grid; grid-template-columns:repeat(2,1fr); gap:0 40px;' : '' }}">
+        <div class="srv-grid {{ $dosColumnas ? 'dos-cols' : '' }}">
             @foreach($colegiosPorServicio as $srvIdx => $srv)
             @php $pct = $totalSchools > 0 ? round($srv['total'] / $totalSchools * 100) : 0; @endphp
-            <div style="display:flex; align-items:center; gap:10px; padding:10px 0;
-                        border-bottom:1px solid var(--border){{ $loop->last && !$dosColumnas ? ';border-bottom:none' : '' }}">
+            <div class="srv-row {{ $loop->last && !$dosColumnas ? 'last-single' : '' }}">
 
                 {{-- Dot --}}
                 <span style="width:9px; height:9px; border-radius:50%; background:{{ $srv['color'] }};
@@ -290,25 +349,19 @@ function statRow(string $color, string $label, $value): string {
                 <span style="font-size:15px; line-height:1; flex-shrink:0">{{ $srv['icon'] }}</span>
 
                 {{-- Nombre --}}
-                <span style="flex:1; font-size:13px; font-weight:600; color:var(--text);
-                             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0"
-                      title="{{ $srv['name'] }}">{{ $srv['name'] }}</span>
+                <span class="srv-name" title="{{ $srv['name'] }}">{{ $srv['name'] }}</span>
+
+                {{-- Conteo --}}
+                <span class="srv-total" style="color:{{ $srv['color'] }}">{{ $srv['total'] }}</span>
 
                 {{-- Barra --}}
-                <div style="width:80px; height:5px; border-radius:99px; background:var(--border);
-                            flex-shrink:0; overflow:hidden">
+                <div class="srv-bar-wrap">
                     <div style="width:{{ $pct }}%; height:100%; border-radius:99px;
                                 background:{{ $srv['color'] }}; transition:width .4s ease"></div>
                 </div>
 
                 {{-- % --}}
-                <span style="font-size:11px; color:var(--text-muted); width:30px; text-align:right;
-                             flex-shrink:0; font-variant-numeric:tabular-nums">{{ $pct }}%</span>
-
-                {{-- Conteo --}}
-                <span style="font-size:15px; font-weight:800; color:{{ $srv['color'] }};
-                             min-width:22px; text-align:right; flex-shrink:0;
-                             font-variant-numeric:tabular-nums">{{ $srv['total'] }}</span>
+                <span class="srv-pct">{{ $pct }}%</span>
 
                 {{-- Ojo --}}
                 @if($srv['total'] > 0)

@@ -412,7 +412,7 @@
                                 @php [$chipClass, $fechaLabel, $diasLabel] = ssaChipData($cap, $hoy); @endphp
                                 <button type="button"
                                     class="fecha-chip {{ $chipClass }}"
-                                    onclick="abrirEditar({{ $cap->id }},'{{ $cap->fecha->format('Y-m-d') }}','{{ $cap->hora ?? '' }}','{{ $cap->tipo }}','{{ $cap->estatus }}',{{ json_encode($cap->notas ?? '') }})"
+                                    onclick="abrirEditar({{ $cap->id }},'{{ $cap->fecha->format('Y-m-d') }}','{{ $cap->hora ?? '' }}','{{ $cap->tipo }}','{{ $cap->estatus }}',{{ json_encode($cap->notas ?? '') }},{{ $school->id }},{{ json_encode($school->name) }})"
                                     title="{{ ucfirst($cap->estatus) }}{{ $cap->notas ? ' — '.$cap->notas : '' }}">
                                     {{ $fechaLabel }}
                                     @if($diasLabel)<span class="dias-badge">{{ $diasLabel }}</span>@endif
@@ -432,7 +432,7 @@
                                 @php [$chipClass, $fechaLabel, $diasLabel] = ssaChipData($cap, $hoy); @endphp
                                 <button type="button"
                                     class="fecha-chip {{ $chipClass }}"
-                                    onclick="abrirEditar({{ $cap->id }},'{{ $cap->fecha->format('Y-m-d') }}','{{ $cap->hora ?? '' }}','{{ $cap->tipo }}','{{ $cap->estatus }}',{{ json_encode($cap->notas ?? '') }})"
+                                    onclick="abrirEditar({{ $cap->id }},'{{ $cap->fecha->format('Y-m-d') }}','{{ $cap->hora ?? '' }}','{{ $cap->tipo }}','{{ $cap->estatus }}',{{ json_encode($cap->notas ?? '') }},{{ $school->id }},{{ json_encode($school->name) }})"
                                     title="{{ ucfirst($cap->estatus) }}{{ $cap->notas ? ' — '.$cap->notas : '' }}">
                                     {{ $fechaLabel }}
                                     @if($diasLabel)<span class="dias-badge">{{ $diasLabel }}</span>@endif
@@ -622,7 +622,43 @@ $capsCalendario = $schools->flatMap(function ($school) {
                 <textarea name="notas" id="editar-notas" class="form-control" rows="3"></textarea>
             </div>
 
-            <div style="display:flex; gap:10px; justify-content:space-between; margin-top:8px">
+            {{-- ── Notificar Consultor Digital ── --}}
+            <div id="editar-notificar-wrap"
+                 style="display:none; margin-top:16px; padding:12px 14px;
+                        background:var(--surface2); border-radius:10px; border:1px solid var(--border)">
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted);
+                            text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px">
+                    Notificar Consultor Digital
+                </div>
+                <div style="font-size:13px; color:var(--text); margin-bottom:10px">
+                    <span id="editar-consultor-nombre" style="font-weight:600"></span>
+                    <span id="editar-consultor-detalle" style="color:var(--text-muted); font-size:12px"></span>
+                </div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap">
+                    <button type="button" onclick="notificarOutlook()"
+                            style="display:inline-flex; align-items:center; gap:6px;
+                                   padding:8px 14px; background:#0078d4; color:#fff;
+                                   border:none; border-radius:8px; font-size:12.5px;
+                                   font-weight:600; cursor:pointer; font-family:inherit;
+                                   transition:opacity .15s"
+                            onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                        Correo (Outlook)
+                    </button>
+                    <button type="button" onclick="notificarWhatsApp()"
+                            style="display:inline-flex; align-items:center; gap:6px;
+                                   padding:8px 14px; background:#25d366; color:#fff;
+                                   border:none; border-radius:8px; font-size:12.5px;
+                                   font-weight:600; cursor:pointer; font-family:inherit;
+                                   transition:opacity .15s"
+                            onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.123 1.528 5.855L0 24l6.335-1.513A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.368l-.36-.214-3.732.892.924-3.63-.236-.374A9.786 9.786 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>
+                        WhatsApp
+                    </button>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:space-between; margin-top:16px">
                 <button type="button" class="btn btn-danger btn-sm"
                         onclick="pedirEliminarCap()">
                     🗑 Eliminar
@@ -823,6 +859,9 @@ function ssaChipData($cap, $hoy): array
 @endphp
 
 <script>
+// ── Datos de consultores digitales (school_id → {nombre, email, phone}) ──
+const CONSULTORES = @json($consultoresDigitales);
+
 // ── Calendario ─────────────────────────────────────────────────────
 const CAL_DATA = @json($capsCalendario);
 const CAL_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
@@ -989,7 +1028,16 @@ function abrirNueva(schoolId, schoolName, tipo) {
     document.getElementById('modal-nueva').classList.add('open');
 }
 
-function abrirEditar(id, fecha, hora, tipo, estatus, notas) {
+// Estado de la capacitación activa en el modal
+var _editarSchoolId   = null;
+var _editarSchoolName = '';
+var _editarTipo       = '';
+var _editarFecha      = '';
+var _editarHora       = '';
+var _editarEstatus    = '';
+var _editarNotas      = '';
+
+function abrirEditar(id, fecha, hora, tipo, estatus, notas, schoolId, schoolName) {
     var base = '{{ url("ssa") }}/' + id;
     document.getElementById('form-editar').action       = base;
     document.getElementById('form-eliminar-cap').action = base;
@@ -1000,7 +1048,70 @@ function abrirEditar(id, fecha, hora, tipo, estatus, notas) {
     var badge = document.getElementById('editar-tipo-badge');
     badge.className   = 'tipo-badge tipo-badge-' + tipo;
     badge.textContent = tipo === 'eca' ? '📘 Capacitación ECA' : '📗 Capacitación ELT';
+
+    // Guardar datos para notificación
+    _editarSchoolId   = schoolId;
+    _editarSchoolName = schoolName || '';
+    _editarTipo       = tipo;
+    _editarFecha      = fecha;
+    _editarHora       = hora ? hora.substring(0, 5) : '';
+    _editarEstatus    = estatus;
+    _editarNotas      = notas || '';
+
+    // Sección de notificación
+    var consultor = schoolId ? (CONSULTORES[schoolId] || null) : null;
+    var wrap = document.getElementById('editar-notificar-wrap');
+    if (consultor) {
+        document.getElementById('editar-consultor-nombre').textContent = consultor.nombre;
+        var detalle = [];
+        if (consultor.email) detalle.push(consultor.email);
+        if (consultor.phone) detalle.push('📱 ' + consultor.phone);
+        document.getElementById('editar-consultor-detalle').textContent =
+            detalle.length ? '  ·  ' + detalle.join('  ·  ') : '';
+        wrap.style.display = '';
+    } else {
+        wrap.style.display = 'none';
+    }
+
     document.getElementById('modal-editar').classList.add('open');
+}
+
+function notificarOutlook() {
+    var consultor = _editarSchoolId ? (CONSULTORES[_editarSchoolId] || null) : null;
+    if (!consultor || !consultor.email) {
+        alert('El consultor digital no tiene correo registrado.');
+        return;
+    }
+    var tipoLabel = _editarTipo === 'eca' ? 'Capacitación ECA' : 'Capacitación ELT';
+    var subject   = tipoLabel + ' — ' + _editarSchoolName + ' — ' + _editarFecha;
+    var body      = 'Hola ' + consultor.nombre + ',\n\n' +
+                    'Te informo sobre la ' + tipoLabel.toLowerCase() + ' del colegio ' +
+                    _editarSchoolName + ' programada para el ' + _editarFecha +
+                    (_editarHora ? ' a las ' + _editarHora : '') + '.\n\n' +
+                    'Estatus: ' + _editarEstatus +
+                    (_editarNotas ? '\nNotas: ' + _editarNotas : '') +
+                    '\n\nSaludos.';
+    window.open('mailto:' + consultor.email +
+        '?subject=' + encodeURIComponent(subject) +
+        '&body='    + encodeURIComponent(body));
+}
+
+function notificarWhatsApp() {
+    var consultor = _editarSchoolId ? (CONSULTORES[_editarSchoolId] || null) : null;
+    if (!consultor || !consultor.phone) {
+        alert('El consultor digital no tiene teléfono registrado.');
+        return;
+    }
+    var tipoLabel = _editarTipo === 'eca' ? 'Capacitación ECA' : 'Capacitación ELT';
+    var phone     = consultor.phone.replace(/\D/g, '');
+    if (phone.length === 10) phone = '52' + phone;
+    var text = 'Hola ' + consultor.nombre + ', te informo sobre la ' +
+               tipoLabel.toLowerCase() + ' del colegio ' + _editarSchoolName +
+               ' programada para el ' + _editarFecha +
+               (_editarHora ? ' a las ' + _editarHora : '') +
+               '. Estatus: ' + _editarEstatus +
+               (_editarNotas ? '. Notas: ' + _editarNotas : '') + '.';
+    window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text));
 }
 
 function abrirModalHoy() {

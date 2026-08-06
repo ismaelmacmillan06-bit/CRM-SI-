@@ -48,7 +48,7 @@ class SsaController extends Controller
                 ->join('users', 'consultants.user_id', '=', 'users.id')
                 ->whereIn('school_consultants.school_id', $schools->pluck('id'))
                 ->where('school_consultants.role', 'digital')
-                ->select('school_consultants.school_id', 'users.name as nombre')
+                ->select('school_consultants.school_id', 'users.name as nombre', 'users.email', 'consultants.phone')
                 ->get()->keyBy('school_id')
             : collect();
 

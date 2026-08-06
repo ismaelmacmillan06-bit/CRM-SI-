@@ -237,6 +237,16 @@
         width: 12px; height: 12px; border-radius: 3px;
         display: inline-block; flex-shrink: 0;
     }
+    .cal-eye-btn {
+        display: block; width: 100%;
+        margin-top: 5px; padding: 3px 6px;
+        background: none; border: none; cursor: pointer;
+        font-size: 11px; font-weight: 500;
+        color: var(--text-muted); border-radius: 4px;
+        text-align: left; transition: background 0.12s, color 0.12s;
+        font-family: 'Inter', sans-serif;
+    }
+    .cal-eye-btn:hover { background: var(--surface2); color: var(--text); }
 
     @media (max-width: 900px) {
         .ssa-stats { grid-template-columns: repeat(2, 1fr); }
@@ -503,6 +513,20 @@ $capsCalendario = $schools->flatMap(function ($school) {
         <div style="display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-muted)">
             <span class="cal-leyenda-dot" style="background:#7c3aed"></span>
             Capacitación ELT confirmada
+        </div>
+    </div>
+</div>
+
+{{-- ── Modal detalle día calendario ───────────────────────────────── --}}
+<div class="ssa-modal-bg" id="cal-modal-dia">
+    <div class="ssa-modal" style="max-width:520px">
+        <button class="ssa-modal-close" onclick="cerrarModal('cal-modal-dia')">✕</button>
+        <div class="ssa-modal-title" id="cal-modal-titulo"></div>
+        <div id="cal-modal-body"></div>
+        <div style="margin-top:20px; text-align:right">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModal('cal-modal-dia')">
+                Cerrar
+            </button>
         </div>
     </div>
 </div>
@@ -895,8 +919,63 @@ function renderCal() {
             cell.appendChild(more);
         }
 
+        if (caps.length > 0) {
+            var eyeBtn = document.createElement('button');
+            eyeBtn.type      = 'button';
+            eyeBtn.className = 'cal-eye-btn';
+            eyeBtn.innerHTML = '👁 ' + caps.length + (caps.length === 1 ? ' capacitación' : ' capacitaciones');
+            eyeBtn.onclick   = (function(f, day) {
+                return function() { verDiaDetalle(f, day); };
+            })(fechaStr, d);
+            cell.appendChild(eyeBtn);
+        }
+
         grid.appendChild(cell);
     }
+}
+
+function verDiaDetalle(fechaStr, dia) {
+    var caps  = CAL_DATA.filter(function(c) { return c.fecha === fechaStr; });
+    var parts = fechaStr.split('-');
+    var titulo = dia + ' de ' + CAL_MESES[parseInt(parts[1]) - 1] + ' ' + parts[0];
+
+    document.getElementById('cal-modal-titulo').textContent = '📅 ' + titulo;
+
+    var body = document.getElementById('cal-modal-body');
+    body.innerHTML = '';
+
+    caps.forEach(function(cap) {
+        var item = document.createElement('div');
+        item.className = 'hoy-item';
+
+        var pill = document.createElement('span');
+        pill.className   = 'hoy-tipo-pill ' + (cap.tipo === 'eca' ? 'hoy-tipo-eca' : 'hoy-tipo-elt');
+        pill.textContent = cap.tipo.toUpperCase();
+
+        var info = document.createElement('div');
+        info.style.cssText = 'flex:1; min-width:0';
+        var nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-weight:500; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap';
+        nameEl.textContent   = cap.colegio;
+        info.appendChild(nameEl);
+
+        var hora = document.createElement('div');
+        hora.style.cssText = 'font-size:13px; font-weight:600; white-space:nowrap';
+        if (cap.hora) {
+            hora.style.color = 'var(--text)';
+            hora.textContent = '🕐 ' + cap.hora;
+        } else {
+            hora.style.color = 'var(--text-muted)';
+            hora.textContent = 'Sin hora';
+        }
+
+        item.appendChild(pill);
+        item.appendChild(info);
+        item.appendChild(hora);
+        body.appendChild(item);
+    });
+
+    document.getElementById('cal-modal-dia').classList.add('open');
 }
 
 // ── Modales / tabla ────────────────────────────────────────────────
@@ -946,7 +1025,7 @@ function pedirEliminarCap() {
 }
 
 // Cerrar al click fuera del modal
-['modal-nueva', 'modal-editar', 'modal-hoy', 'modal-eca', 'modal-elt', 'modal-realizadas'].forEach(function(id) {
+['modal-nueva', 'modal-editar', 'modal-hoy', 'modal-eca', 'modal-elt', 'modal-realizadas', 'cal-modal-dia'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.addEventListener('click', function(e) {
         if (e.target === this) cerrarModal(id);

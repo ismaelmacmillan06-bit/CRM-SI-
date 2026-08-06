@@ -131,6 +131,7 @@ class TeacherController extends Controller
                 'email'        => $email ?: null,
                 'grade'        => $grado ?: null,
                 'subject'      => $subject,
+                'mee_username' => $email ?: null,
                 'mee_password' => $password ?: null,
             ]);
 

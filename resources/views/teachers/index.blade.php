@@ -22,6 +22,20 @@
        onmouseout="this.style.background='#eff6ff';this.style.color='#1d4ed8'">
         📋 Descargar plantilla
     </a>
+    @if($teachers->count())
+    <form method="POST" action="{{ route('schools.teachers.destroy-all', $school) }}"
+          onsubmit="return confirm('¿Eliminar TODOS los {{ $teachers->count() }} docentes de {{ $school->name }}? Esta acción no se puede deshacer.')">
+        @csrf @method('DELETE')
+        <button type="submit"
+                style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
+                       background:#fff0f0; color:#dc2626; border:1px solid #fecaca;
+                       border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s"
+                onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+                onmouseout="this.style.background='#fff0f0';this.style.color='#dc2626'">
+            🗑 Borrar todos
+        </button>
+    </form>
+    @endif
 </div>
 
 {{-- Modal importación masiva --}}

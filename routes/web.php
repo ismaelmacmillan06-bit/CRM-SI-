@@ -50,6 +50,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
         ->shallow();
     Route::post('schools/{school}/teachers/import', [TeacherController::class, 'importarMasivo'])
         ->name('schools.teachers.import');
+    Route::delete('schools/{school}/teachers', [TeacherController::class, 'destroyAll'])
+        ->name('schools.teachers.destroy-all');
     Route::get('teachers/template', [TeacherController::class, 'downloadTemplate'])
         ->name('teachers.template');
 

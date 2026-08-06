@@ -97,6 +97,15 @@ class TeacherController extends Controller
                          ->with('success', 'Docente eliminado correctamente.');
     }
 
+    public function destroyAll(School $school)
+    {
+        $total = $school->teachers()->count();
+        $school->teachers()->get()->each->delete();
+        ActivityLog::log('docente', "Eliminados {$total} docente(s) de {$school->name}", $school->id, '🗑️');
+        return redirect()->route('schools.teachers.index', $school)
+                         ->with('success', "{$total} docente(s) eliminados correctamente.");
+    }
+
     // ── Importación masiva ──────────────────────────────────────────────
 
     public function importarMasivo(Request $request, School $school)

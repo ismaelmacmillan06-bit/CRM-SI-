@@ -316,7 +316,7 @@ function statRow(string $color, string $label, $value): string {
         }
         .srv-row { gap: 7px; }
         .srv-bar-wrap { width: 52px; }
-        .srv-pct { width: 26px; }
+        .srv-pct { display: none; }
         .srv-total { font-size: 14px; }
     }
 </style>

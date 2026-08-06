@@ -38,10 +38,10 @@ class VerificarAccesoRol
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*'];
+            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
-                    ->with('error_acceso', 'Solo tienes acceso a la sección de Colegios y Calendario SSA.');
+                    ->with('error_acceso', 'No tienes acceso a esta sección.');
             }
             // No pueden generar el Report Master
             if ($request->routeIs('schools.reporte-master')) {

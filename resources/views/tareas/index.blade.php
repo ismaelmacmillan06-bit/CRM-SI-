@@ -3,6 +3,7 @@
 @section('title', 'Tareas SI')
 
 @section('content')
+@php $puedeEditar = auth()->user()->hasAnyRole(['admin', 'consultor_digital']); @endphp
 
 {{-- Header --}}
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap">
@@ -185,7 +186,9 @@
                     <th>Ciudad</th>
                     @if($tarea)
                     <th style="text-align:center">Estado</th>
+                    @if($puedeEditar)
                     <th style="text-align:center; min-width:240px">Cambiar estado</th>
+                    @endif
                     @endif
                 </tr>
             </thead>
@@ -209,6 +212,7 @@
                             {{ $status === 'realizada' ? '✓ Realizada' : ($status === 'en_proceso' ? '⟳ En proceso' : '○ Pendiente') }}
                         </span>
                     </td>
+                    @if($puedeEditar)
                     <td style="text-align:center">
                         <div style="display:inline-flex; gap:4px">
                             <button onclick="cambiarEstado({{ $school->id }}, 'pendiente', this)"
@@ -238,10 +242,11 @@
                         </div>
                     </td>
                     @endif
+                    @endif
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="{{ $tarea ? 5 : 3 }}"
+                    <td colspan="{{ $tarea ? ($puedeEditar ? 5 : 4) : 3 }}"
                         style="text-align:center; color:var(--text-muted); padding:40px">
                         No hay colegios registrados.
                     </td>

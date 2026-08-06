@@ -449,10 +449,10 @@
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span> Dashboard
         </a>
-        @unlessrole('consultor_eca|consultor_elt')
         <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
             <span class="nav-icon">✅</span> Tareas SI
         </a>
+        @unlessrole('consultor_eca|consultor_elt|representante_ventas')
         <a href="{{ route('tablero.index') }}" class="nav-item {{ request()->routeIs('tablero.*') ? 'active' : '' }}">
             <span class="nav-icon">📌</span> Tablero SI
         </a>

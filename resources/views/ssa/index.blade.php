@@ -358,9 +358,9 @@
                 </tr>
             </thead>
             <tbody>
+                @php $hoy = today(); @endphp
                 @foreach($schools as $school)
                 @php
-                    $hoy     = today();
                     $capsEca = $school->ssaCapacitaciones->where('tipo', 'eca')->sortBy('fecha');
                     $capsElt = $school->ssaCapacitaciones->where('tipo', 'elt')->sortBy('fecha');
                     $tieneHoy       = $school->ssaCapacitaciones->filter(fn($c) => $c->fecha->isToday())->isNotEmpty();

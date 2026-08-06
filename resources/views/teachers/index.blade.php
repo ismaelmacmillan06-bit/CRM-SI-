@@ -131,16 +131,18 @@
                 </td>
                 <td>
                     <div style="display:flex; gap:6px">
-                        <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm"
+                           style="flex:1; text-align:center; white-space:nowrap">Editar</a>
                         <a href="https://adminservices.macmillaneducacion.com/" target="_blank" rel="noopener"
                            class="btn btn-sm"
-                           style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
-                            🔗 Admin Servicios
+                           style="flex:1; text-align:center; white-space:nowrap; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
+                            Admin Servicios
                         </a>
                         <form method="POST" action="{{ route('teachers.destroy', $teacher) }}"
+                              style="flex:1"
                               onsubmit="return confirm('¿Eliminar este docente?')">
                             @csrf @method('DELETE')
-                            <button class="btn btn-danger btn-sm">Eliminar</button>
+                            <button class="btn btn-danger btn-sm" style="width:100%; white-space:nowrap">Eliminar</button>
                         </form>
                     </div>
                 </td>

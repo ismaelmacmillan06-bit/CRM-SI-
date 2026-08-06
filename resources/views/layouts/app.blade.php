@@ -360,6 +360,8 @@
            RESPONSIVE — TABLET / MOBILE
            ════════════════════════════════ */
         @media (max-width: 900px) {
+            html, body { overflow-x: hidden; }
+
             .hamburger { display: flex; }
 
             .sidebar {
@@ -372,7 +374,7 @@
             }
             .sidebar-overlay.sidebar-open { display: block; }
 
-            .main { margin-left: 0 !important; }
+            .main { margin-left: 0 !important; overflow-x: hidden; }
 
             .topbar {
                 padding: 12px 16px;

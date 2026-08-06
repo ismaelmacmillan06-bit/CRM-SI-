@@ -239,16 +239,19 @@
                 <td>
                     @hasanyrole('admin|consultor_digital')
                     <div style="display:flex; gap:6px">
-                        <a href="{{ route('students.edit', $student) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        <a href="{{ route('students.edit', $student) }}" class="btn btn-secondary btn-sm"
+                           style="flex:1; text-align:center; white-space:nowrap">Editar</a>
                         <a href="https://adminservices.macmillaneducacion.com/" target="_blank" rel="noopener"
                            class="btn btn-sm"
-                           style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
-                            🔗 Admin Servicios
+                           style="flex:1; text-align:center; white-space:nowrap; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
+                            Admin Servicios
                         </a>
                         <form method="POST" action="{{ route('students.destroy', $student) }}"
-                              id="form-eliminar-alumno-{{ $student->id }}">
+                              id="form-eliminar-alumno-{{ $student->id }}"
+                              style="flex:1">
                             @csrf @method('DELETE')
                             <button type="button" class="btn btn-danger btn-sm"
+                                    style="width:100%; white-space:nowrap"
                                     onclick="confirmarEliminar('Eliminar alumno', '¿Deseas eliminar a {{ addslashes($student->name) }} {{ addslashes($student->last_name) }}? Esta acción no se puede deshacer.', 'form-eliminar-alumno-{{ $student->id }}')">
                                 Eliminar
                             </button>

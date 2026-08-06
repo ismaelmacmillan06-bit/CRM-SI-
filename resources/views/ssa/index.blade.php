@@ -163,9 +163,90 @@
     }
     .ssa-no-schools div:first-child { font-size: 48px; margin-bottom: 12px; }
 
+    /* ── Tabs ──────────────────────────────────────────────────── */
+    .ssa-tab-btn {
+        padding: 9px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--text-muted);
+        font-size: 13px; font-weight: 500;
+        cursor: pointer; transition: all 0.15s;
+        font-family: 'Inter', sans-serif;
+    }
+    .ssa-tab-btn:hover { background: var(--surface2); color: var(--text); }
+    .ssa-tab-btn.active {
+        background: var(--accent); color: #fff;
+        border-color: var(--accent);
+    }
+
+    /* ── Calendario físico ──────────────────────────────────────── */
+    .cal-weekdays {
+        display: grid; grid-template-columns: repeat(7, 1fr);
+        background: var(--surface2);
+        border-bottom: 2px solid var(--border);
+    }
+    .cal-weekday {
+        padding: 10px 8px; text-align: center;
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.6px;
+        color: var(--text-muted);
+    }
+    .cal-grid {
+        display: grid; grid-template-columns: repeat(7, 1fr);
+    }
+    .cal-cell {
+        min-height: 108px; padding: 7px 8px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+        vertical-align: top;
+    }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-cell.cal-empty { background: var(--surface2); }
+    .cal-cell.cal-hoy { background: #eff6ff; }
+    .cal-day-num {
+        display: flex; justify-content: flex-end;
+        margin-bottom: 5px;
+    }
+    .cal-day-num span {
+        font-size: 12px; font-weight: 600;
+        color: var(--text-muted);
+        width: 22px; height: 22px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        line-height: 1;
+    }
+    .cal-day-num span.hoy-circle {
+        background: var(--accent); color: #fff; font-weight: 700;
+    }
+    .cal-chip-cal {
+        display: flex; align-items: center; gap: 4px;
+        padding: 2px 7px; border-radius: 4px;
+        font-size: 10px; font-weight: 500;
+        margin-bottom: 3px; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    .cal-chip-eca { background: #2563eb; color: #fff; }
+    .cal-chip-elt { background: #7c3aed; color: #fff; }
+    .cal-more {
+        font-size: 10px; color: var(--text-muted);
+        padding: 1px 2px; font-style: italic;
+    }
+    .cal-leyenda-dot {
+        width: 12px; height: 12px; border-radius: 3px;
+        display: inline-block; flex-shrink: 0;
+    }
+
     @media (max-width: 900px) {
         .ssa-stats { grid-template-columns: repeat(2, 1fr); }
         .form-row  { grid-template-columns: 1fr; }
+        .cal-cell  { min-height: 70px; }
+        .cal-weekday { font-size: 10px; }
+    }
+    @media (max-width: 600px) {
+        .cal-chip-cal { font-size: 9px; padding: 1px 4px; }
+        .cal-cell { min-height: 55px; padding: 4px; }
     }
 </style>
 
@@ -215,6 +296,17 @@
     </div>
 </div>
 
+{{-- ── Tabs ────────────────────────────────────────────────────────── --}}
+<div style="display:flex; gap:8px; margin-bottom:20px">
+    <button id="tab-btn-lista" class="ssa-tab-btn active" onclick="cambiarTab('lista')">
+        📋 Lista
+    </button>
+    <button id="tab-btn-calendario" class="ssa-tab-btn" onclick="cambiarTab('calendario')">
+        📅 Calendario mensual
+    </button>
+</div>
+
+<div id="tab-lista">
 {{-- ── Búsqueda ──────────────────────────────────────────────────── --}}
 <div class="ssa-search">
     <input type="text" id="ssa-buscar" class="ssa-search-input"
@@ -348,6 +440,71 @@
         </table>
     </div>
     @endif
+</div>
+</div>{{-- /tab-lista --}}
+
+@php
+$capsCalendario = $schools->flatMap(function ($school) {
+    return $school->ssaCapacitaciones
+        ->where('estatus', 'confirmado')
+        ->map(function ($cap) use ($school) {
+            return [
+                'fecha'   => $cap->fecha->format('Y-m-d'),
+                'tipo'    => $cap->tipo,
+                'colegio' => $school->name,
+                'hora'    => $cap->hora ? substr($cap->hora, 0, 5) : null,
+            ];
+        });
+})->values();
+@endphp
+
+{{-- ── Calendario físico ──────────────────────────────────────────── --}}
+<div id="tab-calendario" style="display:none">
+
+    {{-- Cabecera de navegación --}}
+    <div style="display:flex; align-items:center; justify-content:space-between;
+                flex-wrap:wrap; gap:12px; margin-bottom:20px">
+        <div>
+            <div id="cal-titulo-mes"
+                 style="font-family:'Bricolage Grotesque',sans-serif;
+                        font-size:22px; font-weight:700; color:var(--text); line-height:1.1">
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px">
+                Solo capacitaciones <strong>confirmadas</strong>
+            </div>
+        </div>
+        <div style="display:flex; gap:8px">
+            <button class="btn btn-secondary btn-sm" onclick="calMes(-1)">← Anterior</button>
+            <button class="btn btn-secondary btn-sm" onclick="calHoy()">Hoy</button>
+            <button class="btn btn-secondary btn-sm" onclick="calMes(1)">Siguiente →</button>
+        </div>
+    </div>
+
+    {{-- Grid del mes --}}
+    <div class="card" style="overflow:hidden; padding:0">
+        <div class="cal-weekdays">
+            <div class="cal-weekday">Lun</div>
+            <div class="cal-weekday">Mar</div>
+            <div class="cal-weekday">Mié</div>
+            <div class="cal-weekday">Jue</div>
+            <div class="cal-weekday">Vie</div>
+            <div class="cal-weekday">Sáb</div>
+            <div class="cal-weekday">Dom</div>
+        </div>
+        <div id="cal-grid" class="cal-grid"></div>
+    </div>
+
+    {{-- Leyenda --}}
+    <div style="display:flex; gap:20px; margin-top:14px; flex-wrap:wrap; align-items:center">
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-muted)">
+            <span class="cal-leyenda-dot" style="background:#2563eb"></span>
+            Capacitación ECA confirmada
+        </div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; color:var(--text-muted)">
+            <span class="cal-leyenda-dot" style="background:#7c3aed"></span>
+            Capacitación ELT confirmada
+        </div>
+    </div>
 </div>
 
 {{-- ── Modal NUEVA CAPACITACIÓN ──────────────────────────────────── --}}
@@ -642,6 +799,107 @@ function ssaChipData($cap, $hoy): array
 @endphp
 
 <script>
+// ── Calendario ─────────────────────────────────────────────────────
+const CAL_DATA = @json($capsCalendario);
+const CAL_MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                   'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function cambiarTab(tab) {
+    document.getElementById('tab-lista').style.display      = tab === 'lista'      ? '' : 'none';
+    document.getElementById('tab-calendario').style.display = tab === 'calendario' ? '' : 'none';
+    document.querySelectorAll('.ssa-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.getElementById('tab-btn-' + tab).classList.add('active');
+    if (tab === 'calendario') renderCal();
+}
+
+function calMes(delta) {
+    calMonth += delta;
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    if (calMonth > 11) { calMonth = 0;  calYear++; }
+    renderCal();
+}
+
+function calHoy() {
+    var now = new Date();
+    calYear  = now.getFullYear();
+    calMonth = now.getMonth();
+    renderCal();
+}
+
+function renderCal() {
+    var hoyObj    = new Date();
+    var primerDia = new Date(calYear, calMonth, 1);
+    var lastDate  = new Date(calYear, calMonth + 1, 0).getDate();
+
+    document.getElementById('cal-titulo-mes').textContent = CAL_MESES[calMonth] + ' ' + calYear;
+
+    // Offset: lunes = 0 (getDay devuelve 0=dom)
+    var dow      = primerDia.getDay();
+    var startPad = dow === 0 ? 6 : dow - 1;
+
+    var grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+
+    for (var i = 0; i < startPad; i++) {
+        var empty = document.createElement('div');
+        empty.className = 'cal-cell cal-empty';
+        grid.appendChild(empty);
+    }
+
+    for (var d = 1; d <= lastDate; d++) {
+        var mStr     = String(calMonth + 1).padStart(2, '0');
+        var dStr     = String(d).padStart(2, '0');
+        var fechaStr = calYear + '-' + mStr + '-' + dStr;
+        var esHoy    = hoyObj.getFullYear() === calYear &&
+                       hoyObj.getMonth()    === calMonth &&
+                       hoyObj.getDate()     === d;
+
+        var cell = document.createElement('div');
+        cell.className = 'cal-cell' + (esHoy ? ' cal-hoy' : '');
+
+        var numDiv  = document.createElement('div');
+        numDiv.className = 'cal-day-num';
+        var numSpan = document.createElement('span');
+        if (esHoy) numSpan.className = 'hoy-circle';
+        numSpan.textContent = d;
+        numDiv.appendChild(numSpan);
+        cell.appendChild(numDiv);
+
+        var caps = CAL_DATA.filter(function(c) { return c.fecha === fechaStr; });
+        var MAX  = 3;
+
+        caps.slice(0, MAX).forEach(function(cap) {
+            var chip = document.createElement('div');
+            chip.className = 'cal-chip-cal cal-chip-' + cap.tipo;
+            chip.title     = cap.colegio + (cap.hora ? '  ·  ' + cap.hora : '');
+
+            var tag = document.createElement('span');
+            tag.style.cssText    = 'font-weight:900; font-size:9px; opacity:0.85; flex-shrink:0';
+            tag.textContent      = cap.tipo.toUpperCase();
+
+            var nom = document.createElement('span');
+            nom.style.cssText    = 'overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0';
+            nom.textContent      = cap.colegio.length > 17 ? cap.colegio.substring(0, 17) + '…' : cap.colegio;
+
+            chip.appendChild(tag);
+            chip.appendChild(nom);
+            cell.appendChild(chip);
+        });
+
+        if (caps.length > MAX) {
+            var more = document.createElement('div');
+            more.className   = 'cal-more';
+            more.textContent = '+' + (caps.length - MAX) + ' más';
+            cell.appendChild(more);
+        }
+
+        grid.appendChild(cell);
+    }
+}
+
+// ── Modales / tabla ────────────────────────────────────────────────
 function abrirNueva(schoolId, schoolName, tipo) {
     document.getElementById('nueva-school-id').value       = schoolId;
     document.getElementById('nueva-tipo').value            = tipo;

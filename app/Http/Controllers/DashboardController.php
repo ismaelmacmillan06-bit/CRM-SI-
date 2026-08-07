@@ -72,6 +72,27 @@ class DashboardController extends Controller
         $colegiosProspecto = $schoolScopeId(School::where('status', 'prospecto'))->count();
         $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
+        // Docentes Registrados Servicios: colegios con "Libro del profesor" completado en ≥1 nivel
+        $libroProfesorDetalle = $schoolScopeId(
+            School::with([
+                'schoolLevels.level',
+                'schoolLevels.processes' => fn($q) => $q->where('process_id', 5)->where('status', 'done'),
+            ])
+        )->get()
+        ->map(fn($school) => [
+            'id'     => $school->id,
+            'name'   => $school->name,
+            'levels' => $school->schoolLevels
+                ->filter(fn($sl) => $sl->processes->isNotEmpty())
+                ->map(fn($sl) => $sl->level->name ?? 'Sin nivel')
+                ->values(),
+        ])
+        ->filter(fn($s) => count($s['levels']) > 0)
+        ->sortBy('name')
+        ->values();
+
+        $colegiosDocentesRegistrados = $libroProfesorDetalle->count();
+
         // Colegios entregados: tienen al menos un proceso y todos están en 'done'
         $colegiosEntregados = $schoolScopeId(
             School::whereHas('schoolLevels.processes')
@@ -160,7 +181,8 @@ class DashboardController extends Controller
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
             'seriesDisponibles', 'totalResurtidos',
             'colegiosEntregados',
-            'colegiosPorNivel', 'colegiosPorServicio'
+            'colegiosPorNivel', 'colegiosPorServicio',
+            'colegiosDocentesRegistrados', 'libroProfesorDetalle'
         ));
     }
 }

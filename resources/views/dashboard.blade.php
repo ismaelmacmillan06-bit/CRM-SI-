@@ -118,6 +118,33 @@ function statRow(string $color, string $label, $value): string {
         </div>
     </div>
 
+    {{-- Docentes Registrados Servicios --}}
+    <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
+                border-left:4px solid #0d9488; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">Docentes Registrados Servicios</div>
+        <div style="display:flex; align-items:center; gap:10px">
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
+                        color:var(--text); line-height:1">{{ number_format($colegiosDocentesRegistrados) }}</div>
+            @if($colegiosDocentesRegistrados > 0)
+            <button onclick="document.getElementById('modal-libro-profesor').style.display='flex'"
+                    title="Ver colegios"
+                    style="background:none; border:none; cursor:pointer; padding:4px;
+                           color:#0d9488; opacity:0.55; transition:opacity .15s; line-height:0; border-radius:6px"
+                    onmouseover="this.style.opacity='1';this.style.background='#0d948818'"
+                    onmouseout="this.style.opacity='0.55';this.style.background='none'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                </svg>
+            </button>
+            @endif
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:12px">
+            colegios con Libro del Profesor completado
+        </div>
+    </div>
+
     {{-- Resurtidos --}}
     <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
                 border-left:4px solid #f97316; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
@@ -386,6 +413,46 @@ function statRow(string $color, string $label, $value): string {
     </div>
 </div>
 
+{{-- Modal Docentes Registrados Servicios --}}
+<div id="modal-libro-profesor"
+     style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
+            background:rgba(0,0,0,0.45); padding:20px">
+    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:520px;
+                max-height:80vh; display:flex; flex-direction:column;
+                box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+        <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);
+                    display:flex; align-items:center; gap:10px; flex-shrink:0">
+            <div style="flex:1">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px;
+                            font-weight:700; color:var(--text)">Docentes Registrados Servicios</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                    {{ $colegiosDocentesRegistrados }} colegio(s) con Libro del Profesor completado
+                </div>
+            </div>
+            <button onclick="document.getElementById('modal-libro-profesor').style.display='none';document.body.style.overflow=''"
+                    style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-muted); line-height:1; padding:4px 8px">✕</button>
+        </div>
+        <div style="overflow-y:auto; padding:16px 24px 20px">
+            @foreach($libroProfesorDetalle as $item)
+            <div style="display:flex; align-items:center; justify-content:space-between;
+                        padding:10px 0; border-bottom:1px solid var(--border)">
+                <a href="{{ route('schools.show', $item['id']) }}"
+                   style="font-size:13px; font-weight:600; color:var(--text); text-decoration:none"
+                   onmouseover="this.style.color='#0d9488'" onmouseout="this.style.color='var(--text)'">
+                    {{ $item['name'] }}
+                </a>
+                <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end">
+                    @foreach($item['levels'] as $nivel)
+                    <span style="font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px;
+                                 background:#ccfbf1; color:#0d9488">{{ $nivel }}</span>
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
 {{-- Modales por servicio --}}
 @foreach($colegiosPorServicio as $srvIdx => $srv)
 @if($srv['total'] > 0)
@@ -447,7 +514,7 @@ function cerrarModalServicio(idx) {
 }
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        document.querySelectorAll('[id^="modal-servicio-"]').forEach(function(m) { m.style.display = 'none'; });
+        document.querySelectorAll('[id^="modal-servicio-"],[id="modal-libro-profesor"]').forEach(function(m) { m.style.display = 'none'; });
         document.body.style.overflow = '';
     }
 });

@@ -404,7 +404,7 @@
     return `<div class="cfield"><span class="crow">${label}</span><span class="cval">${esc(val||"—")}</span></div>`;
   }
   function brandBand(){
-    return `<div class="cbrand"><span class="l">Plataforma:</span><span class="u">MacmillanCastillo SI</span></div>`;
+    return `<div class="cbrand"><span class="l">Plataforma:</span><span class="u">https://si.macmillaneducacion.com/</span></div>`;
   }
   function claseTag(p){
     return p.clase ? `<div class="cclase">${esc(p.clase)}</div>` : "";
@@ -436,7 +436,7 @@
       <div class="chead">${logoMarkup()}<span class="tag">Acceso</span></div>
       <div class="cname">${esc(p.name||"—")}</div>
       ${claseTag(p)}
-      <div class="ccreds two">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
+      <div class="ccreds">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
       ${brandBand()}
     </div>`;
   }

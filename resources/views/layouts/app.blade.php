@@ -469,6 +469,9 @@
         <a href="{{ route('alumnos-docentes.index') }}" class="nav-item {{ request()->routeIs('alumnos-docentes.*') ? 'active' : '' }}">
             <span class="nav-icon">🎓</span> Alumnos Docentes
         </a>
+        <a href="{{ route('avance-colegios.index') }}" class="nav-item {{ request()->routeIs('avance-colegios.*') ? 'active' : '' }}">
+            <span class="nav-icon">🚀</span> Avance Colegios
+        </a>
         @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas')
         <a href="{{ route('ssa.index') }}" class="nav-item {{ request()->routeIs('ssa.*') ? 'active' : '' }}">
             <span class="nav-icon">📅</span> Calendario SSA

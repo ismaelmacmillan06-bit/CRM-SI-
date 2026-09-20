@@ -44,7 +44,7 @@ class VerificarAccesoRol
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*'];
+            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
                     ->with('error_acceso', 'No tienes acceso a esta sección.');

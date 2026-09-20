@@ -22,6 +22,7 @@ use App\Http\Controllers\SchoolServiceTypeController;
 use App\Http\Controllers\SsaController;
 use App\Http\Controllers\SeguimientoSicController;
 use App\Http\Controllers\AlumnosDocentesController;
+use App\Http\Controllers\AvanceColegiosController;
 
 
 Route::get('/', function () {
@@ -50,6 +51,9 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::get('alumnos-docentes', [AlumnosDocentesController::class, 'index'])->name('alumnos-docentes.index');
     Route::get('alumnos-docentes/buscar', [AlumnosDocentesController::class, 'buscar'])->name('alumnos-docentes.buscar');
     Route::get('alumnos-docentes/exportar', [AlumnosDocentesController::class, 'exportar'])->name('alumnos-docentes.exportar');
+
+    // Avance Colegios — cards de progreso que antes vivían en el Dashboard
+    Route::get('avance-colegios', [AvanceColegiosController::class, 'index'])->name('avance-colegios.index');
 
     // Docentes
     Route::resource('schools.teachers', TeacherController::class)

@@ -606,130 +606,23 @@ document.addEventListener('click', function(e) {
 
 </div>
 
-{{-- Filtros de colegios --}}
-<div class="card" style="margin-bottom:20px">
-    <div class="card-body" style="padding:16px 24px; display:flex; gap:12px; flex-wrap:wrap; align-items:center">
-        <input type="text" id="buscador-colegios" class="form-control"
-               placeholder="🔍 Buscar por nombre, consultor o estado..."
-               style="max-width:320px; flex:1; min-width:200px">
-
-        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:200px">
-            <span style="font-size:13px; color:var(--text-muted); white-space:nowrap">📚 Filtrar por serie:</span>
-            <select id="filtro-series" class="form-control" style="max-width:260px">
-                <option value="">Todas las series</option>
-                @foreach($seriesDisponibles as $serie)
-                <option value="{{ strtolower($serie) }}">{{ $serie }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        <button onclick="limpiarFiltros()"
-                style="padding:8px 14px; background:var(--surface2); border:1px solid var(--border);
-                       border-radius:8px; font-size:13px; color:var(--text-muted); cursor:pointer;
-                       transition:all 0.15s; white-space:nowrap"
-                onmouseover="this.style.background='var(--border)'"
-                onmouseout="this.style.background='var(--surface2)'">
-            ✕ Limpiar filtros
-        </button>
-
-        <span id="conteo-resultados" style="font-size:13px; color:var(--text-muted); white-space:nowrap"></span>
-    </div>
-</div>
-
-{{-- Cards de colegios --}}
-<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
-    @forelse($schools as $school)
-    @php
-        $schoolSeries = $school->bundles->pluck('serie')->filter()->unique()->map(fn($s) => strtolower($s))->values()->toJson();
-    @endphp
-    <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
-         data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
-         data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
-         data-series="{{ $schoolSeries }}"
-         style="transition: all 0.2s; display:flex; flex-direction:column; min-height:280px;">
-        <div class="card-header" style="padding:16px 20px">
-            <div>
-                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px">
-                    {{ $school->name }}
-                </div>
-                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
-                    {{ $school->state ?? $school->city ?? 'Sin estado' }}
-                </div>
+{{-- Avance por colegio: ahora vive en su propio apartado --}}
+<a href="{{ route('avance-colegios.index') }}" class="card" style="display:flex; align-items:center; justify-content:space-between;
+        gap:12px; padding:18px 24px; margin-bottom:24px; text-decoration:none; transition:background 0.15s"
+   onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
+    <div style="display:flex; align-items:center; gap:12px">
+        <span style="font-size:22px">🚀</span>
+        <div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px; color:var(--text)">
+                Avance Colegios
             </div>
-            @if($school->status === 'activo')
-                <span class="badge badge-success">Activo</span>
-            @elseif($school->status === 'prospecto')
-                <span class="badge badge-warning">Prospecto</span>
-            @else
-                <span class="badge badge-gray">Inactivo</span>
-            @endif
-        </div>
-        <div class="card-body" style="padding:16px 20px; flex:1; display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px">
-                <span style="color:var(--text-muted)">Consultor Digital</span>
-                <span style="font-weight:500">{{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}</span>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                Progreso, credenciales de Administrador MEE y bundles por colegio
             </div>
-
-            @if($school->meeAdmins->count())
-            <div style="margin-bottom:12px">
-                @foreach($school->meeAdmins as $admin)
-                <div style="display:flex; justify-content:space-between; font-size:12px;
-                            padding:6px 10px; background:var(--surface2); border-radius:6px; margin-bottom:4px">
-                    <span style="color:var(--text-muted)">🔐 {{ $admin->username }}</span>
-                    <span style="font-family:monospace; color:var(--text-muted)">{{ $admin->password_plain }}</span>
-                </div>
-                @endforeach
-            </div>
-            @endif
-
-            @php
-                $totalProcesos = 0;
-                $totalDone = 0;
-                foreach($school->schoolLevels as $sl) {
-                    $totalProcesos += $sl->processes->count();
-                    $totalDone += $sl->processes->where('status', 'done')->count();
-                }
-                $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
-            @endphp
-
-            <div style="margin-bottom:12px">
-                <div style="display:flex; justify-content:space-between; font-size:12px;
-                            color:var(--text-muted); margin-bottom:4px">
-                    <span>Progreso general</span>
-                    <span>{{ $pct }}%</span>
-                </div>
-                <div style="background:var(--surface2); border-radius:20px; height:6px; overflow:hidden">
-                    <div style="height:100%; width:{{ $pct }}%;
-                                background:{{ $pct == 100 ? '#10b981' : 'var(--accent)' }};
-                                border-radius:20px"></div>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px">
-                @foreach($school->schoolLevels as $sl)
-                    <span class="badge badge-info" style="font-size:11px">
-                        {{ $sl->level->name ?? '' }}
-                    </span>
-                @endforeach
-            </div>
-
-            <a href="{{ route('schools.show', $school) }}"
-               style="display:block; text-align:center; padding:8px; background:var(--accent);
-                      color:#fff; border-radius:8px; text-decoration:none; font-size:13px;
-                      font-weight:500; transition:background 0.2s; margin-top:auto;"
-               onmouseover="this.style.background='#d63651'"
-               onmouseout="this.style.background='var(--accent)'">
-                IR →
-            </a>
         </div>
     </div>
-    @empty
-    <div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:60px">
-        No hay colegios registrados.
-        <a href="{{ route('schools.create') }}">Registra el primero</a>
-    </div>
-    @endforelse
-</div>
+    <span style="font-size:14px; color:var(--accent); font-weight:600; white-space:nowrap">Ver →</span>
+</a>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script>
@@ -822,9 +715,7 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
                 const nombre = normalizar(d.properties.name || d.properties.NAME || d.properties.estado);
                 const data   = estadosData[nombre];
                 if (data) {
-                    document.getElementById('buscador-colegios').value = data.nombre;
-                    document.getElementById('buscador-colegios').dispatchEvent(new Event('input'));
-                    document.getElementById('colegios-grid').scrollIntoView({ behavior: 'smooth' });
+                    window.location.href = "{{ route('avance-colegios.index') }}?q=" + encodeURIComponent(data.nombre);
                 }
             });
 
@@ -851,48 +742,6 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
         document.getElementById('mapa-mexico').innerHTML =
             '<p style="text-align:center; color:var(--text-muted); padding:40px">No se pudo cargar el mapa</p>';
     });
-
-// Filtros de colegios (buscador + series)
-function aplicarFiltros() {
-    const query  = document.getElementById('buscador-colegios').value.toLowerCase().trim();
-    const serie  = document.getElementById('filtro-series').value.toLowerCase().trim();
-    const cards  = document.querySelectorAll('.school-card');
-    let visibles = 0;
-
-    cards.forEach(card => {
-        const nombre    = card.dataset.nombre    || '';
-        const consultor = card.dataset.consultor || '';
-        const estado    = card.dataset.estado    || '';
-        let seriesCard  = [];
-        try { seriesCard = JSON.parse(card.dataset.series || '[]'); } catch(e) {}
-
-        const matchTexto = !query || nombre.includes(query) || consultor.includes(query) || estado.includes(query);
-        const matchSerie = !serie || seriesCard.includes(serie);
-
-        if (matchTexto && matchSerie) {
-            card.style.display = '';
-            visibles++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    const conteo = document.getElementById('conteo-resultados');
-    if (conteo) {
-        conteo.textContent = (query || serie)
-            ? `${visibles} colegio(s) encontrado(s)`
-            : '';
-    }
-}
-
-function limpiarFiltros() {
-    document.getElementById('buscador-colegios').value = '';
-    document.getElementById('filtro-series').value = '';
-    aplicarFiltros();
-}
-
-document.getElementById('buscador-colegios').addEventListener('input', aplicarFiltros);
-document.getElementById('filtro-series').addEventListener('change', aplicarFiltros);
 </script>
 
 {{-- ── Overlay: Generando Reporte ── --}}

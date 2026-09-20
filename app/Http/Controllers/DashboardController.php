@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\Zonas;
-use App\Models\Bundle;
 use App\Models\BundleResurtido;
 use App\Models\School;
 use App\Models\Teacher;
@@ -155,31 +154,15 @@ class DashboardController extends Controller
             ];
         });
 
-        // Series de bundles adoptadas por colegios (para filtro en dashboard)
-        $seriesDisponibles = Bundle::select('serie')
-            ->whereHas('schools', fn($q) => $schoolIds ? $q->whereIn('schools.id', $schoolIds) : $q)
-            ->distinct()
-            ->orderBy('serie')
-            ->pluck('serie')
-            ->filter();
-
-        // Colegios con info completa para las cards
-        $schools = $schoolScopeId(School::with([
-            'schoolConsultants.consultant.user',
-            'meeAdmins',
-            'schoolLevels.processes',
-            'bundles',
-        ]))->get();
-
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
             'visitasPendientes', 'totalVisitas',
             'totalDirectores', 'totalAdminsMee',
-            'schools', 'docentesELT', 'docentesECA',
+            'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
-            'seriesDisponibles', 'totalResurtidos',
+            'totalResurtidos',
             'colegiosEntregados',
             'colegiosPorNivel', 'colegiosPorServicio',
             'colegiosDocentesRegistrados', 'libroProfesorDetalle'

@@ -8,7 +8,7 @@
     @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.students.create', $school) }}" class="btn btn-primary">+ Nuevo Alumno</a>
     <button onclick="document.getElementById('modal-excel').style.display='flex'"
-            class="btn btn-secondary">📊 Carga masiva Excel</button>
+            class="btn btn-secondary">📊 Carga masiva Excel/CSV</button>
     <button onclick="document.getElementById('modal-pdf').style.display='flex'"
             class="btn btn-secondary">📄 Carga masiva PDF</button>
     @endhasanyrole
@@ -31,10 +31,13 @@
         <button onclick="document.getElementById('modal-excel').style.display='none'"
                 style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888">✕</button>
 
-        <h3 style="font-family:'Bricolage Grotesque',sans-serif; margin:0 0 6px">📊 Carga masiva desde Excel</h3>
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif; margin:0 0 6px">📊 Carga masiva desde Excel/CSV</h3>
         <p style="margin:0 0 20px; font-size:14px; color:var(--text-muted)">
-            El archivo debe tener estas columnas: <strong>Nombre Completo · Usuario · Contraseña</strong>
-            (+ opcionalmente <strong>Clase</strong> en columna D para asignar grado por fila).
+            Puedes subir directamente el mismo <strong>CSV</strong> que usas para dar de alta alumnos en Macmillan
+            (columnas <strong>Nombre (s) · Apellidos · Usuario · Password · … · Nivel · Grado · Grupo</strong>),
+            o la plantilla clásica de Excel: <strong>Nombre Completo · Usuario · Contraseña</strong>
+            (+ opcionalmente <strong>Clase</strong> en columna D). La herramienta detecta el formato automáticamente
+            leyendo los encabezados.
         </p>
 
         <form method="POST" action="{{ route('schools.students.import-excel', $school) }}"
@@ -42,8 +45,8 @@
             @csrf
 
             <div class="form-group">
-                <label class="form-label">Archivo Excel (.xlsx / .xls) *</label>
-                <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls" required>
+                <label class="form-label">Archivo Excel (.xlsx / .xls) o CSV (.csv) *</label>
+                <input type="file" name="excel_file" class="form-control" accept=".xlsx,.xls,.csv" required>
                 @error('excel_file')
                     <p style="color:#e74c3c; font-size:12px; margin:4px 0 0">{{ $message }}</p>
                 @enderror
@@ -73,7 +76,7 @@
             </div>
 
             <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:20px; font-size:13px; color:#0369a1">
-                💡 Si la columna D contiene la clase de cada alumno (ej. <em>1°A</em>), se usará como grado individual y sobreescribe el campo de arriba.
+                💡 Si el archivo trae Nivel/Grado/Grupo (o Clase) por alumno, esos valores se usan por fila y sobreescriben los campos de arriba.
             </div>
 
             <div style="display:flex; gap:10px; justify-content:flex-end">

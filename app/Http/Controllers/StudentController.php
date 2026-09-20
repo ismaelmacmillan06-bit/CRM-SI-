@@ -200,22 +200,74 @@ private function extractStudentsFromPdf(string $text): array
                          ->with('success', 'Alumno eliminado correctamente.');
     }
 
+    /**
+     * Normaliza un encabezado de columna para compararlo sin acentos,
+     * mayúsculas ni espacios/paréntesis (ej. "Nombre (s)" -> "nombres").
+     */
+    private function normalizarEncabezado($valor): string
+    {
+        $s = (string) $valor;
+        $s = \Normalizer::normalize($s, \Normalizer::FORM_D);
+        $s = preg_replace('/\p{Mn}/u', '', $s);
+        $s = mb_strtolower(trim($s));
+        return preg_replace('/[^a-z0-9]/', '', $s);
+    }
+
     public function importarExcel(Request $request, School $school)
     {
         $request->validate([
-            'excel_file' => 'required|file|mimes:xlsx,xls|max:10240',
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
             'level'      => 'nullable|string|max:100',
             'grade'      => 'nullable|string|max:100',
         ], [
-            'excel_file.mimes' => 'Solo se aceptan archivos Excel (.xlsx o .xls).',
+            'excel_file.mimes' => 'Solo se aceptan archivos Excel (.xlsx, .xls) o CSV (.csv).',
             'excel_file.max'   => 'El archivo no puede superar 10 MB.',
         ]);
 
         try {
-            $spreadsheet = IOFactory::load($request->file('excel_file')->getPathname());
-            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+            $file = $request->file('excel_file');
+            $ext  = strtolower($file->getClientOriginalExtension());
 
-            // Saltar la fila de encabezado (fila 0 del array)
+            if (in_array($ext, ['csv', 'txt'], true)) {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+                $reader->setDelimiter(',');
+                $spreadsheet = $reader->load($file->getPathname());
+            } else {
+                $spreadsheet = IOFactory::load($file->getPathname());
+            }
+            $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+
+            // Detectar columnas por nombre de encabezado (fila 0), tolerante a
+            // acentos/mayúsculas. Soporta tanto el CSV que se usa para dar de
+            // alta alumnos en Macmillan (Nombre(s), Apellidos, Usuario,
+            // Password, ..., Nivel, Grado, Grupo) como la plantilla clásica
+            // (Nombre Completo, Usuario, Contraseña, Clase).
+            $NAME_KEYS     = ['nombre', 'nombres', 'nombrecompleto', 'name', 'fullname', 'alumno', 'estudiante'];
+            $LASTNAME_KEYS = ['apellidos', 'apellido', 'lastname', 'surname'];
+            $USER_KEYS     = ['usuario', 'username', 'user', 'login'];
+            $PASS_KEYS     = ['password', 'contrasena', 'contrasenia', 'clave', 'pass'];
+            $NIVEL_KEYS    = ['nivel', 'level'];
+            $GRADO_KEYS    = ['grado', 'gardo', 'grade'];
+            $GRUPO_KEYS    = ['grupo', 'group', 'seccion'];
+            $CLASE_KEYS    = ['clase', 'class', 'aula', 'salon'];
+
+            $cols   = [];
+            $header = $rows[0] ?? [];
+            foreach ($header as $ci => $cell) {
+                $h = $this->normalizarEncabezado($cell);
+                if ($h === '') continue;
+                if (!isset($cols['name'])     && in_array($h, $NAME_KEYS, true))     $cols['name'] = $ci;
+                if (!isset($cols['lastname']) && in_array($h, $LASTNAME_KEYS, true)) $cols['lastname'] = $ci;
+                if (!isset($cols['user'])     && in_array($h, $USER_KEYS, true))     $cols['user'] = $ci;
+                if (!isset($cols['pass'])     && in_array($h, $PASS_KEYS, true))     $cols['pass'] = $ci;
+                if (!isset($cols['nivel'])    && in_array($h, $NIVEL_KEYS, true))    $cols['nivel'] = $ci;
+                if (!isset($cols['grado'])    && in_array($h, $GRADO_KEYS, true))    $cols['grado'] = $ci;
+                if (!isset($cols['grupo'])    && in_array($h, $GRUPO_KEYS, true))    $cols['grupo'] = $ci;
+                if (!isset($cols['clase'])    && in_array($h, $CLASE_KEYS, true))    $cols['clase'] = $ci;
+            }
+            $usaEncabezados = isset($cols['name']) && isset($cols['user']);
+
+            // Saltar la fila de encabezado
             array_shift($rows);
 
             $level  = $request->level;
@@ -224,20 +276,46 @@ private function extractStudentsFromPdf(string $text): array
             $omitidos = [];
 
             foreach ($rows as $i => $row) {
-                $nombreCompleto = trim((string) ($row[0] ?? ''));
-                $usuario        = trim((string) ($row[1] ?? ''));
-                $contrasena     = trim((string) ($row[2] ?? ''));
-                // Columna D opcional: clase/grado por fila
-                $gradoFila      = isset($row[3]) ? trim((string) $row[3]) : null;
+                if ($usaEncabezados) {
+                    $nombre    = trim((string) ($row[$cols['name']] ?? ''));
+                    $apellido  = isset($cols['lastname']) ? trim((string) ($row[$cols['lastname']] ?? '')) : '';
+                    $usuario   = trim((string) ($row[$cols['user']] ?? ''));
+                    $contrasena = isset($cols['pass'])  ? trim((string) ($row[$cols['pass']] ?? ''))  : '';
+                    $nivelFila = isset($cols['nivel'])  ? trim((string) ($row[$cols['nivel']] ?? '')) : '';
+                    $gradoFila = isset($cols['grado'])  ? trim((string) ($row[$cols['grado']] ?? '')) : '';
+                    $grupoFila = isset($cols['grupo'])  ? trim((string) ($row[$cols['grupo']] ?? '')) : '';
+                    $claseFila = isset($cols['clase'])  ? trim((string) ($row[$cols['clase']] ?? '')) : '';
 
-                if ($nombreCompleto === '' || $usuario === '' || $contrasena === '') {
-                    continue; // Fila vacía o incompleta — saltar silenciosamente
+                    // Sin columna de Apellidos: asumir que "Nombre" trae el nombre completo
+                    if (!isset($cols['lastname']) && $apellido === '' && str_contains($nombre, ' ')) {
+                        $partes   = preg_split('/\s+/', $nombre, 2);
+                        $nombre   = $partes[0];
+                        $apellido = $partes[1] ?? '';
+                    }
+
+                    // Combinar Grado + Grupo (ej. "1" + "A" = "1°A"); si no hay,
+                    // usar la columna Clase directa (formato clásico)
+                    $gradoFinal = $claseFila;
+                    if ($gradoFila !== '' || $grupoFila !== '') {
+                        $gradoFinal = trim($gradoFila . ($grupoFila !== '' ? '°' . $grupoFila : ''));
+                    }
+                } else {
+                    // Formato clásico posicional: Nombre Completo | Usuario | Contraseña | Clase
+                    $nombreCompleto = trim((string) ($row[0] ?? ''));
+                    $usuario        = trim((string) ($row[1] ?? ''));
+                    $contrasena     = trim((string) ($row[2] ?? ''));
+                    $claseFila      = isset($row[3]) ? trim((string) $row[3]) : '';
+
+                    $partes   = preg_split('/\s+/', $nombreCompleto, 2);
+                    $nombre   = $partes[0] ?? '';
+                    $apellido = $partes[1] ?? '';
+                    $nivelFila  = '';
+                    $gradoFinal = $claseFila;
                 }
 
-                // Dividir nombre completo: primera palabra = nombre, resto = apellidos
-                $partes   = preg_split('/\s+/', $nombreCompleto, 2);
-                $nombre   = $partes[0];
-                $apellido = $partes[1] ?? '';
+                if ($nombre === '' || $usuario === '' || $contrasena === '') {
+                    continue; // Fila vacía o incompleta — saltar silenciosamente
+                }
 
                 // Evitar duplicados por username MEE
                 if ($school->students()->where('mee_username', $usuario)->exists()) {
@@ -250,8 +328,8 @@ private function extractStudentsFromPdf(string $text): array
                     'last_name'    => $apellido,
                     'mee_username' => $usuario,
                     'mee_password' => $contrasena,
-                    'level'        => $level,
-                    'grade'        => $gradoFila ?: $grade,
+                    'level'        => $nivelFila !== '' ? $nivelFila : $level,
+                    'grade'        => $gradoFinal !== '' ? $gradoFinal : $grade,
                 ]);
                 $count++;
             }

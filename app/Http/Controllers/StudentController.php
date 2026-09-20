@@ -11,21 +11,31 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class StudentController extends Controller
 {
-    public function index(School $school)
+    public function index(Request $request, School $school)
     {
-        $students = $school->students()->orderBy('level')->orderBy('grade')->get();
+        $perPage = (int) $request->query('per_page', 50);
+        if (!in_array($perPage, [50, 100, 200], true)) {
+            $perPage = 50;
+        }
+
+        $students = $school->students()
+            ->orderBy('level')->orderBy('grade')->orderBy('name')
+            ->paginate($perPage)
+            ->withQueryString();
 
         // Niveles configurados en el colegio (para dropdown de alta masiva)
         $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
             ->pluck('level.name')->filter()->sort()->values();
 
-        // Conteo de alumnos por nivel (solo niveles con alumnos registrados)
-        $porNivel = $students->groupBy('level')
-            ->filter(fn($g, $k) => $k !== '')
-            ->map(fn($g) => $g->count())
+        // Conteo de alumnos por nivel (sobre el total del colegio, no solo la página actual)
+        $porNivel = $school->students()
+            ->whereNotNull('level')->where('level', '!=', '')
+            ->selectRaw('level, count(*) as total')
+            ->groupBy('level')
+            ->pluck('total', 'level')
             ->sortKeys();
 
-        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel'));
+        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage'));
     }
 
     public function create(School $school)
@@ -65,6 +75,14 @@ class StudentController extends Controller
             'level'    => 'nullable|string|max:100',
         ]);
 
+        $grade = $request->grade;
+        $level = $request->level;
+
+        $faltantes = $this->nivelesFaltantes($school, [$level]);
+        if ($faltantes) {
+            return back()->with('error', $this->mensajeNivelesFaltantes($faltantes));
+        }
+
         try {
             $parser = new Parser();
             $pdf    = $parser->parseFile($request->file('pdf_file')->getPathname());
@@ -76,10 +94,7 @@ class StudentController extends Controller
             if (empty($students)) {
                 return back()->with('error', 'No se pudieron extraer alumnos del PDF. Verifica el formato.');
             }
-            
 
-            $grade = $request->grade;
-            $level = $request->level;
             $count = 0;
 
             foreach ($students as $student) {
@@ -213,6 +228,46 @@ private function extractStudentsFromPdf(string $text): array
         return preg_replace('/[^a-z0-9]/', '', $s);
     }
 
+    /**
+     * De una lista de niveles usados en una carga (uno por alumno, o repetido
+     * si es el mismo para todos), devuelve los nombres canónicos (Maternal,
+     * Preescolar, Primaria, Secundaria, Preparatoria, Licenciatura) que el
+     * colegio NO tiene seleccionados. Ignora valores que no correspondan a
+     * ningún nivel del catálogo estándar (no se pueden validar).
+     */
+    private function nivelesFaltantes(School $school, array $nivelesUsados): array
+    {
+        $catalogMap = [];
+        foreach (\App\Models\Level::pluck('name') as $nombreCatalogo) {
+            $catalogMap[$this->normalizarEncabezado($nombreCatalogo)] = $nombreCatalogo;
+        }
+
+        $configurados = $school->schoolLevels()->with('level')->get()
+            ->pluck('level.name')->filter()
+            ->map(fn($n) => $this->normalizarEncabezado($n))->all();
+
+        $faltantes = [];
+        foreach ($nivelesUsados as $nivel) {
+            $nivel = trim((string) $nivel);
+            if ($nivel === '') continue;
+            $norm = $this->normalizarEncabezado($nivel);
+            if (!isset($catalogMap[$norm])) continue; // no es un nivel estándar, no se valida
+            if (!in_array($norm, $configurados, true)) {
+                $faltantes[$norm] = $catalogMap[$norm];
+            }
+        }
+
+        return array_values($faltantes);
+    }
+
+    private function mensajeNivelesFaltantes(array $faltantes): string
+    {
+        $lista = implode(', ', $faltantes);
+        return count($faltantes) === 1
+            ? "Tu colegio no tiene {$lista} seleccionado. Selecciónalo antes de cargar tus alumnos."
+            : "Tu colegio no tiene estos niveles seleccionados: {$lista}. Selecciónalos antes de cargar tus alumnos.";
+    }
+
     public function importarExcel(Request $request, School $school)
     {
         $request->validate([
@@ -272,9 +327,9 @@ private function extractStudentsFromPdf(string $text): array
 
             $level  = $request->level;
             $grade  = $request->grade;
-            $count  = 0;
-            $omitidos = [];
 
+            // --- Primera pasada: parsear todas las filas sin tocar la base de datos ---
+            $filas = [];
             foreach ($rows as $i => $row) {
                 if ($usaEncabezados) {
                     $nombre    = trim((string) ($row[$cols['name']] ?? ''));
@@ -317,19 +372,40 @@ private function extractStudentsFromPdf(string $text): array
                     continue; // Fila vacía o incompleta — saltar silenciosamente
                 }
 
+                $filas[] = [
+                    'fila'       => $i + 2,
+                    'nombre'     => $nombre,
+                    'apellido'   => $apellido,
+                    'usuario'    => $usuario,
+                    'contrasena' => $contrasena,
+                    'nivel'      => $nivelFila !== '' ? $nivelFila : $level,
+                    'grado'      => $gradoFinal !== '' ? $gradoFinal : $grade,
+                ];
+            }
+
+            // --- Validar que el colegio tenga seleccionados los niveles que se van a cargar ---
+            $faltantes = $this->nivelesFaltantes($school, array_column($filas, 'nivel'));
+            if ($faltantes) {
+                return back()->with('error', $this->mensajeNivelesFaltantes($faltantes));
+            }
+
+            // --- Segunda pasada: crear los alumnos ---
+            $count    = 0;
+            $omitidos = [];
+            foreach ($filas as $f) {
                 // Evitar duplicados por username MEE
-                if ($school->students()->where('mee_username', $usuario)->exists()) {
-                    $omitidos[] = "Fila " . ($i + 2) . ": usuario «{$usuario}» ya existe — omitido.";
+                if ($school->students()->where('mee_username', $f['usuario'])->exists()) {
+                    $omitidos[] = "Fila {$f['fila']}: usuario «{$f['usuario']}» ya existe — omitido.";
                     continue;
                 }
 
                 $school->students()->create([
-                    'name'         => $nombre,
-                    'last_name'    => $apellido,
-                    'mee_username' => $usuario,
-                    'mee_password' => $contrasena,
-                    'level'        => $nivelFila !== '' ? $nivelFila : $level,
-                    'grade'        => $gradoFinal !== '' ? $gradoFinal : $grade,
+                    'name'         => $f['nombre'],
+                    'last_name'    => $f['apellido'],
+                    'mee_username' => $f['usuario'],
+                    'mee_password' => $f['contrasena'],
+                    'level'        => $f['nivel'],
+                    'grade'        => $f['grado'],
                 ]);
                 $count++;
             }

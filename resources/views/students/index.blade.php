@@ -178,21 +178,33 @@
                 padding:14px 20px; display:flex; align-items:center; gap:12px; min-width:160px; flex:1; max-width:220px">
         <span style="font-size:26px; line-height:1">👨‍🎓</span>
         <div>
-            <div style="font-size:22px; font-weight:800; color:#fff; line-height:1">{{ $students->count() }}</div>
+            <div style="font-size:22px; font-weight:800; color:#fff; line-height:1">{{ $students->total() }}</div>
             <div style="font-size:12px; font-weight:600; color:#9ca3af; margin-top:2px">Total alumnos</div>
         </div>
     </div>
 </div>
 @endif
 
-{{-- Buscador --}}
+{{-- Buscador + paginación --}}
 <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:16px 24px">
-        <div style="display:flex; gap:10px; align-items:center">
-            <input type="text" id="buscador" class="form-control" 
-                   placeholder="🔍 Buscar por nombre, apellido o usuario MEE..."
-                   style="max-width:400px">
-            <span id="contador" style="font-size:13px; color:var(--text-muted)"></span>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:space-between">
+            <div style="display:flex; gap:10px; align-items:center">
+                <input type="text" id="buscador" class="form-control"
+                       placeholder="🔍 Buscar en esta página por nombre, apellido o usuario MEE..."
+                       style="max-width:400px">
+                <span id="contador" style="font-size:13px; color:var(--text-muted)"></span>
+            </div>
+            <form method="GET" style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted)">
+                <label for="per_page" style="white-space:nowrap">Mostrar</label>
+                <select name="per_page" id="per_page" class="form-control" style="width:auto; padding:6px 10px"
+                        onchange="this.form.submit()">
+                    @foreach([50, 100, 200] as $opcion)
+                        <option value="{{ $opcion }}" @selected($perPage == $opcion)>{{ $opcion }}</option>
+                    @endforeach
+                </select>
+                <span style="white-space:nowrap">por página</span>
+            </form>
         </div>
     </div>
 </div>
@@ -200,7 +212,12 @@
 <div class="card">
     <div class="card-header">
         <span class="card-title">👨‍🎓 Alumnos — {{ $school->name }}</span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $students->count() }} registrados</span>
+        <span style="font-size:13px; color:var(--text-muted)">
+            {{ $students->total() }} registrados
+            @if($students->lastPage() > 1)
+                · página {{ $students->currentPage() }} de {{ $students->lastPage() }}
+            @endif
+        </span>
     </div>
     <table class="table">
         <thead>
@@ -274,6 +291,26 @@
             @endforelse
         </tbody>
     </table>
+
+    @if($students->lastPage() > 1)
+    <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:16px; border-top:1px solid var(--border, #e5e7eb)">
+        @if($students->onFirstPage())
+            <span class="btn btn-secondary btn-sm" style="opacity:.5; cursor:default">← Anterior</span>
+        @else
+            <a href="{{ $students->previousPageUrl() }}" class="btn btn-secondary btn-sm">← Anterior</a>
+        @endif
+
+        <span style="font-size:13px; color:var(--text-muted)">
+            Página {{ $students->currentPage() }} de {{ $students->lastPage() }}
+        </span>
+
+        @if($students->hasMorePages())
+            <a href="{{ $students->nextPageUrl() }}" class="btn btn-secondary btn-sm">Siguiente →</a>
+        @else
+            <span class="btn btn-secondary btn-sm" style="opacity:.5; cursor:default">Siguiente →</span>
+        @endif
+    </div>
+    @endif
 </div>
 
 

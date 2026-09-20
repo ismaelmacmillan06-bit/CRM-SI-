@@ -121,42 +121,42 @@
         .nav-icon { font-size: 16px; width: 20px; text-align: center; }
 
         .sidebar-footer {
-            padding: 16px;
+            padding: 10px 12px;
             border-top: 1px solid rgba(255,255,255,0.08);
         }
 
         .user-info {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             gap: 10px;
-            padding: 16px 12px 12px;
+            padding: 8px 10px;
             border-radius: 8px;
             background: rgba(255,255,255,0.05);
-            text-align: center;
+            text-align: left;
         }
 
         .user-avatar {
-            width: 76px; height: 76px;
+            width: 34px; height: 34px;
             border-radius: 50%;
             background: var(--accent);
             display: flex; align-items: center; justify-content: center;
-            font-size: 28px; font-weight: 600; color: #fff;
+            font-size: 14px; font-weight: 600; color: #fff;
             flex-shrink: 0;
         }
 
-        .user-name { font-size: 13px; color: #fff; font-weight: 500; }
-        .user-role { font-size: 11px; color: rgba(255,255,255,0.4); margin-top:2px; }
+        .user-name { font-size: 12.5px; color: #fff; font-weight: 500; line-height: 1.3; }
+        .user-role { font-size: 10.5px; color: rgba(255,255,255,0.4); margin-top: 1px; }
 
         .logout-btn {
             display: block;
             text-align: center;
-            margin-top: 8px;
-            padding: 8px;
+            margin-top: 4px;
+            padding: 5px;
             border-radius: 8px;
             color: rgba(255,255,255,0.4);
             text-decoration: none;
-            font-size: 12px;
+            font-size: 11px;
             transition: all 0.2s;
         }
 
@@ -513,13 +513,13 @@
 
 @if($consultantPhoto)
     <img src="{{ $consultantPhoto }}"
-         style="width:76px; height:76px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.2); flex-shrink:0">
+         style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.2); flex-shrink:0">
 @else
     <div class="user-avatar">{{ substr(auth()->user()->name, 0, 1) }}</div>
 @endif
 
-            <div>
-                <div class="user-name">{{ auth()->user()->name }}</div>
+            <div style="min-width:0; overflow:hidden">
+                <div class="user-name" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis">{{ auth()->user()->name }}</div>
                 <div class="user-role">{{ auth()->user()->getRoleNames()->first() }}</div>
             </div>
         </div>

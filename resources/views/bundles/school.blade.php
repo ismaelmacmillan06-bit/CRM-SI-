@@ -5,6 +5,7 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @hasanyrole('admin|consultor_digital')
     <button onclick="document.getElementById('modal-bundles').style.display='flex'"
             class="btn btn-primary">+ Agregar Bundles</button>
     <button onclick="document.getElementById('modal-import').style.display='flex'"
@@ -32,6 +33,7 @@
         </button>
     </form>
     @endif
+    @endhasanyrole
 </div>
 
 {{-- Modal confirmación eliminar todos --}}
@@ -275,6 +277,7 @@
                     @endif
                 </td>
                 <td style="display:flex; gap:6px; flex-wrap:wrap">
+                    @hasanyrole('admin|consultor_digital')
                     <button onclick="abrirResurtido({{ $bundle->id }}, {{ json_encode($bundle->name) }}, {{ $bundle->pivot->quantity }})"
                             style="padding:5px 10px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
                                    border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap">
@@ -286,6 +289,7 @@
                         @csrf @method('DELETE')
                         <button class="btn btn-danger btn-sm">Eliminar</button>
                     </form>
+                    @endhasanyrole
                 </td>
             </tr>
             @empty

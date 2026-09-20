@@ -5,7 +5,9 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.tickets.create', $school) }}" class="btn btn-primary">+ Nuevo Ticket</a>
+    @endhasanyrole
 </div>
 
 <div class="card">
@@ -84,6 +86,7 @@
                     {{ $ticket->resolved_at ? \Carbon\Carbon::parse($ticket->resolved_at)->format('d/m/Y') : '—' }}
                 </td>
                 <td>
+                    @hasanyrole('admin|consultor_digital')
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-secondary btn-sm">Editar</a>
                         <form method="POST" action="{{ route('tickets.destroy', $ticket) }}"
@@ -93,6 +96,7 @@
                             <button class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
                     </div>
+                    @endhasanyrole
                 </td>
             </tr>
             @empty

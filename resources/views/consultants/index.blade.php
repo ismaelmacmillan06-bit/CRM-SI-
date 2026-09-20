@@ -36,6 +36,7 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('consultants.show', $consultant) }}" class="btn btn-secondary btn-sm">Ver</a>
+                        @hasanyrole('admin|consultor_digital')
                         <a href="{{ route('consultants.edit', $consultant) }}" class="btn btn-secondary btn-sm">Editar</a>
                         <form method="POST" action="{{ route('consultants.destroy', $consultant) }}"
                               id="form-eliminar-consultor-{{ $consultant->id }}">
@@ -45,6 +46,7 @@
                                 Eliminar
                             </button>
                         </form>
+                        @endhasanyrole
                     </div>
                 </td>
             </tr>

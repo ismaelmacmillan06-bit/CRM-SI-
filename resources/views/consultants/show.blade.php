@@ -5,7 +5,9 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('consultants.index') }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('consultants.edit', $consultant) }}" class="btn btn-primary btn-sm">✏️ Editar</a>
+    @endhasanyrole
 </div>
 
 <div class="grid-2">

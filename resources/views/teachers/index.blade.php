@@ -5,6 +5,7 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('schools.teachers.create', $school) }}" class="btn btn-primary">+ Nuevo Docente</a>
     <button onclick="document.getElementById('modal-import-teachers').style.display='flex'"
             style="display:inline-flex; align-items:center; gap:6px; padding:9px 18px;
@@ -36,6 +37,7 @@
         </button>
     </form>
     @endif
+    @endhasanyrole
 </div>
 
 {{-- Modal importación masiva --}}
@@ -144,6 +146,7 @@
                     {{ $teacher->created_at->format('d/m/Y') }}
                 </td>
                 <td>
+                    @hasanyrole('admin|consultor_digital')
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm"
                            style="flex:1; text-align:center; white-space:nowrap">Editar</a>
@@ -159,6 +162,7 @@
                             <button class="btn btn-danger btn-sm" style="width:100%; white-space:nowrap">Eliminar</button>
                         </form>
                     </div>
+                    @endhasanyrole
                 </td>
             </tr>
             @empty

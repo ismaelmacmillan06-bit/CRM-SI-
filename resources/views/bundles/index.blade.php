@@ -4,7 +4,9 @@
 
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
+    @hasanyrole('admin|consultor_digital')
     <a href="{{ route('bundles.create') }}" class="btn btn-primary">+ Nuevo Bundle</a>
+    @endhasanyrole
     @role('admin')
     <button onclick="document.getElementById('modal-importar-bundles').style.display='flex'" class="btn btn-secondary">
         ⬆ Importar Excel
@@ -108,6 +110,7 @@
                     @endif
                 </td>
                 <td style="display:flex; gap:6px">
+                    @hasanyrole('admin|consultor_digital')
                     <button class="btn btn-secondary btn-sm"
                             onclick="abrirEditar({{ $bundle->id }}, '{{ addslashes($bundle->serie) }}', '{{ addslashes($bundle->name) }}', '{{ $bundle->grade }}', '{{ $bundle->level }}', '{{ $bundle->role }}', '{{ $bundle->type }}')">
                         Editar
@@ -120,6 +123,7 @@
                             Eliminar
                         </button>
                     </form>
+                    @endhasanyrole
                 </td>
             </tr>
             @empty

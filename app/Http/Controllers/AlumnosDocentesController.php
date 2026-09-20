@@ -136,6 +136,7 @@ class AlumnosDocentesController extends Controller
                 'tipo'        => 'Alumno',
                 'nombre'      => trim($s->name . ' ' . $s->last_name),
                 'usuario'     => $s->mee_username,
+                'contrasena'  => $s->mee_password,
                 'school_id'   => $s->school_id,
                 'school_name' => $s->school?->name ?? '—',
             ]);
@@ -147,6 +148,7 @@ class AlumnosDocentesController extends Controller
                 'tipo'        => 'Docente',
                 'nombre'      => trim($t->name . ' ' . $t->last_name),
                 'usuario'     => $t->mee_username,
+                'contrasena'  => $t->mee_password,
                 'school_id'   => $t->school_id,
                 'school_name' => $t->school?->name ?? '—',
             ]);

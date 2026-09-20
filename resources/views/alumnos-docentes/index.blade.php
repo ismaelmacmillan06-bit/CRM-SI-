@@ -141,7 +141,7 @@ function mostrarResultados(resultados, query) {
             No se encontró ningún alumno o docente con el usuario "<strong>${esc(query)}</strong>".
         </div>`;
     } else {
-        resultadoBody.innerHTML = resultados.map(r => `
+        resultadoBody.innerHTML = resultados.map((r, i) => `
             <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--border);
                         border-radius:10px; margin-bottom:10px">
                 <span class="badge ${r.tipo === 'Docente' ? 'badge-warning' : 'badge-info'}" style="flex:none">
@@ -152,12 +152,40 @@ function mostrarResultados(resultados, query) {
                     <div style="font-size:12px; color:var(--text-muted)">
                         Usuario: <span style="font-family:monospace">${esc(r.usuario)}</span> · ${esc(r.school_name)}
                     </div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:6px">
+                        Contraseña:
+                        <span id="pwd-dots-${i}" style="font-family:monospace; letter-spacing:2px">••••••••</span>
+                        <span id="pwd-real-${i}" style="font-family:monospace; display:none">${esc(r.contrasena || '—')}</span>
+                        <button type="button" onclick="togglePwd(${i})"
+                                style="background:none; border:none; cursor:pointer; padding:0; line-height:1; color:var(--text-muted)"
+                                title="Mostrar / ocultar contraseña">
+                            <svg id="pwd-icon-${i}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <a href="${SCHOOL_URL_BASE}/${r.school_id}" class="btn btn-primary btn-sm" style="flex:none">Ir →</a>
             </div>
         `).join('');
     }
     modalResultado.style.display = 'flex';
+}
+
+function togglePwd(i) {
+    const dots = document.getElementById('pwd-dots-' + i);
+    const real = document.getElementById('pwd-real-' + i);
+    const icon = document.getElementById('pwd-icon-' + i);
+    const eyeOpen = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    const eyeOff  = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+
+    if (real.style.display === 'none') {
+        real.style.display = '';
+        dots.style.display = 'none';
+        icon.innerHTML = eyeOff;
+    } else {
+        real.style.display = 'none';
+        dots.style.display = '';
+        icon.innerHTML = eyeOpen;
+    }
 }
 
 btnBuscar.addEventListener('click', buscarUsuario);

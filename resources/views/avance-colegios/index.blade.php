@@ -30,6 +30,15 @@
             </select>
         </div>
 
+        <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-size:13px; color:var(--text-muted); white-space:nowrap">↕ Ordenar por avance:</span>
+            <select id="orden-avance" class="form-control" style="max-width:220px" onchange="ordenarCards()">
+                <option value="">Sin ordenar</option>
+                <option value="desc">Mayor a menor</option>
+                <option value="asc">Menor a mayor</option>
+            </select>
+        </div>
+
         <button onclick="limpiarFiltros()"
                 style="padding:8px 14px; background:var(--surface2); border:1px solid var(--border);
                        border-radius:8px; font-size:13px; color:var(--text-muted); cursor:pointer;
@@ -47,12 +56,20 @@
 <div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
     @forelse($schools as $school)
     @php
-        $schoolSeries = $school->bundles->pluck('serie')->filter()->unique()->map(fn($s) => strtolower($s))->values()->toJson();
+        $schoolSeries  = $school->bundles->pluck('serie')->filter()->unique()->map(fn($s) => strtolower($s))->values()->toJson();
+        $totalProcesos = 0;
+        $totalDone     = 0;
+        foreach($school->schoolLevels as $sl) {
+            $totalProcesos += $sl->processes->count();
+            $totalDone += $sl->processes->where('status', 'done')->count();
+        }
+        $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
     @endphp
     <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
          data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
          data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
          data-series="{{ $schoolSeries }}"
+         data-pct="{{ $pct }}"
          style="transition: all 0.2s; display:flex; flex-direction:column; min-height:280px;">
         <div class="card-header" style="padding:16px 20px">
             <div>
@@ -107,16 +124,6 @@
                 @endforeach
             </div>
             @endif
-
-            @php
-                $totalProcesos = 0;
-                $totalDone = 0;
-                foreach($school->schoolLevels as $sl) {
-                    $totalProcesos += $sl->processes->count();
-                    $totalDone += $sl->processes->where('status', 'done')->count();
-                }
-                $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
-            @endphp
 
             <div style="margin-bottom:12px">
                 <div style="display:flex; justify-content:space-between; font-size:12px;
@@ -223,11 +230,29 @@ function aplicarFiltros() {
 function limpiarFiltros() {
     document.getElementById('buscador-colegios').value = '';
     document.getElementById('filtro-series').value = '';
+    document.getElementById('orden-avance').value = '';
     aplicarFiltros();
+    ordenarCards();
 }
 
 document.getElementById('buscador-colegios').addEventListener('input', aplicarFiltros);
 document.getElementById('filtro-series').addEventListener('change', aplicarFiltros);
+
+// Orden por % de avance (Progreso general de cada card)
+const ordenOriginalCards = Array.from(document.querySelectorAll('#colegios-grid .school-card'));
+
+function ordenarCards() {
+    const grid  = document.getElementById('colegios-grid');
+    const orden = document.getElementById('orden-avance').value;
+
+    let cards = ordenOriginalCards.slice();
+    if (orden === 'desc') {
+        cards.sort((a, b) => parseFloat(b.dataset.pct) - parseFloat(a.dataset.pct));
+    } else if (orden === 'asc') {
+        cards.sort((a, b) => parseFloat(a.dataset.pct) - parseFloat(b.dataset.pct));
+    }
+    cards.forEach(card => grid.appendChild(card));
+}
 
 // Si venimos del mapa del Dashboard con ?q=estado, precargar el buscador
 (function() {

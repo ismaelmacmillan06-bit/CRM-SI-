@@ -6,6 +6,10 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AlumnosDocentesController extends Controller
 {
@@ -13,13 +17,82 @@ class AlumnosDocentesController extends Controller
 
     public function index()
     {
+        return view('alumnos-docentes.index', [
+            'filas'   => $this->construirFilas(),
+            'niveles' => self::NIVELES,
+        ]);
+    }
+
+    public function exportar()
+    {
+        $filas = $this->construirFilas();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Alumnos por nivel');
+
+        $headers = array_merge(['Colegio'], self::NIVELES, ['Otros', 'Total']);
+        foreach ($headers as $ci => $header) {
+            $sheet->setCellValue($this->col($ci) . '1', $header);
+        }
+        $ultimaCol = $this->col(count($headers) - 1);
+        $sheet->getStyle("A1:{$ultimaCol}1")->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+
+        $row = 2;
+        foreach ($filas as $fila) {
+            $valores = array_merge(
+                [$fila['school']->name],
+                array_values($fila['niveles']),
+                [$fila['otros'], $fila['total']]
+            );
+            foreach ($valores as $ci => $val) {
+                $sheet->setCellValue($this->col($ci) . $row, $val);
+            }
+            $row++;
+        }
+
+        // Fila de totales generales
+        $sheet->setCellValue('A' . $row, 'Total general');
+        foreach (self::NIVELES as $i => $nivel) {
+            $sheet->setCellValue($this->col($i + 1) . $row, $filas->sum(fn($f) => $f['niveles'][$nivel]));
+        }
+        $sheet->setCellValue($this->col(count(self::NIVELES) + 1) . $row, $filas->sum('otros'));
+        $sheet->setCellValue($this->col(count(self::NIVELES) + 2) . $row, $filas->sum('total'));
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->applyFromArray([
+            'font' => ['bold' => true],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F1F5F9']],
+        ]);
+
+        $sheet->getColumnDimension('A')->setWidth(38);
+        foreach (range(1, count($headers) - 1) as $ci) {
+            $sheet->getColumnDimension($this->col($ci))->setWidth(14);
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'alumnos_docentes_');
+        try {
+            (new Xlsx($spreadsheet))->save($tempFile);
+            return response()->download($tempFile, 'alumnos-por-nivel.xlsx', [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            @unlink($tempFile);
+            return back()->with('error', 'No se pudo generar el Excel. Intenta de nuevo.');
+        }
+    }
+
+    private function construirFilas()
+    {
         $schools = School::withCount('students')->orderBy('name')->get();
 
         $porColegio = Student::select('school_id', 'level')->get()->groupBy('school_id');
 
         $catalogNorm = collect(self::NIVELES)->mapWithKeys(fn($n) => [$this->normalizar($n) => $n]);
 
-        $filas = $schools->map(function ($school) use ($porColegio, $catalogNorm) {
+        return $schools->map(function ($school) use ($porColegio, $catalogNorm) {
             $conteos = array_fill_keys(self::NIVELES, 0);
             $otros   = 0;
 
@@ -39,11 +112,14 @@ class AlumnosDocentesController extends Controller
                 'total'   => $school->students_count,
             ];
         });
+    }
 
-        return view('alumnos-docentes.index', [
-            'filas'   => $filas,
-            'niveles' => self::NIVELES,
-        ]);
+    /**
+     * Convierte un índice 0-based de columna a letra de Excel (0 -> A, 1 -> B, ...).
+     */
+    private function col(int $index): string
+    {
+        return \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
     }
 
     public function buscar(Request $request)

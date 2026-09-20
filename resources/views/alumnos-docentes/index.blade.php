@@ -13,6 +13,9 @@
             Alumnos por nivel en cada colegio, y buscador de usuarios (alumno o docente).
         </p>
     </div>
+    <a href="{{ route('alumnos-docentes.exportar') }}" class="btn btn-secondary" style="margin-left:auto">
+        ⬇ Descargar Excel
+    </a>
 </div>
 
 {{-- Buscador de usuario --}}

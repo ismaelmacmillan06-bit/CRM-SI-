@@ -49,6 +49,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     // Alumnos Docentes — resumen de alumnos por nivel y buscador de usuarios
     Route::get('alumnos-docentes', [AlumnosDocentesController::class, 'index'])->name('alumnos-docentes.index');
     Route::get('alumnos-docentes/buscar', [AlumnosDocentesController::class, 'buscar'])->name('alumnos-docentes.buscar');
+    Route::get('alumnos-docentes/exportar', [AlumnosDocentesController::class, 'exportar'])->name('alumnos-docentes.exportar');
 
     // Docentes
     Route::resource('schools.teachers', TeacherController::class)

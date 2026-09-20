@@ -56,6 +56,21 @@ class TareaController extends Controller
             ->with('success', "Tarea \"{$tarea->titulo}\" creada para {$schoolIds->count()} colegios.");
     }
 
+    public function update(Request $request, TareaSI $tarea)
+    {
+        $request->validate(['titulo' => 'required|string|max:255']);
+
+        $tarea->update([
+            'titulo'      => $request->titulo,
+            'descripcion' => $request->descripcion,
+        ]);
+
+        ActivityLog::log('tarea', "Tarea \"{$tarea->titulo}\" editada", null, '✏️');
+
+        return redirect()->route('tareas.index', ['tarea_id' => $tarea->id])
+            ->with('success', "Tarea \"{$tarea->titulo}\" actualizada correctamente.");
+    }
+
     public function updateStatus(Request $request, TareaSI $tarea, School $school)
     {
         $request->validate(['status' => 'required|in:pendiente,en_proceso,realizada']);

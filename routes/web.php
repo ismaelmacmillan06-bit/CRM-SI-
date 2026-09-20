@@ -151,6 +151,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      // Tareas SI
      Route::get('tareas', [TareaController::class, 'index'])->name('tareas.index');
      Route::post('tareas', [TareaController::class, 'store'])->name('tareas.store');
+     Route::put('tareas/{tarea}', [TareaController::class, 'update'])->name('tareas.update');
      Route::patch('tareas/{tarea}/colegios/{school}', [TareaController::class, 'updateStatus'])->name('tareas.update-status');
      Route::delete('tareas/{tarea}', [TareaController::class, 'destroy'])->name('tareas.destroy');
 

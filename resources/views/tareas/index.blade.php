@@ -67,6 +67,38 @@
     </div>
 </div>
 
+{{-- Modal Editar Tarea --}}
+<div id="modal-editar-tarea" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:999; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:520px; max-width:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; margin:0">
+                ✏️ Editar Tarea SI
+            </h3>
+            <button onclick="document.getElementById('modal-editar-tarea').style.display='none'"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+        <form method="POST" id="form-editar-tarea" action="">
+            @csrf
+            @method('PUT')
+            <div class="form-group">
+                <label class="form-label">Título de la tarea *</label>
+                <input type="text" name="titulo" id="editar-tarea-titulo" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Descripción (opcional)</label>
+                <textarea name="descripcion" id="editar-tarea-descripcion" class="form-control" rows="3"></textarea>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end">
+                <button type="button"
+                        onclick="document.getElementById('modal-editar-tarea').style.display='none'"
+                        class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- Layout principal --}}
 <div style="display:grid; grid-template-columns:260px 1fr; gap:20px; align-items:start">
 
@@ -159,6 +191,10 @@
                     {{ $p['realizada'] }} listas
                 </button>
                 @if(auth()->user()->hasRole('admin'))
+                <button type="button" class="btn btn-secondary btn-sm" style="padding:4px 10px"
+                        onclick="abrirEditarTarea({{ $tarea->id }}, {{ json_encode($tarea->titulo) }}, {{ json_encode($tarea->descripcion) }})">
+                    ✏️ Editar
+                </button>
                 <form method="POST" action="{{ route('tareas.destroy', $tarea) }}"
                       id="form-eliminar-tarea-{{ $tarea->id }}" style="margin:0">
                     @csrf @method('DELETE')
@@ -394,6 +430,13 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
 }
 
 document.getElementById('buscador-tareas')?.addEventListener('input', aplicarFiltroVisible);
+
+function abrirEditarTarea(id, titulo, descripcion) {
+    document.getElementById('form-editar-tarea').action = '/tareas/' + id;
+    document.getElementById('editar-tarea-titulo').value = titulo || '';
+    document.getElementById('editar-tarea-descripcion').value = descripcion || '';
+    document.getElementById('modal-editar-tarea').style.display = 'flex';
+}
 </script>
 
 {{-- Toast de confirmación --}}

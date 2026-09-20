@@ -482,6 +482,9 @@
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
+        <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
+            <span class="nav-icon">📈</span> Seguimiento SIC
+        </a>
         @endhasanyrole
         @hasrole('admin')
         <a href="{{ route('configuracion.servicios.index') }}" class="nav-item {{ request()->routeIs('configuracion.*') ? 'active' : '' }}">

@@ -20,6 +20,7 @@ use App\Http\Controllers\ComunicadoController;
 use App\Http\Controllers\HerramientasController;
 use App\Http\Controllers\SchoolServiceTypeController;
 use App\Http\Controllers\SsaController;
+use App\Http\Controllers\SeguimientoSicController;
 
 
 Route::get('/', function () {
@@ -141,6 +142,9 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::post('herramientas-si/archivos',              [HerramientasController::class, 'store'])          ->name('herramientas.archivos.store');
      Route::post('herramientas-si/archivos/{archivoSI}',  [HerramientasController::class, 'update'])         ->name('herramientas.archivos.update');
      Route::delete('herramientas-si/archivos/{archivoSI}',[HerramientasController::class, 'destroy'])        ->name('herramientas.archivos.destroy');
+
+     // Seguimiento SIC — qué le falta cargar a cada consultor digital (solo admin / consultor_digital)
+     Route::get('seguimiento-sic', [SeguimientoSicController::class, 'index'])->name('seguimiento-sic.index');
 
      // Configuración — servicios contables por colegio (solo admin)
      Route::get('configuracion/servicios',                  [SchoolServiceTypeController::class, 'index'])  ->name('configuracion.servicios.index');

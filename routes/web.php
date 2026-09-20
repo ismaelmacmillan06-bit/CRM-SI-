@@ -21,6 +21,7 @@ use App\Http\Controllers\HerramientasController;
 use App\Http\Controllers\SchoolServiceTypeController;
 use App\Http\Controllers\SsaController;
 use App\Http\Controllers\SeguimientoSicController;
+use App\Http\Controllers\AlumnosDocentesController;
 
 
 Route::get('/', function () {
@@ -44,6 +45,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::post('schools/importar',  [SchoolController::class, 'importarMasivo'])->name('schools.importar');
     Route::delete('schools-borrar-todo', [SchoolController::class, 'destroyAll'])->name('schools.destroy-all');
     Route::resource('schools', SchoolController::class);
+
+    // Alumnos Docentes — resumen de alumnos por nivel y buscador de usuarios
+    Route::get('alumnos-docentes', [AlumnosDocentesController::class, 'index'])->name('alumnos-docentes.index');
+    Route::get('alumnos-docentes/buscar', [AlumnosDocentesController::class, 'buscar'])->name('alumnos-docentes.buscar');
 
     // Docentes
     Route::resource('schools.teachers', TeacherController::class)

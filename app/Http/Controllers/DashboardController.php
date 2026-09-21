@@ -164,6 +164,9 @@ class DashboardController extends Controller
         ['acciones' => $accionesArranque, 'formatos' => $formatosCapacitaciones, 'detalle' => $accionesDetalle]
             = $this->computeAccionesArranque($schoolIds);
 
+        // Análisis: velocidad de arranque — acciones completadas por semana (últimas 8 semanas)
+        $velocidadArranque = $this->computeVelocidadArranque($schoolIds);
+
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
@@ -176,8 +179,40 @@ class DashboardController extends Controller
             'colegiosEntregados',
             'colegiosPorNivel', 'colegiosPorServicio',
             'colegiosDocentesRegistrados', 'libroProfesorDetalle',
-            'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle'
+            'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle',
+            'velocidadArranque'
         ));
+    }
+
+    // Análisis: cuántas acciones de arranque se completaron cada semana (últimas 8, ISO
+    // semana Lunes-Domingo) — para ver si el ritmo de arranque va subiendo o bajando.
+    private function computeVelocidadArranque($schoolIds)
+    {
+        $hoy = now();
+        $semanas = collect();
+        for ($i = 7; $i >= 0; $i--) {
+            $inicioSemana = $hoy->copy()->subWeeks($i)->startOfWeek(\Carbon\Carbon::MONDAY);
+            $semanas->push([
+                'yw'    => (int) $inicioSemana->format('oW'),
+                'label' => $inicioSemana->format('d M'),
+            ]);
+        }
+        $primerInicio = $hoy->copy()->subWeeks(7)->startOfWeek(\Carbon\Carbon::MONDAY);
+
+        $conteos = \DB::table('school_level_process')
+            ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
+            ->where('school_level_process.status', 'done')
+            ->whereNotNull('school_level_process.completed_at')
+            ->where('school_level_process.completed_at', '>=', $primerInicio)
+            ->selectRaw('YEARWEEK(school_level_process.completed_at, 3) as yw, COUNT(*) as total')
+            ->groupBy('yw')
+            ->pluck('total', 'yw');
+
+        return $semanas->map(fn($s) => [
+            'label' => $s['label'],
+            'total' => (int) ($conteos[$s['yw']] ?? 0),
+        ]);
     }
 
     // Progreso agregado por acción de arranque + detalle por colegio (con su consultor digital).

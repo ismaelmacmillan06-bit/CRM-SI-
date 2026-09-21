@@ -863,6 +863,31 @@ document.addEventListener('click', function(e) {
     </div>
     @endif
 
+    @if($velocidadArranque->sum('total') > 0)
+    <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--border)">
+        <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:2px">
+            📈 Velocidad de arranque
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px">
+            Acciones completadas por semana, últimas 8 semanas
+        </div>
+        @php $maxVel = max(1, $velocidadArranque->max('total')); @endphp
+        <div style="display:flex; align-items:flex-end; gap:8px; height:100px">
+            @foreach($velocidadArranque as $s)
+            @php $h = $s['total'] > 0 ? max(6, round($s['total'] / $maxVel * 100)) : 3; @endphp
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center;
+                        justify-content:flex-end; gap:4px; height:100%">
+                <span style="font-size:11px; font-weight:700; color:var(--text)">{{ $s['total'] }}</span>
+                <div style="width:100%; max-width:30px; height:{{ $h }}%; border-radius:4px 4px 0 0;
+                            background:{{ $s['total'] > 0 ? 'var(--accent)' : 'var(--border)' }};
+                            transition:height .4s ease"></div>
+                <span style="font-size:10px; color:var(--text-muted); white-space:nowrap">{{ $s['label'] }}</span>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     </div>
 </div>
 @endif

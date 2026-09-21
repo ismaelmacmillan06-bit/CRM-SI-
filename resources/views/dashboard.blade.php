@@ -863,33 +863,80 @@ document.addEventListener('click', function(e) {
     </div>
     @endif
 
-    @if($velocidadArranque->sum('total') > 0)
-    <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--border)">
-        <div style="font-size:13px; font-weight:700; color:var(--text); margin-bottom:2px">
-            📈 Velocidad de arranque
-        </div>
-        <div style="font-size:12px; color:var(--text-muted); margin-bottom:14px">
-            Acciones completadas por semana, últimas 8 semanas
-        </div>
-        @php $maxVel = max(1, $velocidadArranque->max('total')); @endphp
-        <div style="display:flex; align-items:flex-end; gap:8px; height:100px">
-            @foreach($velocidadArranque as $s)
-            @php $h = $s['total'] > 0 ? max(6, round($s['total'] / $maxVel * 100)) : 3; @endphp
-            <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center;
-                        justify-content:flex-end; gap:4px; height:100%">
-                <span style="font-size:11px; font-weight:700; color:var(--text)">{{ $s['total'] }}</span>
-                <div style="width:100%; max-width:30px; height:{{ $h }}%; border-radius:4px 4px 0 0;
-                            background:{{ $s['total'] > 0 ? 'var(--accent)' : 'var(--border)' }};
-                            transition:height .4s ease"></div>
-                <span style="font-size:10px; color:var(--text-muted); white-space:nowrap">{{ $s['label'] }}</span>
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
     </div>
 </div>
+@endif
+
+{{-- ── Línea de tiempo de arranque (día por día, filtro semana/mes) ── --}}
+@if($timelineArranque->isNotEmpty())
+<div style="background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:20px 22px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px">
+        <div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:700; color:var(--text)">
+                📅 Línea de tiempo de arranque
+            </div>
+            <div style="font-size:12.5px; color:var(--text-muted); margin-top:2px">
+                Qué acciones se completaron cada día, en todos los colegios
+            </div>
+        </div>
+        <div id="timelineFiltro" style="display:inline-flex; background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:2px; flex-shrink:0">
+            <button type="button" class="timeline-filtro-btn is-active" data-dias="7" onclick="filtrarTimeline(7, this)">Semana</button>
+            <button type="button" class="timeline-filtro-btn" data-dias="30" onclick="filtrarTimeline(30, this)">Mes</button>
+        </div>
+    </div>
+
+    <style>
+        .timeline-filtro-btn { border:none; background:transparent; color:var(--text-secondary,var(--text-muted));
+            font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:7px; cursor:pointer; }
+        .timeline-filtro-btn.is-active { background:var(--surface); color:var(--text); box-shadow:0 1px 2px rgba(0,0,0,.06); }
+        .timeline-list { position:relative; padding-left:20px; }
+        .timeline-list::before { content:""; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:var(--border); }
+        .timeline-day { position:relative; padding-bottom:18px; }
+        .timeline-day:last-child { padding-bottom:0; }
+        .timeline-dot { position:absolute; left:-20px; top:3px; width:12px; height:12px; border-radius:50%;
+            background:var(--accent); border:2px solid var(--surface); box-shadow:0 0 0 2px var(--accent); }
+        .timeline-fecha { font-size:12.5px; font-weight:700; color:var(--text); text-transform:capitalize; margin-bottom:6px; }
+        .timeline-chips { display:flex; flex-wrap:wrap; gap:6px; }
+        .timeline-chip { display:inline-flex; align-items:center; gap:5px; background:var(--surface2);
+            border:1px solid var(--border); border-radius:999px; padding:4px 10px 4px 8px; font-size:12px; color:var(--text-secondary,var(--text)); }
+        .timeline-chip b { color:var(--text); font-weight:700; }
+    </style>
+
+    <div class="timeline-list" id="timelineList">
+        @foreach($timelineArranque as $dia)
+        <div class="timeline-day" data-dias-atras="{{ $dia['diasAtras'] }}">
+            <span class="timeline-dot"></span>
+            <div class="timeline-fecha">{{ $dia['label'] }} · {{ $dia['total'] }} acción{{ $dia['total'] === 1 ? '' : 'es' }}</div>
+            <div class="timeline-chips">
+                @foreach($dia['acciones'] as $accion)
+                <span class="timeline-chip">{{ $accion['icon'] }} {{ $accion['nombre'] }} <b>{{ $accion['total'] }}</b></span>
+                @endforeach
+            </div>
+        </div>
+        @endforeach
+    </div>
+    <p id="timelineVacio" class="cell-muted" style="display:none; margin:10px 0 0; font-size:13px">
+        No hubo acciones completadas en este rango.
+    </p>
+</div>
+<script>
+function filtrarTimeline(dias, btn) {
+    document.querySelectorAll('#timelineFiltro .timeline-filtro-btn').forEach(function (b) { b.classList.remove('is-active'); });
+    btn.classList.add('is-active');
+    var visibles = 0;
+    document.querySelectorAll('#timelineList .timeline-day').forEach(function (el) {
+        var mostrar = parseInt(el.getAttribute('data-dias-atras'), 10) < dias;
+        el.style.display = mostrar ? '' : 'none';
+        if (mostrar) visibles++;
+    });
+    document.getElementById('timelineVacio').style.display = visibles === 0 ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function () {
+    var btn = document.querySelector('#timelineFiltro .timeline-filtro-btn.is-active');
+    if (btn) filtrarTimeline(parseInt(btn.getAttribute('data-dias'), 10), btn);
+});
+</script>
 @endif
 
 {{-- Avance por colegio: ahora vive en su propio apartado --}}

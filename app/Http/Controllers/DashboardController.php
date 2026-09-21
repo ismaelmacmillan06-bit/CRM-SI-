@@ -164,8 +164,8 @@ class DashboardController extends Controller
         ['acciones' => $accionesArranque, 'formatos' => $formatosCapacitaciones, 'detalle' => $accionesDetalle]
             = $this->computeAccionesArranque($schoolIds);
 
-        // Análisis: velocidad de arranque — acciones completadas por semana (últimas 8 semanas)
-        $velocidadArranque = $this->computeVelocidadArranque($schoolIds);
+        // Análisis: línea de tiempo de arranque — acciones completadas por día (últimos 30 días)
+        $timelineArranque = $this->computeTimelineArranque($schoolIds);
 
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
@@ -180,46 +180,14 @@ class DashboardController extends Controller
             'colegiosPorNivel', 'colegiosPorServicio',
             'colegiosDocentesRegistrados', 'libroProfesorDetalle',
             'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle',
-            'velocidadArranque'
+            'timelineArranque'
         ));
     }
 
-    // Análisis: cuántas acciones de arranque se completaron cada semana (últimas 8, ISO
-    // semana Lunes-Domingo) — para ver si el ritmo de arranque va subiendo o bajando.
-    private function computeVelocidadArranque($schoolIds)
+    // Íconos compartidos por acción de arranque (mismo slug del catálogo `processes`).
+    private static function procesoIconos(): array
     {
-        $hoy = now();
-        $semanas = collect();
-        for ($i = 7; $i >= 0; $i--) {
-            $inicioSemana = $hoy->copy()->subWeeks($i)->startOfWeek(\Carbon\Carbon::MONDAY);
-            $semanas->push([
-                'yw'    => (int) $inicioSemana->format('oW'),
-                'label' => $inicioSemana->format('d M'),
-            ]);
-        }
-        $primerInicio = $hoy->copy()->subWeeks(7)->startOfWeek(\Carbon\Carbon::MONDAY);
-
-        $conteos = \DB::table('school_level_process')
-            ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
-            ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
-            ->where('school_level_process.status', 'done')
-            ->whereNotNull('school_level_process.completed_at')
-            ->where('school_level_process.completed_at', '>=', $primerInicio)
-            ->selectRaw('YEARWEEK(school_level_process.completed_at, 3) as yw, COUNT(*) as total')
-            ->groupBy('yw')
-            ->pluck('total', 'yw');
-
-        return $semanas->map(fn($s) => [
-            'label' => $s['label'],
-            'total' => (int) ($conteos[$s['yw']] ?? 0),
-        ]);
-    }
-
-    // Progreso agregado por acción de arranque + detalle por colegio (con su consultor digital).
-    // Se comparte entre la vista del dashboard y la exportación a Excel.
-    private function computeAccionesArranque($schoolIds): array
-    {
-        $procesoIconos = [
+        return [
             'alta_bundles'            => '🔓',
             'capacitacion_admin'      => '🎓',
             'registrar_profesores'    => '👩‍🏫',
@@ -231,6 +199,73 @@ class DashboardController extends Controller
             'alta_servicios_alumno'   => '🧾',
             'entrega_colegio'         => '✅',
         ];
+    }
+
+    // Análisis: línea de tiempo de arranque — qué acciones se completaron cada día,
+    // en todos los colegios, en los últimos 30 días. El filtro semana/mes en la vista
+    // es puramente client-side (muestra/oculta días ya traídos), así no hace falta
+    // un endpoint aparte.
+    private function computeTimelineArranque($schoolIds)
+    {
+        $procesoIconos = self::procesoIconos();
+        $hoy   = now()->startOfDay();
+        $desde = $hoy->copy()->subDays(29);
+
+        $rows = \DB::table('school_level_process')
+            ->join('processes', 'processes.id', '=', 'school_level_process.process_id')
+            ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
+            ->where('school_level_process.status', 'done')
+            ->whereNotNull('school_level_process.completed_at')
+            ->where('school_level_process.completed_at', '>=', $desde)
+            ->selectRaw('DATE(school_level_process.completed_at) as dia, processes.id as proceso_id,
+                         processes.name as accion, processes.slug as slug, COUNT(*) as total')
+            ->groupBy('dia', 'processes.id', 'processes.name', 'processes.slug')
+            ->orderByDesc('dia')
+            ->get();
+
+        return $rows->groupBy('dia')
+            ->map(function ($items, $dia) use ($procesoIconos, $hoy) {
+                $fecha      = \Carbon\Carbon::parse($dia);
+                $fechaCorta = self::fechaEsCorta($fecha);
+                $label      = $fecha->isToday() ? 'Hoy, ' . $fechaCorta
+                            : ($fecha->isYesterday() ? 'Ayer, ' . $fechaCorta
+                            : self::diaSemanaEs($fecha) . ' ' . $fechaCorta);
+                return [
+                    'fecha'     => $dia,
+                    'label'     => $label,
+                    'diasAtras' => $hoy->diffInDays($fecha),
+                    'total'     => (int) $items->sum('total'),
+                    'acciones'  => $items->map(fn ($i) => [
+                        'nombre' => $i->accion,
+                        'icon'   => $procesoIconos[$i->slug] ?? '📌',
+                        'total'  => (int) $i->total,
+                    ])->sortByDesc('total')->values(),
+                ];
+            })
+            ->sortByDesc('fecha')
+            ->values();
+    }
+
+    // Formateo de fechas en español, independiente del locale de la app (que está en 'en').
+    private static function diaSemanaEs(\Carbon\Carbon $fecha): string
+    {
+        $dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        return $dias[$fecha->dayOfWeek];
+    }
+
+    private static function fechaEsCorta(\Carbon\Carbon $fecha): string
+    {
+        $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                  'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        return $fecha->day . ' de ' . $meses[$fecha->month - 1];
+    }
+
+    // Progreso agregado por acción de arranque + detalle por colegio (con su consultor digital).
+    // Se comparte entre la vista del dashboard y la exportación a Excel.
+    private function computeAccionesArranque($schoolIds): array
+    {
+        $procesoIconos = self::procesoIconos();
         // Interpola un color de rojo (<=55%) a verde (100%) según el % de avance
         $pctColor = function (int $pct): string {
             $t   = max(0, min(1, ($pct - 55) / 45));

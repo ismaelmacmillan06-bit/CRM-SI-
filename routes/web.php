@@ -23,6 +23,7 @@ use App\Http\Controllers\SsaController;
 use App\Http\Controllers\SeguimientoSicController;
 use App\Http\Controllers\AlumnosDocentesController;
 use App\Http\Controllers\AvanceColegiosController;
+use App\Http\Controllers\ProduccionController;
 
 
 Route::get('/', function () {
@@ -155,6 +156,11 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
 
      // Seguimiento SIC — qué le falta cargar a cada consultor digital (solo admin / consultor_digital)
      Route::get('seguimiento-sic', [SeguimientoSicController::class, 'index'])->name('seguimiento-sic.index');
+
+     // Producción — dashboard de series por colegio a partir de un Excel (solo admin / consultor_digital)
+     Route::get('produccion', [ProduccionController::class, 'index'])->name('produccion.index');
+     Route::post('produccion/cargar', [ProduccionController::class, 'upload'])->name('produccion.upload');
+     Route::delete('produccion', [ProduccionController::class, 'destroy'])->name('produccion.destroy');
 
      // Configuración — servicios contables por colegio (solo admin)
      Route::get('configuracion/servicios',                  [SchoolServiceTypeController::class, 'index'])  ->name('configuracion.servicios.index');

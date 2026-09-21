@@ -488,6 +488,9 @@
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
+        <a href="{{ route('produccion.index') }}" class="nav-item {{ request()->routeIs('produccion.*') ? 'active' : '' }}">
+            <span class="nav-icon">📦</span> Producción
+        </a>
         <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
             <span class="nav-icon">📈</span> Seguimiento SIC
         </a>

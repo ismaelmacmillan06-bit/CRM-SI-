@@ -35,6 +35,12 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
+        // Producción: solo admin y consultor_digital
+        if ($request->routeIs('produccion.*') && !$user->hasRole('consultor_digital')) {
+            return redirect()->route('dashboard')
+                ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
+        }
+
         // ECA y ELT: lectura en Colegios/Dashboard + acceso completo a SSA
         if ($user->hasAnyRole(['consultor_eca', 'consultor_elt'])) {
             // SSA: escritura permitida

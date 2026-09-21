@@ -33,9 +33,19 @@
 
 {{-- Tabla de alumnos por nivel --}}
 <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap:wrap; gap:10px">
         <span class="card-title">📊 Alumnos por nivel — todos los colegios</span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $filas->count() }} colegios</span>
+        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+            <div style="display:flex; align-items:center; gap:8px">
+                <label for="orden-total" style="font-size:13px; color:var(--text-muted); white-space:nowrap">↕ Ordenar por total de alumnos:</label>
+                <select id="orden-total" class="form-control" style="max-width:200px" onchange="ordenarFilasAlumnos()">
+                    <option value="">Sin ordenar</option>
+                    <option value="desc">Mayor a menor</option>
+                    <option value="asc">Menor a mayor</option>
+                </select>
+            </div>
+            <span style="font-size:13px; color:var(--text-muted)">{{ $filas->count() }} colegios</span>
+        </div>
     </div>
     <div style="overflow-x:auto">
         <table class="table">
@@ -49,9 +59,9 @@
                     <th style="text-align:center; white-space:nowrap">Total</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="tbody-alumnos-nivel">
                 @forelse($filas as $fila)
-                <tr>
+                <tr data-total="{{ $fila['total'] }}">
                     <td><strong>{{ $fila['school']->name }}</strong></td>
                     @foreach($niveles as $nivel)
                         <td style="text-align:center; {{ $fila['niveles'][$nivel] > 0 ? '' : 'color:var(--text-muted)' }}">
@@ -192,5 +202,21 @@ btnBuscar.addEventListener('click', buscarUsuario);
 inputUsuario.addEventListener('keydown', e => {
     if (e.key === 'Enter') buscarUsuario();
 });
+
+// Orden por total de alumnos (mayor/menor colegio)
+const ordenOriginalFilasAlumnos = Array.from(document.querySelectorAll('#tbody-alumnos-nivel tr[data-total]'));
+
+function ordenarFilasAlumnos() {
+    const tbody = document.getElementById('tbody-alumnos-nivel');
+    const orden = document.getElementById('orden-total').value;
+
+    let filas = ordenOriginalFilasAlumnos.slice();
+    if (orden === 'desc') {
+        filas.sort((a, b) => parseFloat(b.dataset.total) - parseFloat(a.dataset.total));
+    } else if (orden === 'asc') {
+        filas.sort((a, b) => parseFloat(a.dataset.total) - parseFloat(b.dataset.total));
+    }
+    filas.forEach(fila => tbody.appendChild(fila));
+}
 </script>
 @endsection

@@ -229,7 +229,7 @@
     </section>
 
     {{-- FILTROS --}}
-    <section class="card" style="padding:18px 20px; margin-bottom:20px">
+    <section class="card" style="padding:18px 20px; margin-bottom:20px; overflow:visible">
         <div style="margin-bottom:14px">
             <h2 style="font-size:14.5px; font-weight:700; margin:0">Filtrar información</h2>
             <span style="font-size:12px; color:var(--text-muted)">Combina series, colegio, nivel, empresa y tipo de pago</span>

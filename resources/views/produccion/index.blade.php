@@ -337,7 +337,7 @@
         const NIVEL_ORDER = ['Maternal', 'Preescolar', 'Primaria', 'Secundaria', 'Preparatoria', 'Bachillerato', 'Licenciatura'];
         function sortNiveles(a, b) {
             const ia = NIVEL_ORDER.indexOf(a), ib = NIVEL_ORDER.indexOf(b);
-            if (ia === -1 && ib === -1) return a.localeCompare(b);
+            if (ia === -1 && ib === -1) return cmp(a, b);
             if (ia === -1) return 1;
             if (ib === -1) return -1;
             return ia - ib;
@@ -359,6 +359,11 @@
         }
 
         function fmt(n) { return Number(n || 0).toLocaleString('es-MX'); }
+
+        // Compara de forma segura aunque alguno de los valores venga vacío/null
+        // (el Excel puede traer filas sin Serie, Nivel, etc.) — evita que un
+        // .localeCompare sobre null rompa TODO el filtrado silenciosamente.
+        function cmp(a, b) { return String(a || '').localeCompare(String(b || '')); }
 
         function el(tag, attrs, children) {
             const node = document.createElement(tag);
@@ -537,7 +542,7 @@
             chipsEl: document.getElementById('serieChips'),
             getOptions: () => Array.from(seriesIndex.entries())
                 .map(([serie, set]) => ({ key: serie, label: serie, countLabel: set.size + ' colegios' }))
-                .sort((a, b) => a.label.localeCompare(b.label)),
+                .sort((a, b) => cmp(a.label, b.label)),
             formatOption: (o) => o.label,
             selectedSet: state.series,
             onChange: () => { state.page = 1; renderAll(); },
@@ -549,7 +554,7 @@
             chipsEl: document.getElementById('colegioChips'),
             getOptions: () => Array.from(colegioIndex.entries())
                 .map(([ci, info]) => ({ key: ci, label: info.nombre, sub: ci, countLabel: ci }))
-                .sort((a, b) => a.label.localeCompare(b.label)),
+                .sort((a, b) => cmp(a.label, b.label)),
             formatOption: (o) => o.label,
             selectedSet: state.colegios,
             onChange: () => { state.page = 1; renderAll(); },
@@ -601,7 +606,7 @@
                 g.niveles.add(d.n); g.grados.add(d.g); g.empresas.add(d.e); g.pagos.add(d.tp);
                 g.piezas += d.c; g.detalle.push(d);
             });
-            return Array.from(map.values()).sort((a, b) => b.piezas - a.piezas || a.co.localeCompare(b.co));
+            return Array.from(map.values()).sort((a, b) => b.piezas - a.piezas || cmp(a.co, b.co));
         }
 
         function groupByColegio(rows) {
@@ -614,7 +619,7 @@
                 g.niveles.add(d.n); g.piezas += d.c; g.titulos.add(d.t + '|' + d.isbn);
                 g.series.set(d.s, (g.series.get(d.s) || 0) + d.c);
             });
-            return Array.from(map.values()).sort((a, b) => b.piezas - a.piezas || a.co.localeCompare(b.co));
+            return Array.from(map.values()).sort((a, b) => b.piezas - a.piezas || cmp(a.co, b.co));
         }
 
         const resultsHead = document.getElementById('resultsHead');

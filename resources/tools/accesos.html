@@ -554,15 +554,16 @@
       .replace(/[^a-z0-9]+/g,"-").replace(/(^-+|-+$)/g,"") || "archivo";
   }
 
-  // Renderiza las tarjetas de UNA sola clase en un contenedor fuera de
-  // pantalla (mismo CSS que la vista previa) y lo convierte a un PDF real
-  // (blob) con html2pdf (html2canvas + jsPDF). Evita cortar una tarjeta a
-  // la mitad entre página y página.
-  async function classToPdfBlob(g, split){
-    const container = document.createElement("div");
-    container.style.cssText = "position:absolute;left:-9999px;top:0;width:760px;background:#fff;";
-    container.innerHTML = `<div class="app" style="padding:0;max-width:none">${claseSectionHtml(g, split, 0)}</div>`;
-    document.body.appendChild(container);
+  // Convierte a PDF (blob) la sección de UNA clase que YA está visible en la
+  // vista previa (#cs-<idx>, creada por build()). Capturar el nodo real y
+  // visible es mucho más confiable con html2canvas que clonarlo fuera de
+  // pantalla (esa técnica suele producir capturas en blanco).
+  async function classToPdfBlob(idx){
+    const target = document.getElementById("cs-"+idx);
+    if(!target) throw new Error("No se encontró la sección de la clase #"+idx);
+
+    const wasHidden = target.classList.contains("print-hidden");
+    target.classList.remove("print-hidden");
     try{
       const opts = {
         margin: [10,10,10,10],
@@ -571,9 +572,9 @@
         jsPDF: { unit:"mm", format:"letter", orientation:"portrait" },
         pagebreak: { mode:["css","legacy"], avoid:[".card",".sheet-title",".sheet-sub",".section-label"] },
       };
-      return await html2pdf().set(opts).from(container).outputPdf("blob");
+      return await html2pdf().set(opts).from(target).outputPdf("blob");
     } finally {
-      document.body.removeChild(container);
+      if(wasHidden) target.classList.add("print-hidden");
     }
   }
 
@@ -594,7 +595,7 @@
         let name = base+".pdf", n=2;
         while(used.has(name)){ name = base+"-"+n+".pdf"; n++; }
         used.add(name);
-        const pdfBlob = await classToPdfBlob(g, lastBuild.split);
+        const pdfBlob = await classToPdfBlob(idx);
         zip.file(name, pdfBlob);
       }
 

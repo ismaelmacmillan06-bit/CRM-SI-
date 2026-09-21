@@ -188,6 +188,7 @@ class DashboardController extends Controller
                 $done  = (int) $row->done;
                 $pct   = $total > 0 ? (int) round($done / $total * 100) : 0;
                 return [
+                    'id'    => $row->id,
                     'slug'  => $row->slug,
                     'name'  => $row->name,
                     'icon'  => $procesoIconos[$row->slug] ?? '📌',
@@ -206,6 +207,7 @@ class DashboardController extends Controller
         ])->map(function ($cfg) use ($accionesArranque) {
             $row = $accionesArranque->firstWhere('slug', $cfg['slug']);
             return [
+                'id'    => $row['id'] ?? null,
                 'label' => $cfg['label'],
                 'icon'  => $cfg['icon'],
                 'color' => $cfg['color'],
@@ -214,6 +216,30 @@ class DashboardController extends Controller
                 'pct'   => $row['pct'] ?? 0,
             ];
         });
+
+        // Detalle por colegio/nivel de cada acción de arranque (para el modal del ojito):
+        // separa colegios que ya la completaron de los que aún no.
+        $accionesDetalle = \DB::table('school_level_process')
+            ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->join('schools', 'schools.id', '=', 'school_level.school_id')
+            ->join('levels', 'levels.id', '=', 'school_level.level_id')
+            ->when($schoolIds, fn($q) => $q->whereIn('schools.id', $schoolIds))
+            ->select(
+                'school_level_process.process_id',
+                'school_level_process.status',
+                'schools.id as school_id',
+                'schools.name as school_name',
+                'schools.state',
+                'schools.city',
+                'levels.name as level_name'
+            )
+            ->orderBy('schools.name')
+            ->get()
+            ->groupBy('process_id')
+            ->map(fn($rows) => [
+                'done'    => $rows->where('status', 'done')->values(),
+                'pending' => $rows->where('status', '!=', 'done')->values(),
+            ]);
 
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
@@ -227,7 +253,7 @@ class DashboardController extends Controller
             'colegiosEntregados',
             'colegiosPorNivel', 'colegiosPorServicio',
             'colegiosDocentesRegistrados', 'libroProfesorDetalle',
-            'accionesArranque', 'formatosCapacitaciones'
+            'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle'
         ));
     }
 }

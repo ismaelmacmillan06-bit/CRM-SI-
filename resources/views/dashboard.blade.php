@@ -500,6 +500,69 @@ function statRow(string $color, string $label, $value): string {
 @endif
 @endforeach
 
+{{-- Modales por acción de arranque (colegios que la completaron / les falta) --}}
+@foreach($accionesArranque as $accion)
+@if($accion['total'] > 0)
+<div id="modal-accion-{{ $accion['id'] }}"
+     style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
+            background:rgba(0,0,0,0.45); padding:20px">
+    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:560px;
+                max-height:82vh; display:flex; flex-direction:column;
+                box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+        <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);
+                    display:flex; align-items:center; gap:10px; flex-shrink:0">
+            <span style="font-size:22px">{{ $accion['icon'] }}</span>
+            <div style="flex:1">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px;
+                            font-weight:700; color:var(--text)">{{ $accion['name'] }}</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                    {{ $accion['done'] }} de {{ $accion['total'] }} completados ({{ $accion['pct'] }}%)
+                </div>
+            </div>
+            <button onclick="cerrarModalAccion({{ $accion['id'] }})"
+                    style="background:none; border:none; cursor:pointer; font-size:20px;
+                           color:var(--text-muted); line-height:1; padding:4px">×</button>
+        </div>
+        <div style="overflow-y:auto; padding:16px 24px 20px; flex:1">
+            @php $detalle = $accionesDetalle[$accion['id']] ?? ['done' => collect(), 'pending' => collect()]; @endphp
+
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+                        color:#16a34a; margin:0 0 8px">✅ Completado ({{ $detalle['done']->count() }})</div>
+            @forelse($detalle['done'] as $row)
+            <a href="{{ route('schools.show', $row->school_id) }}"
+               style="display:flex; align-items:center; gap:10px; padding:8px 10px;
+                      border-radius:8px; text-decoration:none; border-bottom:1px solid var(--border)"
+               onmouseover="this.style.background='#16a34a18'" onmouseout="this.style.background='transparent'">
+                <span style="width:8px; height:8px; border-radius:50%; background:#16a34a; flex-shrink:0"></span>
+                <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
+                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
+                             background:#dcfce7; color:#16a34a">{{ $row->level_name }}</span>
+            </a>
+            @empty
+            <div style="font-size:12.5px; color:var(--text-muted); padding:6px 0 14px">Ninguno todavía.</div>
+            @endforelse
+
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+                        color:#dc2626; margin:18px 0 8px">⏳ Pendiente ({{ $detalle['pending']->count() }})</div>
+            @forelse($detalle['pending'] as $row)
+            <a href="{{ route('schools.show', $row->school_id) }}"
+               style="display:flex; align-items:center; gap:10px; padding:8px 10px;
+                      border-radius:8px; text-decoration:none; border-bottom:1px solid var(--border)"
+               onmouseover="this.style.background='#dc262618'" onmouseout="this.style.background='transparent'">
+                <span style="width:8px; height:8px; border-radius:50%; background:#dc2626; flex-shrink:0"></span>
+                <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
+                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
+                             background:#fee2e2; color:#dc2626">{{ $row->level_name }}</span>
+            </a>
+            @empty
+            <div style="font-size:12.5px; color:var(--text-muted); padding:6px 0">¡Todos completos! 🎉</div>
+            @endforelse
+        </div>
+    </div>
+</div>
+@endif
+@endforeach
+
 <script>
 function abrirModalServicio(idx) {
     var m = document.getElementById('modal-servicio-' + idx);
@@ -512,14 +575,25 @@ function cerrarModalServicio(idx) {
     if (m) m.style.display = 'none';
     document.body.style.overflow = '';
 }
+function abrirModalAccion(id) {
+    var m = document.getElementById('modal-accion-' + id);
+    if (!m) return;
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function cerrarModalAccion(id) {
+    var m = document.getElementById('modal-accion-' + id);
+    if (m) m.style.display = 'none';
+    document.body.style.overflow = '';
+}
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        document.querySelectorAll('[id^="modal-servicio-"],[id="modal-libro-profesor"]').forEach(function(m) { m.style.display = 'none'; });
+        document.querySelectorAll('[id^="modal-servicio-"],[id^="modal-accion-"],[id="modal-libro-profesor"]').forEach(function(m) { m.style.display = 'none'; });
         document.body.style.overflow = '';
     }
 });
 document.addEventListener('click', function(e) {
-    if (e.target.matches('[id^="modal-servicio-"]')) {
+    if (e.target.matches('[id^="modal-servicio-"],[id^="modal-accion-"]')) {
         e.target.style.display = 'none';
         document.body.style.overflow = '';
     }
@@ -657,6 +731,21 @@ document.addEventListener('click', function(e) {
                             background:{{ $accion['color'] }}; transition:width .4s ease"></div>
             </div>
             <span class="acc-pct" style="color:{{ $accion['color'] }}">{{ $accion['pct'] }}%</span>
+            @if($accion['total'] > 0)
+            <button onclick="abrirModalAccion({{ $accion['id'] }})" title="Ver colegios"
+                    style="background:none; border:none; cursor:pointer; padding:4px;
+                           color:{{ $accion['color'] }}; opacity:0.5; transition:opacity .15s;
+                           line-height:0; flex-shrink:0; border-radius:6px"
+                    onmouseover="this.style.opacity='1';this.style.background='{{ $accion['color'] }}18'"
+                    onmouseout="this.style.opacity='0.5';this.style.background='none'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                </svg>
+            </button>
+            @else
+            <span style="width:23px; flex-shrink:0"></span>
+            @endif
         </div>
         @endforeach
     </div>
@@ -692,6 +781,19 @@ document.addEventListener('click', function(e) {
                             color:{{ $card['color'] }}; flex-shrink:0">
                     {{ $card['pct'] }}%
                 </div>
+                @if($card['total'] > 0 && $card['id'])
+                <button onclick="abrirModalAccion({{ $card['id'] }})" title="Ver colegios"
+                        style="background:none; border:none; cursor:pointer; padding:4px;
+                               color:{{ $card['color'] }}; opacity:0.55; transition:opacity .15s;
+                               line-height:0; flex-shrink:0; border-radius:6px"
+                        onmouseover="this.style.opacity='1';this.style.background='{{ $card['color'] }}18'"
+                        onmouseout="this.style.opacity='0.55';this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                        <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                </button>
+                @endif
             </div>
             @endforeach
         </div>

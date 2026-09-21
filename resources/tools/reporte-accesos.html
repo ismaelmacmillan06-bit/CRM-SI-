@@ -214,8 +214,8 @@ input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--ac
   --text-secondary: #55585E;
   --text-muted:     #8A8D93;
 
-  --border:         #E7E8EB;
-  --border-strong:  #D7D9DD;
+  --border:         #DBDDE1;
+  --border-strong:  #C6C9CE;
 
   --accent:         #E2231A;
   --accent-soft:    #FBE3E2;
@@ -232,7 +232,11 @@ input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--ac
   --neutral-bg: #EDEDED;
   --neutral-ink: #8F8F8F;
 
+  /* Recalcula color aquí (no solo en <body>) para que todo lo que herede
+     color sin declararlo explícitamente use el texto oscuro del tema claro,
+     en vez del blanco del tema oscuro del topbar/generador. */
   background: var(--surface-page);
+  color: var(--text-primary);
 }
 #reportScreen .icon-badge {
   width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
@@ -290,7 +294,7 @@ input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--ac
 
 /* stat tiles */
 .stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
-.stat-tile { background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; box-shadow: var(--shadow-sm); }
+.stat-tile { background: var(--surface-2); border: 1.5px solid var(--border-strong); border-left: 4px solid var(--accent); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; box-shadow: var(--shadow-sm); }
 .stat-icon { width: 32px; height: 32px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
 .stat-label { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
 .stat-value { font-family:'Bricolage Grotesque',sans-serif; font-size: 23px; font-weight: 800; letter-spacing: -0.01em; }

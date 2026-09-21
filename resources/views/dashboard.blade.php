@@ -183,50 +183,6 @@ function statRow(string $color, string $label, $value): string {
     </a>
 </div>
 
-{{-- ── Colegios por Nivel (full width, mismo orden y colores que Alumnos SI) ── --}}
-@if($colegiosPorNivel->isNotEmpty())
-@php
-    $nivelColorMap = [
-        'maternal'     => '#f59e0b',
-        'preescolar'   => '#8b5cf6',
-        'primaria'     => '#3b82f6',
-        'secundaria'   => '#10b981',
-        'preparatoria' => '#E2231A',
-        'licenciatura' => '#0ea5e9',
-    ];
-    $nivelOrden = ['maternal','preescolar','primaria','secundaria','preparatoria','licenciatura'];
-    $colegiosPorNivelOrdenados = $colegiosPorNivel->sortBy(function($n) use ($nivelOrden) {
-        $idx = array_search(strtolower($n['name']), $nivelOrden);
-        return $idx === false ? 99 : $idx;
-    });
-@endphp
-<div style="margin-bottom:24px">
-    <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px">
-        <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
-            🏫 Colegios por Nivel
-        </span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
-    </div>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:16px">
-        @foreach($colegiosPorNivelOrdenados as $nivel)
-        @php $color = $nivelColorMap[strtolower($nivel['name'])] ?? '#94a3b8'; @endphp
-        <div style="background:var(--surface); border-radius:14px; padding:18px 20px;
-                    border-top:3px solid {{ $color }}; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
-            <div style="font-size:11px; font-weight:600; letter-spacing:.5px;
-                         text-transform:uppercase; color:var(--text-muted); margin-bottom:8px">
-                {{ $nivel['name'] }}
-            </div>
-            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:30px; font-weight:700;
-                        color:{{ $color }}; line-height:1">{{ $nivel['total'] }}</div>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:6px">
-                {{ $totalSchools > 0 ? round($nivel['total'] / $totalSchools * 100) : 0 }}% colegios
-            </div>
-        </div>
-        @endforeach
-    </div>
-</div>
-@endif
-
 {{-- Visitas pendientes alert --}}
 @if($visitasPendientes > 0)
 <div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;
@@ -283,6 +239,81 @@ function statRow(string $color, string $label, $value): string {
     </div>
 </div>
 
+{{-- ── Colegios por Nivel (estilo compacto, como Colegios por Servicio) ── --}}
+@if($colegiosPorNivel->isNotEmpty())
+@php
+    $nivelColorMap = [
+        'maternal'     => '#f59e0b',
+        'preescolar'   => '#8b5cf6',
+        'primaria'     => '#3b82f6',
+        'secundaria'   => '#10b981',
+        'preparatoria' => '#E2231A',
+        'licenciatura' => '#0ea5e9',
+    ];
+    $nivelIconMap = [
+        'maternal'     => '🍼',
+        'preescolar'   => '🧸',
+        'primaria'     => '✏️',
+        'secundaria'   => '📐',
+        'preparatoria' => '🎓',
+        'licenciatura' => '🏛️',
+    ];
+    $nivelOrden = ['maternal','preescolar','primaria','secundaria','preparatoria','licenciatura'];
+    $colegiosPorNivelOrdenados = $colegiosPorNivel->sortBy(function($n) use ($nivelOrden) {
+        $idx = array_search(strtolower($n['name']), $nivelOrden);
+        return $idx === false ? 99 : $idx;
+    })->values();
+    $dosColumnasNivel = $colegiosPorNivelOrdenados->count() > 5;
+@endphp
+<style>
+    .niv-grid.dos-cols { display:grid; grid-template-columns:repeat(2,1fr); gap:0 40px; }
+    .niv-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); flex-wrap:nowrap; }
+    .niv-row.last-single { border-bottom:none; }
+    .niv-name { flex:1; font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+    .niv-bar-wrap { width:80px; height:5px; border-radius:99px; background:var(--border); flex-shrink:0; overflow:hidden; }
+    .niv-pct { font-size:11px; color:var(--text-muted); width:30px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
+    .niv-total { font-size:15px; font-weight:800; min-width:22px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
+    @media (max-width: 640px) {
+        .niv-grid.dos-cols { grid-template-columns:1fr; }
+        .niv-row { gap:7px; }
+        .niv-bar-wrap { width:52px; }
+        .niv-pct { display:none; }
+        .niv-total { font-size:14px; }
+    }
+</style>
+<div style="margin-bottom:24px">
+    <div style="display:flex; align-items:baseline; gap:10px; margin-bottom:14px">
+        <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
+            🏫 Colegios por Nivel
+        </span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
+    </div>
+    <div style="background:var(--surface); border-radius:14px; padding:6px 20px;
+                border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+        <div class="niv-grid {{ $dosColumnasNivel ? 'dos-cols' : '' }}">
+            @foreach($colegiosPorNivelOrdenados as $nivel)
+            @php
+                $color = $nivelColorMap[strtolower($nivel['name'])] ?? '#94a3b8';
+                $icon  = $nivelIconMap[strtolower($nivel['name'])] ?? '🏫';
+                $pct   = $totalSchools > 0 ? round($nivel['total'] / $totalSchools * 100) : 0;
+            @endphp
+            <div class="niv-row {{ $loop->last && !$dosColumnasNivel ? 'last-single' : '' }}">
+                <span style="width:9px; height:9px; border-radius:50%; background:{{ $color }};
+                             flex-shrink:0; box-shadow:0 0 0 2px {{ $color }}28"></span>
+                <span style="font-size:15px; line-height:1; flex-shrink:0">{{ $icon }}</span>
+                <span class="niv-name" title="{{ $nivel['name'] }}">{{ $nivel['name'] }}</span>
+                <span class="niv-total" style="color:{{ $color }}">{{ $nivel['total'] }}</span>
+                <div class="niv-bar-wrap">
+                    <div style="width:{{ $pct }}%; height:100%; border-radius:99px;
+                                background:{{ $color }}; transition:width .4s ease"></div>
+                </div>
+                <span class="niv-pct">{{ $pct }}%</span>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ── Colegios por Servicio (full width, 2 cols si >5) ── --}}
 @if($colegiosPorServicio->isNotEmpty())

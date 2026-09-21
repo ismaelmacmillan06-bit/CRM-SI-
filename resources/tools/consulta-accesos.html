@@ -269,6 +269,7 @@
   var pending = null;
   var logoDataURL = null;
   var selectedConsultor = { name: "", phone: "" };
+  var AVATAR_COLORS=["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316"];
 
   var $ = function(id){ return document.getElementById(id); };
   var drop=$("drop"), fileInput=$("fileInput"),
@@ -470,6 +471,7 @@
   .htxt .hs{font-size:12px;color:#9ca3af;margin-top:2px;}
   .hcount{margin-left:auto;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.1);padding:5px 10px;border-radius:8px;text-align:right;flex:none;border:1px solid rgba(255,255,255,.12);}
   .tools{position:sticky;top:var(--hh,70px);z-index:9;background:var(--bg);padding:12px 16px 8px;border-bottom:1px solid var(--border);}
+  .tools-inner{display:flex;flex-direction:column;}
   .search{position:relative;}
   .search input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid var(--border);border-radius:10px;font-size:16px;background:#fff;color:var(--ink);font-family:inherit;}
   .search input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.1);}
@@ -478,14 +480,20 @@
   .chips::-webkit-scrollbar{display:none;}
   .chip{flex:none;border:1.5px solid var(--border);background:#fff;color:var(--ink);font-size:13px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;font-family:inherit;}
   .chip.on{background:var(--red);color:#fff;border-color:var(--red);}
-  .priv{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-top:8px;cursor:pointer;user-select:none;}
+  .priv{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-top:8px;cursor:pointer;user-select:none;flex:none;}
   .priv input{width:16px;height:16px;accent-color:var(--red);}
   .list{padding:12px 16px 0;}
-  .gh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 2px 9px;display:flex;align-items:center;gap:8px;}
+  .avatar{display:none;}
+  .chead{display:flex;align-items:center;gap:11px;margin-bottom:11px;}
+  .gh{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 2px 9px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
   .gh:first-child{margin-top:4px;}
   .gh::after{content:"";flex:1;height:1px;background:var(--border);}
+  .gh-chev{flex:none;transition:transform .15s;color:var(--muted);}
+  .gh.gh-closed .gh-chev{transform:rotate(-90deg);}
+  .cards-grid.gh-collapsed{display:none;}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 15px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
   .cname{font-size:16px;font-weight:700;line-height:1.15;margin-bottom:11px;}
+  .chead .cname{margin-bottom:0;}
   .crow{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;margin-bottom:8px;}
   .crow .ci{flex:1;min-width:0;}
   .crow .cl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;}
@@ -508,6 +516,27 @@
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--dark);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:50;transition:.25s;pointer-events:none;box-shadow:0 12px 28px rgba(0,0,0,.3);}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .foot{text-align:center;font-size:11.5px;color:#9ca3af;background:var(--dark);margin-top:24px;padding:16px;}
+
+  /* ── Pantallas grandes (PC/tablet): layout tipo dashboard ── */
+  @media (min-width:860px){
+    header{padding:18px 28px;}
+    .hwrap{max-width:1180px;margin:0 auto;}
+    .hlogo{width:48px;height:48px;border-radius:10px;}
+    .htxt h1{font-size:21px;}
+    .htxt .hs{font-size:13px;}
+    .hcount{font-size:12.5px;padding:7px 14px;}
+    .tools{position:static;padding:20px 28px 4px;}
+    .tools-inner{max-width:1180px;margin:0 auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 20px;}
+    .search{order:1;flex:0 1 480px;}
+    .priv{order:2;margin-left:auto;margin-top:0;}
+    .chips{order:3;flex:1 1 100%;flex-wrap:wrap;overflow-x:visible;padding:6px 0 4px;}
+    .list{max-width:1180px;margin:0 auto;padding:22px 28px 48px;}
+    .avatar{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;flex:none;font-weight:700;font-size:15px;color:#fff;}
+    .gh{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;font-size:12.5px;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+    .gh::after{display:none;}
+    .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+    .card{margin-bottom:0;}
+  }
 </style>
 </head>
 <body>
@@ -515,19 +544,21 @@
   <div class="hwrap">
     __LOGO__<div class="hbar"></div>
     <div class="htxt"><h1>__TITLE__</h1><div class="hs">Consulta de accesos</div></div>
-    <div class="hcount" id="hcount"></div>
+    <div class="hcount" id="hcount">__STATIC_HCOUNT__</div>
   </div>
 </header>
 <script>(function(){var h=document.querySelector('header');if(!h)return;function setHH(){document.documentElement.style.setProperty('--hh',h.getBoundingClientRect().height+'px');}setHH();window.addEventListener('resize',setHH);})();<\/script>
 <div class="tools">
-  <div class="search">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input id="q" type="text" placeholder="Buscar alumno por nombre…" autocomplete="off">
+  <div class="tools-inner">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="text" placeholder="Buscar alumno por nombre…" autocomplete="off">
+    </div>
+    <div class="chips" id="chips">__STATIC_CHIPS__</div>
+    <label class="priv"><input type="checkbox" id="hp"> Ocultar contraseñas en pantalla</label>
   </div>
-  <div class="chips" id="chips"></div>
-  <label class="priv"><input type="checkbox" id="hp"> Ocultar contraseñas en pantalla</label>
 </div>
-<div class="list" id="list"></div>
+<div class="list" id="list">__STATIC_LIST__</div>
 <div class="foot">Macmillan Castillo · Solución Integral</div>
 <div class="toast" id="toast"></div>
 <script>
@@ -541,6 +572,9 @@
   var $=function(id){return document.getElementById(id);};
   function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"");}
   function esc(s){return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];});}
+  var AVATAR_COLORS=["#ef4444","#f59e0b","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316"];
+  function avatarColor(name){var h=0,s=String(name||"?");for(var i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return AVATAR_COLORS[h%AVATAR_COLORS.length];}
+  function initials(name){var p=String(name||"").trim().split(/\s+/).filter(Boolean);if(!p.length)return"?";if(p.length===1)return p[0].slice(0,2).toUpperCase();return(p[0][0]+p[1][0]).toUpperCase();}
 
   var groups=[];var seen={};
   DATA.forEach(function(d){if(!seen[d.group]){seen[d.group]=true;groups.push(d.group);}});
@@ -572,7 +606,7 @@
   }
   function cardHtml(d){
     var pv = state.hide ? '<span class="cv mask">••••••••</span>' : '<span class="cv">'+esc(d.password||"—")+'</span>';
-    var h='<div class="card"><div class="cname">'+esc(d.name||"—")+'</div>';
+    var h='<div class="card"><div class="chead"><div class="avatar" style="background:'+avatarColor(d.name)+'">'+esc(initials(d.name))+'</div><div class="cname">'+esc(d.name||"—")+'</div></div>';
     h+='<div class="crow"><div class="ci"><div class="cl">Usuario</div><div class="cv">'+esc(d.username||"—")+'</div></div>'+
        '<button class="copy" data-c="'+esc(d.username||"")+'" aria-label="Copiar usuario"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
     h+='<div class="crow"><div class="ci"><div class="cl">Contraseña</div>'+pv+'</div>'+
@@ -605,15 +639,32 @@
       groups.forEach(function(g){
         var gr=rows.filter(function(d){return d.group===g;});
         if(!gr.length) return;
-        html+='<div class="gh">'+esc(g)+'</div>';
+        html+='<div class="gh" data-g="'+esc(g)+'">'+
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>'+
+              '<span>'+esc(g)+'</span>'+
+              '<span style="text-transform:none;letter-spacing:0;font-weight:600">'+gr.length+' alumno'+(gr.length!==1?'s':'')+'</span>'+
+              '<svg class="gh-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+              '</div>';
+        html+='<div class="cards-grid">';
         gr.forEach(function(d){html+=cardHtml(d);});
+        html+='</div>';
       });
     }else{
+      html+='<div class="cards-grid">';
       rows.forEach(function(d){html+=cardHtml(d);});
+      html+='</div>';
     }
     box.innerHTML=html;
     Array.prototype.forEach.call(box.querySelectorAll(".copy"),function(b){
       b.addEventListener("click",function(){copyText(b.getAttribute("data-c"));});
+    });
+    Array.prototype.forEach.call(box.querySelectorAll(".gh"),function(ghEl){
+      ghEl.addEventListener("click",function(){
+        var grid=ghEl.nextElementSibling;
+        if(!grid||!grid.classList.contains("cards-grid")) return;
+        grid.classList.toggle("gh-collapsed");
+        ghEl.classList.toggle("gh-closed");
+      });
     });
   }
   function copyText(t){
@@ -631,10 +682,91 @@
 </html>`;
   /*__TEMPLATE_END__*/
 
+  // ── Pre-render estático del listado ─────────────────────────────────────
+  // Algunos visores de HTML en iPhone (ej. Quick Look al abrir un adjunto)
+  // no ejecutan JavaScript por seguridad. Para que el archivo descargado
+  // igual muestre nombres/usuarios/contraseñas y los botones (Entrar a SI,
+  // Entrar a MEE, WhatsApp) sin depender de JS, se genera aquí el mismo
+  // listado ya armado como HTML plano. Si el JS SÍ corre, render() lo
+  // vuelve a pintar igual (o filtrado), sin diferencia visual.
+  function staticAvatarColor(name){
+    var h=0, s=String(name||"?");
+    for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+    return AVATAR_COLORS[h%AVATAR_COLORS.length];
+  }
+  function staticInitials(name){
+    var p=String(name||"").trim().split(/\s+/).filter(Boolean);
+    if(!p.length) return "?";
+    if(p.length===1) return p[0].slice(0,2).toUpperCase();
+    return (p[0][0]+p[1][0]).toUpperCase();
+  }
+  function staticCardHtml(d){
+    var h='<div class="card"><div class="chead"><div class="avatar" style="background:'+staticAvatarColor(d.name)+'">'+esc(staticInitials(d.name))+'</div><div class="cname">'+esc(d.name||"—")+'</div></div>';
+    h+='<div class="crow"><div class="ci"><div class="cl">Usuario</div><div class="cv">'+esc(d.username||"—")+'</div></div>'+
+       '<button class="copy" data-c="'+esc(d.username||"")+'" aria-label="Copiar usuario"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
+    h+='<div class="crow"><div class="ci"><div class="cl">Contraseña</div><span class="cv">'+esc(d.password||"—")+'</span></div>'+
+       '<button class="copy" data-c="'+esc(d.password||"")+'" aria-label="Copiar contraseña"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></div>';
+    h+='<div class="btn-row">';
+    h+='<a class="clink clink-mee" href="'+PLATFORM_URL+'" target="_blank" rel="noopener">Entrar a SI ↗</a>';
+    if(SERVICIOS_URL){
+      h+='<a class="clink clink-sv-active" href="'+SERVICIOS_URL+'" target="_blank" rel="noopener">'+
+         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'+
+         'Entrar a MEE ↗</a>';
+    }else{
+      h+='<div class="clink clink-sv">Entrar a MEE <span>Próximamente</span></div>';
+    }
+    if(selectedConsultor.name && selectedConsultor.phone){
+      var waMsg=encodeURIComponent("Hola "+selectedConsultor.name+" me podrias ayudar por favor a restaurar la contraseña de este usuario "+esc(d.username||d.name)+".");
+      h+='<a class="clink clink-wa" href="https://wa.me/'+selectedConsultor.phone+'?text='+waMsg+'" target="_blank" rel="noopener">'+
+         '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.123 1.528 5.855L0 24l6.335-1.513A11.944 11.944 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 0 1-5.006-1.368l-.36-.214-3.732.892.924-3.63-.236-.374A9.786 9.786 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/></svg>'+
+         'Contactar Consultor Digital ↗</a>';
+    }
+    h+='</div></div>';
+    return h;
+  }
+  function buildStaticBlocks(){
+    var order = groupOrder();
+    var multi = order.length>1 || (order.length===1 && order[0]!=="Sin clase");
+
+    var hcountHtml = students.length+" alumno"+(students.length!==1?"s":"")+(multi?("<br>"+order.length+" clase"+(order.length!==1?"s":"")):"");
+
+    var chipsHtml = "";
+    if(multi){
+      chipsHtml = '<span class="chip on">Todas</span>';
+      order.forEach(function(g){ chipsHtml += '<span class="chip">'+esc(g)+'</span>'; });
+    }
+
+    var listHtml = "";
+    if(!students.length){
+      listHtml = '<div class="empty"><div class="e">🔍</div>No se encontraron alumnos.</div>';
+    }else if(multi){
+      order.forEach(function(g){
+        var gr = students.filter(function(s){ return s.group===g; });
+        if(!gr.length) return;
+        listHtml += '<div class="gh" data-g="'+esc(g)+'">'+
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>'+
+          '<span>'+esc(g)+'</span>'+
+          '<span style="text-transform:none;letter-spacing:0;font-weight:600">'+gr.length+' alumno'+(gr.length!==1?'s':'')+'</span>'+
+          '<svg class="gh-chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>'+
+          '</div>';
+        listHtml += '<div class="cards-grid">';
+        gr.forEach(function(d){ listHtml += staticCardHtml(d); });
+        listHtml += '</div>';
+      });
+    }else{
+      listHtml += '<div class="cards-grid">';
+      students.forEach(function(d){ listHtml += staticCardHtml(d); });
+      listHtml += '</div>';
+    }
+
+    return { hcount: hcountHtml, chips: chipsHtml, list: listHtml };
+  }
+
   function buildAppHTML(){
     var title = (schoolName.value.trim() || "Accesos de alumnos");
     var dataJson = JSON.stringify(students.map(function(s){return {name:s.name,username:s.username,password:s.password,group:s.group};})).replace(/</g,"\\u003c");
     var logoHtml = logoDataURL ? ('<img class="hlogo" src="'+logoDataURL+'" alt="logo">') : "";
+    var staticBlocks = buildStaticBlocks();
     return OUTPUT_TEMPLATE
       .split("__TITLE__").join(esc(title))
       .split("__LOGO__").join(logoHtml)
@@ -642,6 +774,9 @@
       .split("__SERVICIOS_URL__").join(SERVICIOS_URL)
       .split("__CONSULTOR_NAME__").join(selectedConsultor.name)
       .split("__CONSULTOR_PHONE__").join(selectedConsultor.phone)
+      .split("__STATIC_HCOUNT__").join(staticBlocks.hcount)
+      .split("__STATIC_CHIPS__").join(staticBlocks.chips)
+      .split("__STATIC_LIST__").join(staticBlocks.list)
       .split("__DATA__").join(dataJson);
   }
 

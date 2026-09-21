@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root{
     --paper:#f5ece0; --paper-2:#efe3d2;
@@ -481,26 +482,36 @@
     return order.map(k=>({clase:k, alumnos:map[k]}));
   }
 
+  // Se guarda el último build para que "Descargar .zip" reutilice exactamente
+  // los mismos grupos/colegio/modo, sin tener que recalcularlos.
+  let lastBuild = null;
+
+  function claseSectionHtml(g, split, i){
+    let html = `<div class="clase-section" id="cs-${i}" data-clase="${esc(g.clase)}">`;
+    html += `<div class="sheet-title">${esc(g.clase)}</div>`;
+    if(lastBuild && lastBuild.school) html += `<div class="sheet-sub">${esc(lastBuild.school)} · Datos de acceso · recorta y entrega</div>`;
+    else                              html += `<div class="sheet-sub">Datos de acceso · recorta y entrega a cada alumno</div>`;
+    if(split){
+      html += `<div class="section-label">Usuarios</div>`;
+      html += `<div class="cards">`+g.alumnos.map(userCard).join("")+`</div>`;
+      html += `<div class="section-label section-break">Contraseñas</div>`;
+      html += `<div class="cards">`+g.alumnos.map(passCard).join("")+`</div>`;
+    }else{
+      html += `<div class="cards">`+g.alumnos.map(combinedCard).join("")+`</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
   function build(){
     const school = groupName.value.trim();
     const split  = splitPages.checked;
     const groups = groupByClase(rows);
+    lastBuild = {school, split, groups};
     let html = "";
 
     groups.forEach((g,i)=>{
-      html += `<div class="clase-section" id="cs-${i}" data-clase="${esc(g.clase)}">`;
-      html += `<div class="sheet-title">${esc(g.clase)}</div>`;
-      if(school) html += `<div class="sheet-sub">${esc(school)} · Datos de acceso · recorta y entrega</div>`;
-      else        html += `<div class="sheet-sub">Datos de acceso · recorta y entrega a cada alumno</div>`;
-      if(split){
-        html += `<div class="section-label">Usuarios</div>`;
-        html += `<div class="cards">`+g.alumnos.map(userCard).join("")+`</div>`;
-        html += `<div class="section-label section-break">Contraseñas</div>`;
-        html += `<div class="cards">`+g.alumnos.map(passCard).join("")+`</div>`;
-      }else{
-        html += `<div class="cards">`+g.alumnos.map(combinedCard).join("")+`</div>`;
-      }
-      html += `</div>`;
+      html += claseSectionHtml(g, split, i);
       if(i < groups.length-1) html += `<hr class="clase-divider no-print">`;
     });
 
@@ -510,6 +521,7 @@
     // Botones per-clase
     clasePrintBtns.innerHTML =
       `<button class="btn-print-all" onclick="printAll()">🖨 Imprimir todo</button>` +
+      `<button class="btn-print-all" id="zipBtn" onclick="downloadZip()">🗂 Descargar .zip</button>` +
       groups.map((g,i)=>
         `<button class="btn-clase" onclick="printClase(${i})">
           ${esc(g.clase)} <span class="cnt">${g.alumnos.length}</span>
@@ -534,6 +546,71 @@
     window.print();
     sections.forEach(el=>el.classList.remove("print-hidden"));
   };
+
+  function slugifyFile(s){
+    return String(s||"").toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g,"")
+      .replace(/[^a-z0-9]+/g,"-").replace(/(^-+|-+$)/g,"") || "archivo";
+  }
+
+  // Genera un HTML autocontenido (mismo look que la vista previa/impresión)
+  // con las tarjetas de UNA sola clase, para meterlo al zip.
+  function standaloneClaseHtml(g, split){
+    const styleTag = document.querySelector("style").outerHTML;
+    const school = lastBuild && lastBuild.school ? lastBuild.school : "";
+    const title = (school ? school+" · " : "") + g.clase;
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(title)}</title>
+${styleTag}
+</head>
+<body>
+<div class="app">
+  <div class="preview-wrap" style="margin-top:0">
+    <div id="sheet">${claseSectionHtml(g, split, 0)}</div>
+  </div>
+</div>
+</body>
+</html>`;
+  }
+
+  async function downloadZip(){
+    if(!lastBuild || !lastBuild.groups.length) return;
+    const zipBtn = document.getElementById("zipBtn");
+    if(zipBtn) zipBtn.disabled = true;
+    setStatus("Generando ZIP…","");
+
+    try{
+      const zip = new JSZip();
+      const used = new Set();
+      lastBuild.groups.forEach(g=>{
+        const base = slugifyFile(g.clase);
+        let name = base+".html", n=2;
+        while(used.has(name)){ name = base+"-"+n+".html"; n++; }
+        used.add(name);
+        zip.file(name, standaloneClaseHtml(g, lastBuild.split));
+      });
+
+      const blob = await zip.generateAsync({type:"blob"});
+      const schoolSlug = lastBuild.school ? slugifyFile(lastBuild.school)+"-" : "";
+      const fecha = new Date().toISOString().slice(0,10);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `accesos-${schoolSlug}${fecha}.zip`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+
+      setStatus(`ZIP descargado con ${lastBuild.groups.length} archivo(s), uno por clase.`,"ok");
+    }catch(err){
+      setStatus("No se pudo generar el ZIP.","err");
+    }finally{
+      if(zipBtn) zipBtn.disabled = false;
+    }
+  }
+  window.downloadZip = downloadZip;
 
   function downloadTemplate(){
     const data=[

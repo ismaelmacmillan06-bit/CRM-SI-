@@ -53,7 +53,35 @@
 </div>
 
 {{-- Cards de colegios --}}
-<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px">
+<style>
+    .avance-card { transition: transform .18s ease, box-shadow .18s ease; }
+    .avance-card:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,.08); }
+    .avance-copy-btn { background:none; border:none; cursor:pointer; padding:4px; border-radius:6px;
+        line-height:1; flex-shrink:0; color:var(--text-muted); transition:all .15s; }
+    .avance-copy-btn:hover { background:rgba(0,0,0,.06); color:var(--text); }
+    .avance-ir-btn { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px;
+        background:linear-gradient(135deg, var(--accent), #ff5b4d); color:#fff; border-radius:10px;
+        text-decoration:none; font-size:13px; font-weight:700; margin-top:auto;
+        box-shadow:0 4px 10px rgba(226,35,26,.25); transition:all .18s; }
+    .avance-ir-btn:hover { box-shadow:0 6px 16px rgba(226,35,26,.4); filter:brightness(1.05); }
+    .avance-ir-btn svg { transition:transform .18s; }
+    .avance-ir-btn:hover svg { transform:translateX(3px); }
+</style>
+<div id="colegios-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:18px">
+    @php
+        $nivelColors = [
+            'Maternal'      => '#f59e0b',
+            'Preescolar'    => '#8b5cf6',
+            'Primaria'      => '#2563eb',
+            'Secundaria'    => '#059669',
+            'Preparatoria'  => '#dc2626',
+            'Licenciatura'  => '#0d1117',
+        ];
+        $estadoColors = [
+            'activo'    => ['bg' => '#f0fdf4', 'text' => '#16a34a', 'bar' => '#22c55e'],
+            'prospecto' => ['bg' => '#fffbeb', 'text' => '#b45309', 'bar' => '#f59e0b'],
+        ];
+    @endphp
     @forelse($schools as $school)
     @php
         $schoolSeries  = $school->bundles->pluck('serie')->filter()->unique()->map(fn($s) => strtolower($s))->values()->toJson();
@@ -64,58 +92,70 @@
             $totalDone += $sl->processes->where('status', 'done')->count();
         }
         $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
+
+        $pctColor = $pct >= 100 ? '#10b981' : ($pct >= 70 ? '#3b82f6' : ($pct >= 40 ? '#f59e0b' : '#ef4444'));
+        $estado   = $estadoColors[$school->status] ?? ['bg' => '#f8fafc', 'text' => '#64748b', 'bar' => '#94a3b8'];
+        $consultorDigital = $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name;
     @endphp
-    <div class="school-card card" data-nombre="{{ strtolower($school->name) }}"
-         data-consultor="{{ strtolower($school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '') }}"
+    <div class="school-card avance-card card" data-nombre="{{ strtolower($school->name) }}"
+         data-consultor="{{ strtolower($consultorDigital ?? '') }}"
          data-estado="{{ strtolower($school->state ?? $school->city ?? '') }}"
          data-series="{{ $schoolSeries }}"
          data-pct="{{ $pct }}"
-         style="transition: all 0.2s; display:flex; flex-direction:column; min-height:280px;">
-        <div class="card-header" style="padding:16px 20px">
-            <div>
-                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:600; font-size:15px">
+         style="display:flex; flex-direction:column; min-height:280px; overflow:hidden; border-radius:14px;">
+
+        <div style="height:4px; background:{{ $estado['bar'] }}"></div>
+
+        <div style="padding:18px 20px 14px">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px">
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:16px;
+                            color:var(--text); line-height:1.3">
                     {{ $school->name }}
                 </div>
-                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
-                    {{ $school->state ?? $school->city ?? 'Sin estado' }}
-                </div>
+                <span style="flex-shrink:0; font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+                             background:{{ $estado['bg'] }}; color:{{ $estado['text'] }}; white-space:nowrap">
+                    {{ ucfirst($school->status ?? 'inactivo') }}
+                </span>
             </div>
-            @if($school->status === 'activo')
-                <span class="badge badge-success">Activo</span>
-            @elseif($school->status === 'prospecto')
-                <span class="badge badge-warning">Prospecto</span>
-            @else
-                <span class="badge badge-gray">Inactivo</span>
-            @endif
+            <div style="font-size:12px; color:var(--text-muted); margin-top:4px; display:flex; align-items:center; gap:4px">
+                📍 {{ $school->state ?? $school->city ?? 'Sin estado' }}
+            </div>
         </div>
-        <div class="card-body" style="padding:16px 20px; flex:1; display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px">
-                <span style="color:var(--text-muted)">Consultor Digital</span>
-                <span style="font-weight:500">{{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}</span>
+
+        <div style="padding:0 20px 18px; flex:1; display:flex; flex-direction:column; gap:14px">
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;
+                        padding:10px 12px; background:var(--surface2); border-radius:10px">
+                <span style="font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px">
+                    👤 Consultor Digital
+                </span>
+                <span style="font-size:12.5px; font-weight:700; color:var(--text); text-align:right">
+                    {{ $consultorDigital ?? '—' }}
+                </span>
             </div>
 
             @if($school->meeAdmins->count())
-            <div style="margin-bottom:12px; display:flex; flex-direction:column; gap:6px">
+            <div style="border:1px solid var(--border); border-radius:10px; overflow:hidden">
+                <div style="padding:7px 12px; background:var(--surface2); font-size:10.5px; font-weight:700;
+                            text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted)">
+                    🔐 Administrador MEE
+                </div>
                 @foreach($school->meeAdmins as $admin)
-                <div style="background:var(--surface2); border-radius:8px; padding:8px 10px; font-size:12px">
+                <div style="padding:9px 12px; font-size:12px; {{ !$loop->last ? 'border-bottom:1px dashed var(--border)' : '' }}">
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px">
                         <span style="color:var(--text-muted); white-space:nowrap">Usuario</span>
-                        <div style="display:flex; align-items:center; gap:5px; min-width:0">
-                            <span style="font-family:monospace; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ $admin->username }}</span>
-                            <button type="button" onclick="copiarTexto(this, {{ json_encode($admin->username) }})"
-                                    style="background:none; border:none; cursor:pointer; padding:2px; line-height:1; flex-shrink:0; color:var(--text-muted)"
-                                    title="Copiar usuario">
+                        <div style="display:flex; align-items:center; gap:2px; min-width:0">
+                            <span style="font-family:monospace; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ $admin->username }}</span>
+                            <button type="button" class="avance-copy-btn" onclick="copiarTexto(this, {{ json_encode($admin->username) }})" title="Copiar usuario">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                             </button>
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
                         <span style="color:var(--text-muted); white-space:nowrap">Contraseña</span>
-                        <div style="display:flex; align-items:center; gap:5px; min-width:0">
-                            <span style="font-family:monospace; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ $admin->password_plain }}</span>
-                            <button type="button" onclick="copiarTexto(this, {{ json_encode($admin->password_plain) }})"
-                                    style="background:none; border:none; cursor:pointer; padding:2px; line-height:1; flex-shrink:0; color:var(--text-muted)"
-                                    title="Copiar contraseña">
+                        <div style="display:flex; align-items:center; gap:2px; min-width:0">
+                            <span style="font-family:monospace; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ $admin->password_plain }}</span>
+                            <button type="button" class="avance-copy-btn" onclick="copiarTexto(this, {{ json_encode($admin->password_plain) }})" title="Copiar contraseña">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                             </button>
                         </div>
@@ -125,34 +165,36 @@
             </div>
             @endif
 
-            <div style="margin-bottom:12px">
-                <div style="display:flex; justify-content:space-between; font-size:12px;
-                            color:var(--text-muted); margin-bottom:4px">
-                    <span>Progreso general</span>
-                    <span>{{ $pct }}%</span>
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px">
+                    <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted)">
+                        Progreso general
+                    </span>
+                    <span style="font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:17px; color:{{ $pctColor }}">
+                        {{ $pct }}%
+                    </span>
                 </div>
-                <div style="background:var(--surface2); border-radius:20px; height:6px; overflow:hidden">
-                    <div style="height:100%; width:{{ $pct }}%;
-                                background:{{ $pct == 100 ? '#10b981' : 'var(--accent)' }};
-                                border-radius:20px"></div>
+                <div style="background:var(--surface2); border-radius:20px; height:8px; overflow:hidden">
+                    <div style="height:100%; width:{{ $pct }}%; background:{{ $pctColor }};
+                                border-radius:20px; transition:width .3s"></div>
                 </div>
             </div>
 
-            <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:12px">
+            @if($school->schoolLevels->isNotEmpty())
+            <div style="display:flex; gap:5px; flex-wrap:wrap">
                 @foreach($school->schoolLevels as $sl)
-                    <span class="badge badge-info" style="font-size:11px">
+                    @php $nc = $nivelColors[$sl->level->name ?? ''] ?? '#6b7280'; @endphp
+                    <span style="font-size:10.5px; font-weight:700; padding:3px 10px; border-radius:999px;
+                                 background:{{ $nc }}1a; color:{{ $nc }}">
                         {{ $sl->level->name ?? '' }}
                     </span>
                 @endforeach
             </div>
+            @endif
 
-            <a href="{{ route('schools.show', $school) }}"
-               style="display:block; text-align:center; padding:8px; background:var(--accent);
-                      color:#fff; border-radius:8px; text-decoration:none; font-size:13px;
-                      font-weight:500; transition:background 0.2s; margin-top:auto;"
-               onmouseover="this.style.background='#d63651'"
-               onmouseout="this.style.background='var(--accent)'">
-                IR →
+            <a href="{{ route('schools.show', $school) }}" class="avance-ir-btn">
+                IR
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </a>
         </div>
     </div>

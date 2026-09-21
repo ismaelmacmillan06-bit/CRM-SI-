@@ -464,6 +464,10 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
     detailLinkSelector: '[data-testid="user-view-link"]',
     detailLinkText: null,
     fields: {
+      // ⚠️ OJO: "nombre" es un selector de prueba — casi seguro hay que
+      // ajustarlo. Inspecciona la ficha de un usuario y busca el elemento
+      // que muestra su nombre completo (clic derecho → Inspeccionar).
+      nombre: '[data-testid="user-name"]',
       usuario: '[data-testid="user-username"]',
       ultima_conexion: '[data-testid="user-last-login"]',
       rol: '[data-testid="role-content"] .role-title',

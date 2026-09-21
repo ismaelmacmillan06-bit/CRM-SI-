@@ -194,7 +194,7 @@
     <header class="hero">
       <span class="badge">● Herramienta interna · Solución Integral</span>
       <h1 class="display">Generador de <em>accesos</em><br>para alumnos</h1>
-      <p class="sub">Carga un Excel con las columnas <b>Nombre Completo</b>, <b>Usuario</b>, <b>Contraseña</b> y <b>Clase</b>. La herramienta agrupa automáticamente por clase y genera tarjetas recortables — una sección (archivo) por grupo.</p>
+      <p class="sub">Carga directamente el mismo CSV que se usa para dar de alta alumnos en Macmillan (columnas <b>Nombre (s)</b>, <b>Apellidos</b>, <b>Usuario</b>, <b>Password</b>, <b>Nivel</b>, <b>Grado</b> y <b>Grupo</b>) — también acepta el formato clásico de <b>Nombre Completo</b>, <b>Usuario</b>, <b>Contraseña</b> y <b>Clase</b>. La herramienta agrupa automáticamente por clase y genera tarjetas recortables — una sección (archivo) por grupo.</p>
     </header>
 
     <div class="grid">
@@ -240,29 +240,32 @@
 
     <!-- EXAMPLE -->
     <div class="example">
-      <h2><span class="ico">📄</span> Así debe verse tu Excel</h2>
-      <p class="lead">La primera fila son los encabezados. Necesitas 4 columnas — la columna <b>Clase</b> determina cómo se agrupan las tarjetas:</p>
+      <h2><span class="ico">📄</span> Así debe verse tu archivo</h2>
+      <p class="lead">Puedes subir tal cual el CSV de altas de Macmillan (primera fila = encabezados). La clase de cada tarjeta se arma combinando <b>Grado</b> + <b>Grupo</b> + <b>Nivel</b>:</p>
       <div class="xl-wrap">
         <table class="xl">
           <thead>
             <tr>
-              <th>Nombre Completo</th>
+              <th>Nombre (s)</th>
+              <th>Apellidos</th>
               <th>Usuario</th>
-              <th>Contraseña</th>
-              <th>Clase</th>
+              <th>Password</th>
+              <th>Nivel</th>
+              <th>Grado</th>
+              <th>Grupo</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>JOSE ISMAEL FLORES AVILA</td><td>ismaelavila2026</td><td>Everest.2026</td><td>1°A Primaria</td></tr>
-            <tr><td>CELESTE MAY RODRIGUEZ</td><td>celestemay2026</td><td>Everest.2026</td><td>1°A Primaria</td></tr>
-            <tr><td>MARIANA CALDERON RUIZ</td><td>marianacalderon2026</td><td>Everest.2026</td><td>1°B Primaria</td></tr>
-            <tr><td>CATALINA BUSTAMANTE PALMA</td><td>bustamantecatalina2026</td><td>Everest.2026</td><td>1°C Primaria</td></tr>
+            <tr><td>Jose Ismael</td><td>Flores Avila</td><td>ismaelavila2026</td><td>Everest.2026</td><td>Primaria</td><td>1</td><td>A</td></tr>
+            <tr><td>Celeste May</td><td>Rodriguez</td><td>celestemay2026</td><td>Everest.2026</td><td>Primaria</td><td>1</td><td>A</td></tr>
+            <tr><td>Mariana</td><td>Calderon Ruiz</td><td>marianacalderon2026</td><td>Everest.2026</td><td>Primaria</td><td>1</td><td>B</td></tr>
+            <tr><td>Catalina</td><td>Bustamante Palma</td><td>bustamantecatalina2026</td><td>Everest.2026</td><td>Primaria</td><td>1</td><td>C</td></tr>
           </tbody>
         </table>
       </div>
       <div class="xl-note">
         <span>💡</span>
-        <span>Los encabezados son <b>flexibles</b>: acepta <i>Nombre</i> o <i>Nombre Completo</i>; <i>Usuario</i> o <i>Username</i>; <i>Contraseña</i> o <i>Password</i>; <i>Clase</i>, <i>Grupo</i> o <i>Aula</i>. El orden de columnas no importa. Los alumnos sin clase se agrupan en "Sin clase".</span>
+        <span>Los encabezados son <b>flexibles</b>: acepta el CSV real de Macmillan (<i>Nombre (s)</i> + <i>Apellidos</i>, <i>Usuario</i>, <i>Password</i>, <i>Nivel</i>/<i>Grado</i>/<i>Grupo</i> — incluye el typo "Gardo" del archivo original) o el formato clásico (<i>Nombre Completo</i>, <i>Usuario</i>, <i>Contraseña</i>, <i>Clase</i>). El orden de columnas no importa y sobran columnas extra (correo, teléfono, etc. se ignoran). Los alumnos sin clase se agrupan en "Sin clase".</span>
       </div>
       <div class="ex-actions">
         <button class="btn-sm" id="tplBtn">⬇ Descargar plantilla de ejemplo (.xlsx)</button>
@@ -319,10 +322,15 @@
   function norm(s){
     return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"").trim();
   }
-  const NAME_KEYS  = ["nombrecompleto","nombre","name","fullname","alumno","estudiante"];
-  const USER_KEYS  = ["usuario","username","user","login"];
-  const PASS_KEYS  = ["contrasena","contrasenia","password","clave","pass"];
-  const CLASE_KEYS = ["clase","class","grupo","group","aula","salon","grado"];
+  const NAME_KEYS      = ["nombrecompleto","nombre","name","fullname","alumno","estudiante"];
+  const NOMBRES_KEYS   = ["nombres"]; // "Nombre (s)" normaliza a "nombres"
+  const APELLIDOS_KEYS = ["apellidos","apellido"];
+  const USER_KEYS      = ["usuario","username","user","login"];
+  const PASS_KEYS      = ["contrasena","contrasenia","password","clave","pass"];
+  const CLASE_KEYS     = ["clase","class","aula","salon"];
+  const NIVEL_KEYS     = ["nivel"];
+  const GRADO_KEYS     = ["grado","gardo"]; // "gardo" = typo real del CSV de altas de Macmillan
+  const GRUPO_KEYS     = ["grupo","group"];
   function matchKey(h, keys){ return keys.includes(norm(h)); }
 
   function readWorkbook(file){
@@ -348,12 +356,18 @@
     for(let i=0;i<Math.min(matrix.length,5);i++){
       const r=matrix[i]; const tmp={};
       r.forEach((cell,ci)=>{
-        if(matchKey(cell,NAME_KEYS)  && tmp.name===undefined)     tmp.name=ci;
-        if(matchKey(cell,USER_KEYS)  && tmp.username===undefined) tmp.username=ci;
-        if(matchKey(cell,PASS_KEYS)  && tmp.password===undefined) tmp.password=ci;
-        if(matchKey(cell,CLASE_KEYS) && tmp.clase===undefined)    tmp.clase=ci;
+        if(matchKey(cell,NAME_KEYS)      && tmp.name===undefined)      tmp.name=ci;
+        if(matchKey(cell,NOMBRES_KEYS)   && tmp.nombre===undefined)    tmp.nombre=ci;
+        if(matchKey(cell,APELLIDOS_KEYS) && tmp.apellidos===undefined) tmp.apellidos=ci;
+        if(matchKey(cell,USER_KEYS)      && tmp.username===undefined) tmp.username=ci;
+        if(matchKey(cell,PASS_KEYS)      && tmp.password===undefined) tmp.password=ci;
+        if(matchKey(cell,CLASE_KEYS)     && tmp.clase===undefined)    tmp.clase=ci;
+        if(matchKey(cell,NIVEL_KEYS)     && tmp.nivel===undefined)    tmp.nivel=ci;
+        if(matchKey(cell,GRADO_KEYS)     && tmp.grado===undefined)    tmp.grado=ci;
+        if(matchKey(cell,GRUPO_KEYS)     && tmp.grupo===undefined)    tmp.grupo=ci;
       });
-      if(tmp.username!==undefined||tmp.name!==undefined){ headerIdx=i; cols=tmp; break; }
+      const hasName = tmp.name!==undefined || tmp.nombre!==undefined || tmp.apellidos!==undefined;
+      if(tmp.username!==undefined || hasName){ headerIdx=i; cols=tmp; break; }
     }
     if(headerIdx===-1){
       setStatus("No encontré columnas válidas. Revisa que el Excel tenga encabezados.","err"); return;
@@ -361,10 +375,24 @@
     const out=[];
     for(let i=headerIdx+1;i<matrix.length;i++){
       const r=matrix[i]; if(!r) continue;
-      const name     = cols.name!==undefined     ? String(r[cols.name]||"").trim()     : "";
+      const name = cols.name!==undefined
+        ? String(r[cols.name]||"").trim()
+        : [
+            cols.nombre!==undefined     ? String(r[cols.nombre]||"").trim()     : "",
+            cols.apellidos!==undefined  ? String(r[cols.apellidos]||"").trim()  : "",
+          ].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
       const username = cols.username!==undefined ? String(r[cols.username]||"").trim() : "";
       const password = cols.password!==undefined ? String(r[cols.password]||"").trim() : "";
-      const clase    = cols.clase!==undefined    ? String(r[cols.clase]||"").trim()    : "";
+
+      let clase = cols.clase!==undefined ? String(r[cols.clase]||"").trim() : "";
+      if(!clase && (cols.grado!==undefined || cols.grupo!==undefined)){
+        const grado = cols.grado!==undefined ? String(r[cols.grado]||"").trim() : "";
+        const grupo = cols.grupo!==undefined ? String(r[cols.grupo]||"").trim() : "";
+        const nivel = cols.nivel!==undefined ? String(r[cols.nivel]||"").trim() : "";
+        const base  = (grado && grupo) ? (grado+"°"+grupo) : (grado||grupo);
+        clase = [base, nivel].filter(Boolean).join(" ").trim();
+      }
+
       if(!name&&!username&&!password) continue;
       out.push({name,username,password,clase});
     }
@@ -378,11 +406,13 @@
       .map(([k,n])=>`<span class="clase-pill">${esc(k)}<span class="cnt">${n}</span></span>`).join("");
     clasesSummary.classList.add("show");
 
+    const hasNombre  = cols.name!==undefined || cols.nombre!==undefined || cols.apellidos!==undefined;
+    const hasClase   = cols.clase!==undefined || cols.grado!==undefined || cols.grupo!==undefined;
     const missing=[];
-    if(cols.name===undefined)     missing.push("Nombre");
+    if(!hasNombre)                 missing.push("Nombre");
     if(cols.username===undefined) missing.push("Usuario");
     if(cols.password===undefined) missing.push("Contraseña");
-    if(cols.clase===undefined)    missing.push("Clase (todos irán a 'Sin clase')");
+    if(!hasClase)                  missing.push("Clase/Grado/Grupo (todos irán a 'Sin clase')");
 
     genBtn.disabled = false;
     countPill.style.display = "inline-block";
@@ -507,14 +537,14 @@
 
   function downloadTemplate(){
     const data=[
-      ["Nombre Completo","Usuario","Contraseña","Clase"],
-      ["JOSE ISMAEL FLORES AVILA","ismaelavila2026","Everest.2026","1°A Primaria"],
-      ["CELESTE MAY RODRIGUEZ","celestemay2026","Everest.2026","1°A Primaria"],
-      ["MARIANA CALDERON RUIZ","marianacalderon2026","Everest.2026","1°B Primaria"],
-      ["CATALINA BUSTAMANTE PALMA","bustamantecatalina2026","Everest.2026","1°C Primaria"],
+      ["Nombre (s)","Apellidos","Usuario","Password","Nivel","Grado","Grupo"],
+      ["Jose Ismael","Flores Avila","ismaelavila2026","Everest.2026","Primaria","1","A"],
+      ["Celeste May","Rodriguez","celestemay2026","Everest.2026","Primaria","1","A"],
+      ["Mariana","Calderon Ruiz","marianacalderon2026","Everest.2026","Primaria","1","B"],
+      ["Catalina","Bustamante Palma","bustamantecatalina2026","Everest.2026","Primaria","1","C"],
     ];
     const ws=XLSX.utils.aoa_to_sheet(data);
-    ws['!cols']=[{wch:30},{wch:26},{wch:16},{wch:16}];
+    ws['!cols']=[{wch:18},{wch:22},{wch:24},{wch:16},{wch:14},{wch:10},{wch:10}];
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,"Alumnos");
     XLSX.writeFile(wb,"plantilla_accesos_alumnos.xlsx");

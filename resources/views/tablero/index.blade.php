@@ -385,6 +385,7 @@
     // ── Viewer de comunicado ──
     const svgLink = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
     const svgPdf  = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>';
+    const svgDownload = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
     function verComunicado(btn) {
         document.getElementById('viewerTitulo').textContent = btn.dataset.titulo;
@@ -416,6 +417,14 @@
                 img.alt   = btn.dataset.archivoNombre;
                 img.style.cssText = 'width:100%;border-radius:12px;border:1px solid var(--border)';
                 archivoBox.appendChild(img);
+
+                const dl = document.createElement('a');
+                dl.href     = btn.dataset.archivoUrl;
+                dl.download = btn.dataset.archivoNombre || 'imagen';
+                dl.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:13px;font-weight:500;text-decoration:none;margin-top:10px';
+                dl.innerHTML = svgDownload; // SVG estático
+                dl.appendChild(document.createTextNode('Descargar imagen'));
+                archivoBox.appendChild(dl);
             } else {
                 const a = document.createElement('a');
                 a.href   = btn.dataset.archivoUrl;

@@ -86,6 +86,11 @@
     .archivo-desc {
         font-size: 13.5px; color: #4A4540;
         line-height: 1.6; white-space: pre-line; flex: 1;
+        overflow: hidden; text-overflow: ellipsis;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5;
+        line-clamp: 5;
+        overflow-wrap: break-word; word-break: break-word;
+        max-height: calc(1.6em * 5);
     }
     .archivo-adjunto-link {
         display: inline-flex; align-items: center; gap: 7px;
@@ -406,7 +411,7 @@
             <div class="archivo-titulo">{{ $archivo->titulo }}</div>
 
             @if($archivo->descripcion)
-                <p class="archivo-desc">{{ $archivo->descripcion }}</p>
+                <p class="archivo-desc" title="{{ $archivo->descripcion }}">{{ $archivo->descripcion }}</p>
             @endif
 
             @if($archivo->archivo)

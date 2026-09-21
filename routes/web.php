@@ -25,6 +25,7 @@ use App\Http\Controllers\AlumnosDocentesController;
 use App\Http\Controllers\AvanceColegiosController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\SeguimientoExternoController;
+use App\Http\Controllers\NoteController;
 
 
 Route::get('/', function () {
@@ -187,6 +188,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::put('tareas/{tarea}', [TareaController::class, 'update'])->name('tareas.update');
      Route::patch('tareas/{tarea}/colegios/{school}', [TareaController::class, 'updateStatus'])->name('tareas.update-status');
      Route::delete('tareas/{tarea}', [TareaController::class, 'destroy'])->name('tareas.destroy');
+
+     // Mis Notas SI — bloc de notas personal (todos los roles, cada quien ve solo lo suyo salvo admin)
+     Route::get('mis-notas',              [NoteController::class, 'index'])  ->name('notes.index');
+     Route::post('mis-notas',             [NoteController::class, 'store'])  ->name('notes.store');
+     Route::put('mis-notas/{note}',       [NoteController::class, 'update']) ->name('notes.update');
+     Route::delete('mis-notas/{note}',    [NoteController::class, 'destroy'])->name('notes.destroy');
 
      // Calendario SSA
      Route::get('ssa',                           [SsaController::class, 'index'])  ->name('ssa.index');

@@ -514,6 +514,9 @@
         </a>
         @endhasrole
         @endunlessrole
+        <a href="{{ route('notes.index') }}" class="nav-item {{ request()->routeIs('notes.*') ? 'active' : '' }}">
+            <span class="nav-icon">📝</span> Mis Notas SI
+        </a>
     </nav>
     <div class="sidebar-footer">
         <div class="user-info">

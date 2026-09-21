@@ -23,6 +23,13 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Mis Notas SI: bloc de notas personal — acceso completo (lectura y
+        // escritura) para todos los roles por igual; el propio controlador
+        // ya limita a cada quien a ver/editar solo sus notas.
+        if ($request->routeIs('notes.*')) {
+            return $next($request);
+        }
+
         // Herramientas SI: solo admin y consultor_digital
         if ($request->routeIs('herramientas.*') && !$user->hasRole('consultor_digital')) {
             return redirect()->route('dashboard')

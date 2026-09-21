@@ -14,21 +14,27 @@ use App\Models\Ticket;
 use App\Models\Visit;
 use App\Models\Level;
 use App\Models\SchoolServiceType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DashboardController extends Controller
 {
-    public function index()
+    // IDs de colegios asignados al usuario si es consultor_digital, null si ve todo
+    private function resolveSchoolIds()
     {
         $user = auth()->user();
-
-        // Para consultor_digital: obtener solo los IDs de sus colegios asignados
-        $schoolIds = null;
-        if ($user->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', $user->id)->first();
-            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')
-                ->pluck('school_id');
+        if (!$user->hasRole('consultor_digital')) {
+            return null;
         }
+        $consultant = Consultant::where('user_id', $user->id)->first();
+        return SchoolConsultant::where('consultant_id', $consultant?->id)
+            ->where('role', 'digital')
+            ->pluck('school_id');
+    }
+
+    public function index()
+    {
+        $schoolIds = $this->resolveSchoolIds();
 
         // Scope helper: filtra por schoolIds si aplica
         $schoolScope   = fn($q) => $schoolIds ? $q->whereIn('school_id', $schoolIds) : $q;
@@ -155,6 +161,29 @@ class DashboardController extends Controller
         });
 
         // Acciones de arranque: progreso agregado por acción, sumado en todos los colegios
+        ['acciones' => $accionesArranque, 'formatos' => $formatosCapacitaciones, 'detalle' => $accionesDetalle]
+            = $this->computeAccionesArranque($schoolIds);
+
+        return view('dashboard', compact(
+            'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
+            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
+            'visitasPendientes', 'totalVisitas',
+            'totalDirectores', 'totalAdminsMee',
+            'docentesELT', 'docentesECA',
+            'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
+            'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
+            'totalResurtidos',
+            'colegiosEntregados',
+            'colegiosPorNivel', 'colegiosPorServicio',
+            'colegiosDocentesRegistrados', 'libroProfesorDetalle',
+            'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle'
+        ));
+    }
+
+    // Progreso agregado por acción de arranque + detalle por colegio (con su consultor digital).
+    // Se comparte entre la vista del dashboard y la exportación a Excel.
+    private function computeAccionesArranque($schoolIds): array
+    {
         $procesoIconos = [
             'alta_bundles'            => '🔓',
             'capacitacion_admin'      => '🎓',
@@ -217,12 +246,18 @@ class DashboardController extends Controller
             ];
         });
 
-        // Detalle por colegio/nivel de cada acción de arranque (para el modal del ojito):
-        // separa colegios que ya la completaron de los que aún no.
+        // Detalle por colegio/nivel de cada acción de arranque (para el modal del ojito y el
+        // Excel): separa colegios que ya la completaron de los que aún no, con su consultor digital.
         $accionesDetalle = \DB::table('school_level_process')
             ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
             ->join('schools', 'schools.id', '=', 'school_level.school_id')
             ->join('levels', 'levels.id', '=', 'school_level.level_id')
+            ->leftJoin('school_consultants', function ($join) {
+                $join->on('school_consultants.school_id', '=', 'schools.id')
+                     ->where('school_consultants.role', '=', 'digital');
+            })
+            ->leftJoin('consultants', 'consultants.id', '=', 'school_consultants.consultant_id')
+            ->leftJoin('users', 'users.id', '=', 'consultants.user_id')
             ->when($schoolIds, fn($q) => $q->whereIn('schools.id', $schoolIds))
             ->select(
                 'school_level_process.process_id',
@@ -231,7 +266,8 @@ class DashboardController extends Controller
                 'schools.name as school_name',
                 'schools.state',
                 'schools.city',
-                'levels.name as level_name'
+                'levels.name as level_name',
+                'users.name as consultor_digital'
             )
             ->orderBy('schools.name')
             ->get()
@@ -241,19 +277,74 @@ class DashboardController extends Controller
                 'pending' => $rows->where('status', '!=', 'done')->values(),
             ]);
 
-        return view('dashboard', compact(
-            'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
-            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
-            'visitasPendientes', 'totalVisitas',
-            'totalDirectores', 'totalAdminsMee',
-            'docentesELT', 'docentesECA',
-            'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
-            'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
-            'totalResurtidos',
-            'colegiosEntregados',
-            'colegiosPorNivel', 'colegiosPorServicio',
-            'colegiosDocentesRegistrados', 'libroProfesorDetalle',
-            'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle'
-        ));
+        return [
+            'acciones' => $accionesArranque,
+            'formatos' => $formatosCapacitaciones,
+            'detalle'  => $accionesDetalle,
+        ];
+    }
+
+    public function exportAccionesArranqueExcel()
+    {
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
+        $schoolIds = $this->resolveSchoolIds();
+        ['acciones' => $accionesArranque, 'detalle' => $accionesDetalle] = $this->computeAccionesArranque($schoolIds);
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->removeSheetByIndex(0);
+
+        // Hoja 1: Resumen por acción
+        $ws1 = $spreadsheet->createSheet(0);
+        $ws1->setTitle('Resumen');
+        $ws1->fromArray(['Acción', 'Completados', 'Total', '% avance'], null, 'A1');
+        $ws1->getStyle('A1:D1')->getFont()->setBold(true);
+        $r = 2;
+        foreach ($accionesArranque as $accion) {
+            $ws1->fromArray([$accion['name'], $accion['done'], $accion['total'], $accion['pct'] . '%'], null, 'A' . $r);
+            $r++;
+        }
+        foreach (range('A', 'D') as $col) {
+            $ws1->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Hoja 2: Detalle por colegio, con el consultor digital responsable
+        $ws2 = $spreadsheet->createSheet(1);
+        $ws2->setTitle('Detalle');
+        $headers = ['Colegio', 'Estado/Ciudad', 'Nivel', 'Acción', 'Estado', 'Consultor Digital'];
+        $ws2->fromArray($headers, null, 'A1');
+        $ws2->getStyle('A1:F1')->getFont()->setBold(true);
+        $r = 2;
+        foreach ($accionesArranque as $accion) {
+            $detalle = $accionesDetalle[$accion['id']] ?? ['done' => collect(), 'pending' => collect()];
+            foreach (['done' => 'Completado', 'pending' => 'Pendiente'] as $key => $label) {
+                foreach ($detalle[$key] as $row) {
+                    $ws2->fromArray([
+                        $row->school_name,
+                        $row->state ?? $row->city ?? '—',
+                        $row->level_name,
+                        $accion['name'],
+                        $label,
+                        $row->consultor_digital ?? 'Sin asignar',
+                    ], null, 'A' . $r);
+                    $r++;
+                }
+            }
+        }
+        foreach (range('A', 'F') as $col) {
+            $ws2->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $filename = 'acciones-arranque-' . now()->format('Y-m-d') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'crm_');
+
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 }

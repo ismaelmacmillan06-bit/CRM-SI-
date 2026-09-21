@@ -561,13 +561,18 @@ function statRow(string $color, string $label, $value): string {
                         color:#16a34a; margin:0 0 8px">✅ Completado ({{ $detalle['done']->count() }})</div>
             @forelse($detalle['done'] as $row)
             <a href="{{ route('schools.show', $row->school_id) }}"
-               style="display:flex; align-items:center; gap:10px; padding:8px 10px;
+               style="display:flex; flex-direction:column; gap:2px; padding:8px 10px;
                       border-radius:8px; text-decoration:none; border-bottom:1px solid var(--border)"
                onmouseover="this.style.background='#16a34a18'" onmouseout="this.style.background='transparent'">
-                <span style="width:8px; height:8px; border-radius:50%; background:#16a34a; flex-shrink:0"></span>
-                <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
-                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
-                             background:#dcfce7; color:#16a34a">{{ $row->level_name }}</span>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#16a34a; flex-shrink:0"></span>
+                    <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
+                    <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
+                                 background:#dcfce7; color:#16a34a">{{ $row->level_name }}</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); padding-left:18px">
+                    👤 {{ $row->consultor_digital ?? 'Sin consultor asignado' }}
+                </div>
             </a>
             @empty
             <div style="font-size:12.5px; color:var(--text-muted); padding:6px 0 14px">Ninguno todavía.</div>
@@ -577,13 +582,18 @@ function statRow(string $color, string $label, $value): string {
                         color:#dc2626; margin:18px 0 8px">⏳ Pendiente ({{ $detalle['pending']->count() }})</div>
             @forelse($detalle['pending'] as $row)
             <a href="{{ route('schools.show', $row->school_id) }}"
-               style="display:flex; align-items:center; gap:10px; padding:8px 10px;
+               style="display:flex; flex-direction:column; gap:2px; padding:8px 10px;
                       border-radius:8px; text-decoration:none; border-bottom:1px solid var(--border)"
                onmouseover="this.style.background='#dc262618'" onmouseout="this.style.background='transparent'">
-                <span style="width:8px; height:8px; border-radius:50%; background:#dc2626; flex-shrink:0"></span>
-                <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
-                <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
-                             background:#fee2e2; color:#dc2626">{{ $row->level_name }}</span>
+                <div style="display:flex; align-items:center; gap:10px">
+                    <span style="width:8px; height:8px; border-radius:50%; background:#dc2626; flex-shrink:0"></span>
+                    <span style="font-size:13px; font-weight:600; color:var(--text); flex:1">{{ $row->school_name }}</span>
+                    <span style="font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px;
+                                 background:#fee2e2; color:#dc2626">{{ $row->level_name }}</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); padding-left:18px">
+                    👤 {{ $row->consultor_digital ?? 'Sin consultor asignado' }}
+                </div>
             </a>
             @empty
             <div style="font-size:12.5px; color:var(--text-muted); padding:6px 0">¡Todos completos! 🎉</div>
@@ -711,12 +721,12 @@ document.addEventListener('click', function(e) {
 
 </div>
 
-{{-- ── Acciones de arranque + Formatos y capacitaciones (una alado de la otra) ── --}}
+{{-- ── Acciones de arranque + Formatos y capacitaciones (un solo apartado, una alado de la otra) ── --}}
 @if($accionesArranque->isNotEmpty() || $formatosCapacitaciones->isNotEmpty())
 <style>
-    .acc-card { background:var(--surface); border:1px solid var(--border); border-radius:14px;
-                overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); height:100%; }
-    .acc-head { padding:18px 22px 14px; }
+    .acc-card { background:var(--surface2); border:1px solid var(--border); border-radius:12px;
+                overflow:hidden; height:100%; }
+    .acc-head { padding:16px 20px 12px; }
     .acc-head-title { font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:700; color:var(--text); }
     .acc-head-sub { font-size:12.5px; color:var(--text-muted); margin-top:2px; }
     .acc-colhead { padding:9px 22px; font-size:11px; font-weight:700; text-transform:uppercase;
@@ -743,7 +753,29 @@ document.addEventListener('click', function(e) {
         .acc-bar-wrap { width:auto; max-width:none; flex:1; }
     }
 </style>
-<div class="acc-fmt-grid" style="margin-bottom:24px">
+<div style="background:var(--surface); border:1px solid var(--border); border-radius:14px;
+            padding:20px 22px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
+
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+                flex-wrap:wrap; margin-bottom:16px">
+        <div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:700; color:var(--text)">
+                🚀 Progreso de arranque
+            </div>
+            <div style="font-size:12.5px; color:var(--text-muted); margin-top:2px">
+                Acciones de arranque y formatos/capacitaciones, sumado en todos los colegios
+            </div>
+        </div>
+        <a href="{{ route('dashboard.acciones-arranque.excel') }}"
+           style="display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#16a34a;
+                  color:#fff; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none;
+                  flex-shrink:0; transition:filter .15s"
+           onmouseover="this.style.filter='brightness(1.08)'" onmouseout="this.style.filter='none'">
+            📥 Descargar Excel
+        </a>
+    </div>
+
+    <div class="acc-fmt-grid">
 
     @if($accionesArranque->isNotEmpty())
     <div class="acc-card">
@@ -831,6 +863,7 @@ document.addEventListener('click', function(e) {
     </div>
     @endif
 
+    </div>
 </div>
 @endif
 

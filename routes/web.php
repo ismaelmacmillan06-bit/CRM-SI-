@@ -36,6 +36,10 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
      ->middleware(['auth', 'verified', 'verificar.acceso'])
      ->name('dashboard');
 
+Route::get('/dashboard/acciones-arranque/excel', [DashboardController::class, 'exportAccionesArranqueExcel'])
+     ->middleware(['auth', 'verified', 'verificar.acceso'])
+     ->name('dashboard.acciones-arranque.excel');
+
 
 Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -263,7 +263,7 @@
 (function(){
   "use strict";
   var PLATFORM_URL  = "https://si.macmillaneducacion.com/";
-  var SERVICIOS_URL = "https://si.macmillaneducacion.com/";
+  var SERVICIOS_URL = "https://mee.macmillaneducation.com/?lang=es";
 
   var students = [];
   var pending = null;
@@ -582,9 +582,9 @@
     if(SERVICIOS_URL){
       h+='<a class="clink clink-sv-active" href="'+SERVICIOS_URL+'" target="_blank" rel="noopener">'+
          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'+
-         'Servicios Alumnos ↗</a>';
+         'Entrar a MEE ↗</a>';
     }else{
-      h+='<div class="clink clink-sv">Servicios Alumnos <span>Próximamente</span></div>';
+      h+='<div class="clink clink-sv">Entrar a MEE <span>Próximamente</span></div>';
     }
     if(CONSULTOR_NAME && CONSULTOR_PHONE){
       var waMsg=encodeURIComponent("Hola "+CONSULTOR_NAME+" me podrias ayudar por favor a restaurar la contraseña de este usuario "+esc(d.username||d.name)+".");

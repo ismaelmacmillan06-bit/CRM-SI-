@@ -154,7 +154,7 @@
         </div>
       </div>
       <p class="small" style="margin-top:14px;color:var(--muted);font-size:12.5px;">
-        Encabezados flexibles: <i>Nombre/Nombre Completo</i>, <i>Usuario/Username</i>, <i>Contraseña/Password</i>. Si el Excel trae una columna de <i>Clase/Grado/Grupo</i>, se agrupa solo.
+        Acepta directamente el CSV real de altas de Macmillan (<i>Nombre (s)</i> + <i>Apellidos</i>, <i>Usuario</i>, <i>Password</i>, <i>Nivel</i>/<i>Grado</i>/<i>Grupo</i>) o el formato clásico (<i>Nombre/Nombre Completo</i>, <i>Usuario/Username</i>, <i>Contraseña/Password</i>, <i>Clase</i>). Si detecta columnas de clase/nivel/grado/grupo, se agrupa solo.
       </p>
     </div>
 
@@ -301,9 +301,14 @@
 
   function norm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"").trim(); }
   var NAME_KEYS=["nombrecompleto","nombre","name","fullname","alumno","estudiante"];
+  var NOMBRES_KEYS=["nombres"]; // "Nombre (s)" normaliza a "nombres"
+  var APELLIDOS_KEYS=["apellidos","apellido"];
   var USER_KEYS=["usuario","username","user","login"];
   var PASS_KEYS=["contrasena","contrasenia","password","clave","pass"];
-  var CLASS_KEYS=["clase","grupo","grado","nivel","salon","seccion","aula","class","grade","group","gradogrupo"];
+  var CLASS_KEYS=["clase","salon","seccion","aula","class","grade","group","gradogrupo"];
+  var NIVEL_KEYS=["nivel"];
+  var GRADO_KEYS=["grado","gardo"]; // "gardo" = typo real del CSV de altas de Macmillan
+  var GRUPO_KEYS=["grupo"];
   function matchKey(h,keys){ return keys.indexOf(norm(h))>=0; }
   function esc(s){ return String(s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];}); }
   function setStatus(msg,kind){ status.textContent=msg; status.className="status"+(kind?(" "+kind):""); }
@@ -330,25 +335,46 @@
       var r=matrix[i], tmp={};
       r.forEach(function(cell,ci){
         if(matchKey(cell,NAME_KEYS)&&tmp.name===undefined) tmp.name=ci;
+        if(matchKey(cell,NOMBRES_KEYS)&&tmp.nombre===undefined) tmp.nombre=ci;
+        if(matchKey(cell,APELLIDOS_KEYS)&&tmp.apellidos===undefined) tmp.apellidos=ci;
         if(matchKey(cell,USER_KEYS)&&tmp.username===undefined) tmp.username=ci;
         if(matchKey(cell,PASS_KEYS)&&tmp.password===undefined) tmp.password=ci;
         if(matchKey(cell,CLASS_KEYS)&&tmp.group===undefined) tmp.group=ci;
+        if(matchKey(cell,NIVEL_KEYS)&&tmp.nivel===undefined) tmp.nivel=ci;
+        if(matchKey(cell,GRADO_KEYS)&&tmp.grado===undefined) tmp.grado=ci;
+        if(matchKey(cell,GRUPO_KEYS)&&tmp.grupo===undefined) tmp.grupo=ci;
       });
-      if(tmp.username!==undefined||tmp.name!==undefined){ headerIdx=i; cols=tmp; break; }
+      var hasName = tmp.name!==undefined || tmp.nombre!==undefined || tmp.apellidos!==undefined;
+      if(tmp.username!==undefined||hasName){ headerIdx=i; cols=tmp; break; }
     }
     if(headerIdx===-1){ setStatus("No encontré las columnas. Necesito al menos Nombre y Usuario.","err"); return; }
     var out=[];
     for(var j=headerIdx+1;j<matrix.length;j++){
       var row=matrix[j]; if(!row) continue;
-      var name=cols.name!==undefined?String(row[cols.name]||"").trim():"";
+      var name = cols.name!==undefined
+        ? String(row[cols.name]||"").trim()
+        : [
+            cols.nombre!==undefined?String(row[cols.nombre]||"").trim():"",
+            cols.apellidos!==undefined?String(row[cols.apellidos]||"").trim():"",
+          ].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
       var username=cols.username!==undefined?String(row[cols.username]||"").trim():"";
       var password=cols.password!==undefined?String(row[cols.password]||"").trim():"";
+
       var group=cols.group!==undefined?String(row[cols.group]||"").trim():"";
+      if(!group && (cols.grado!==undefined || cols.grupo!==undefined)){
+        var grado=cols.grado!==undefined?String(row[cols.grado]||"").trim():"";
+        var grupo=cols.grupo!==undefined?String(row[cols.grupo]||"").trim():"";
+        var nivel=cols.nivel!==undefined?String(row[cols.nivel]||"").trim():"";
+        var base=(grado&&grupo)?(grado+"°"+grupo):(grado||grupo);
+        group=[base,nivel].filter(Boolean).join(" ").trim();
+      }
+
       if(!name&&!username&&!password) continue;
       out.push({name:name,username:username,password:password,group:group});
     }
     if(!out.length){ setStatus("No encontré filas de alumnos con datos.","err"); return; }
-    var hasClass = cols.group!==undefined && out.some(function(o){return o.group;});
+    var hasGroupSource = cols.group!==undefined || cols.grado!==undefined || cols.grupo!==undefined;
+    var hasClass = hasGroupSource && out.some(function(o){return o.group;});
     pending={ fileName:fname, rows:out, hasClass:hasClass };
     showPending();
   }

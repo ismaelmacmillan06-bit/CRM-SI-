@@ -78,8 +78,8 @@
             'Licenciatura'  => '#0d1117',
         ];
         $estadoColors = [
-            'activo'    => ['bg' => '#f0fdf4', 'text' => '#16a34a', 'bar' => '#22c55e'],
-            'prospecto' => ['bg' => '#fffbeb', 'text' => '#b45309', 'bar' => '#f59e0b'],
+            'activo'    => ['bg' => '#f0fdf4', 'text' => '#16a34a'],
+            'prospecto' => ['bg' => '#fffbeb', 'text' => '#b45309'],
         ];
     @endphp
     @forelse($schools as $school)
@@ -94,7 +94,7 @@
         $pct = $totalProcesos > 0 ? round(($totalDone / $totalProcesos) * 100) : 0;
 
         $pctColor = $pct >= 100 ? '#10b981' : ($pct >= 70 ? '#3b82f6' : ($pct >= 40 ? '#f59e0b' : '#ef4444'));
-        $estado   = $estadoColors[$school->status] ?? ['bg' => '#f8fafc', 'text' => '#64748b', 'bar' => '#94a3b8'];
+        $estado   = $estadoColors[$school->status] ?? ['bg' => '#f8fafc', 'text' => '#64748b'];
         $consultorDigital = $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name;
     @endphp
     <div class="school-card avance-card card" data-nombre="{{ strtolower($school->name) }}"
@@ -103,8 +103,6 @@
          data-series="{{ $schoolSeries }}"
          data-pct="{{ $pct }}"
          style="display:flex; flex-direction:column; min-height:280px; overflow:hidden; border-radius:14px;">
-
-        <div style="height:4px; background:{{ $estado['bar'] }}"></div>
 
         <div style="padding:18px 20px 14px">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px">

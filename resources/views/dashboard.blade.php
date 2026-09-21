@@ -606,33 +606,41 @@ document.addEventListener('click', function(e) {
 
 </div>
 
-{{-- ── Acciones de arranque (agregado global por acción, todos los colegios) ── --}}
-@if($accionesArranque->isNotEmpty())
+{{-- ── Acciones de arranque + Formatos y capacitaciones (una alado de la otra) ── --}}
+@if($accionesArranque->isNotEmpty() || $formatosCapacitaciones->isNotEmpty())
 <style>
     .acc-card { background:var(--surface); border:1px solid var(--border); border-radius:14px;
-                overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+                overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); height:100%; }
     .acc-head { padding:18px 22px 14px; }
     .acc-head-title { font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:700; color:var(--text); }
     .acc-head-sub { font-size:12.5px; color:var(--text-muted); margin-top:2px; }
     .acc-colhead { padding:9px 22px; font-size:11px; font-weight:700; text-transform:uppercase;
                    letter-spacing:.5px; color:var(--text-muted); background:var(--surface2);
                    border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
-    .acc-row { display:flex; align-items:center; gap:14px; padding:13px 22px; border-bottom:1px solid var(--border); }
+    .acc-row { display:flex; align-items:center; gap:12px; padding:10px 22px; border-bottom:1px solid var(--border); }
     .acc-row:last-child { border-bottom:none; }
-    .acc-icon { font-size:16px; flex-shrink:0; width:20px; text-align:center; }
-    .acc-name { flex:1; font-size:13.5px; font-weight:600; color:var(--text); min-width:0; }
-    .acc-frac { font-size:12.5px; color:var(--text-muted); font-variant-numeric:tabular-nums;
-                width:76px; flex-shrink:0; }
-    .acc-bar-wrap { flex:1; max-width:260px; height:8px; border-radius:99px; background:var(--border);
-                    overflow:hidden; flex-shrink:1; }
-    .acc-pct { font-size:13px; font-weight:700; width:42px; text-align:right; flex-shrink:0;
+    .acc-icon { font-size:15px; flex-shrink:0; width:18px; text-align:center; }
+    .acc-name { flex:1; font-size:13px; font-weight:600; color:var(--text); min-width:0; }
+    .acc-frac { font-size:12px; color:var(--text-muted); font-variant-numeric:tabular-nums;
+                width:60px; flex-shrink:0; text-align:right; }
+    .acc-bar-wrap { width:100px; max-width:30%; height:7px; border-radius:99px; background:var(--border);
+                    overflow:hidden; flex-shrink:0; }
+    .acc-pct { font-size:12.5px; font-weight:700; width:38px; text-align:right; flex-shrink:0;
                font-variant-numeric:tabular-nums; }
-    @media (max-width: 720px) {
+    .acc-fmt-grid { display:grid; grid-template-columns:1.7fr 1fr; gap:16px; align-items:start; }
+    .acc-fmt-card { background:var(--surface); border-radius:12px; padding:14px 16px; display:flex;
+                    align-items:center; gap:12px; }
+    .acc-fmt-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center;
+                    justify-content:center; font-size:16px; flex-shrink:0; }
+    @media (max-width: 900px) {
+        .acc-fmt-grid { grid-template-columns:1fr; }
         .acc-frac { display:none; }
-        .acc-bar-wrap { max-width:none; }
+        .acc-bar-wrap { width:auto; max-width:none; flex:1; }
     }
 </style>
-<div style="margin-bottom:24px">
+<div class="acc-fmt-grid" style="margin-bottom:24px">
+
+    @if($accionesArranque->isNotEmpty())
     <div class="acc-card">
         <div class="acc-head">
             <div class="acc-head-title">🚀 Acciones de arranque</div>
@@ -652,41 +660,44 @@ document.addEventListener('click', function(e) {
         </div>
         @endforeach
     </div>
-</div>
-@endif
+    @endif
 
-{{-- ── Formatos y capacitaciones (cards de acciones clave) ── --}}
-@if($formatosCapacitaciones->isNotEmpty())
-<div style="margin-bottom:24px">
-    <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600;
-                color:var(--text); margin-bottom:14px">
-        📋 Formatos y capacitaciones
-    </div>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px">
-        @foreach($formatosCapacitaciones as $card)
-        <div style="background:{{ $card['color'] }}12; border:1px solid {{ $card['color'] }}30;
-                    border-left:4px solid {{ $card['color'] }}; border-radius:14px; padding:20px">
-            <div style="width:38px; height:38px; border-radius:10px; background:{{ $card['color'] }}22;
-                        display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:12px">
-                {{ $card['icon'] }}
-            </div>
-            <div style="font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:4px">
-                {{ $card['label'] }}
-            </div>
-            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
-                        color:{{ $card['color'] }}; margin-bottom:10px; line-height:1">
-                {{ $card['pct'] }}%
-            </div>
-            <div style="height:6px; border-radius:99px; background:var(--border); overflow:hidden; margin-bottom:8px">
-                <div style="width:{{ $card['pct'] }}%; height:100%; border-radius:99px;
-                            background:{{ $card['color'] }}; transition:width .4s ease"></div>
-            </div>
-            <div style="font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums">
-                {{ number_format($card['done']) }} / {{ number_format($card['total']) }}
-            </div>
+    @if($formatosCapacitaciones->isNotEmpty())
+    <div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px; font-weight:600;
+                    color:var(--text); margin-bottom:12px">
+            📋 Formatos y capacitaciones
         </div>
-        @endforeach
+        <div style="display:flex; flex-direction:column; gap:12px">
+            @foreach($formatosCapacitaciones as $card)
+            <div class="acc-fmt-card" style="border:1px solid {{ $card['color'] }}30;
+                        border-left:4px solid {{ $card['color'] }}">
+                <div class="acc-fmt-icon" style="background:{{ $card['color'] }}22">
+                    {{ $card['icon'] }}
+                </div>
+                <div style="flex:1; min-width:0">
+                    <div style="font-size:11.5px; font-weight:600; color:var(--text-muted); margin-bottom:2px;
+                                white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                        {{ $card['label'] }}
+                    </div>
+                    <div style="height:6px; border-radius:99px; background:var(--border); overflow:hidden; margin-bottom:4px">
+                        <div style="width:{{ $card['pct'] }}%; height:100%; border-radius:99px;
+                                    background:{{ $card['color'] }}; transition:width .4s ease"></div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums">
+                        {{ number_format($card['done']) }} / {{ number_format($card['total']) }}
+                    </div>
+                </div>
+                <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:21px; font-weight:800;
+                            color:{{ $card['color'] }}; flex-shrink:0">
+                    {{ $card['pct'] }}%
+                </div>
+            </div>
+            @endforeach
+        </div>
     </div>
+    @endif
+
 </div>
 @endif
 

@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Spline+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" integrity="sha512-MpDFIChbcXl2QgipQrt1VcPHMldRILetapBl5MPCA9Y8r7qvlwx1/Mc9hNTzY+kS5kX6PdoDq41ws1HiVNLdZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js" integrity="sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
   :root{
     --paper:#f5ece0; --paper-2:#efe3d2;
@@ -309,6 +309,7 @@
 
   let rows = [];
   let logoDataURL = null;
+  let logoImgInfo = null; // {w,h} en px naturales, para dibujar el logo con su proporción real en el PDF
 
   const $ = (id) => document.getElementById(id);
   const drop = $("drop"), fileInput = $("fileInput"), fileChip = $("fileChip"),
@@ -554,28 +555,179 @@
       .replace(/[^a-z0-9]+/g,"-").replace(/(^-+|-+$)/g,"") || "archivo";
   }
 
-  // Convierte a PDF (blob) la sección de UNA clase que YA está visible en la
-  // vista previa (#cs-<idx>, creada por build()). Capturar el nodo real y
-  // visible es mucho más confiable con html2canvas que clonarlo fuera de
-  // pantalla (esa técnica suele producir capturas en blanco).
-  async function classToPdfBlob(idx){
-    const target = document.getElementById("cs-"+idx);
-    if(!target) throw new Error("No se encontró la sección de la clase #"+idx);
+  // ── Generación de PDF vectorial (sin html2canvas) ──────────────────────
+  // Se dibuja cada tarjeta directamente con jsPDF (rectángulos + texto),
+  // igual que la versión en pantalla pero sin rasterizar nada: es liviano,
+  // rápido y el texto queda nítido/seleccionable en el PDF final.
+  function hexToRgb(hex){ const v=parseInt(hex.replace("#",""),16); return [(v>>16)&255,(v>>8)&255,v&255]; }
+  const PDF_BRICK      = hexToRgb("#b23a2c");
+  const PDF_BRICK_SOFT = hexToRgb("#f6e3dc");
+  const PDF_INK        = hexToRgb("#2b211b");
+  const PDF_MUTED      = hexToRgb("#8c7c69");
+  const PDF_LINE2      = hexToRgb("#dac9b1");
 
-    const wasHidden = target.classList.contains("print-hidden");
-    target.classList.remove("print-hidden");
-    try{
-      const opts = {
-        margin: [10,10,10,10],
-        image: { type:"jpeg", quality:0.98 },
-        html2canvas: { scale:2, useCORS:true, backgroundColor:"#ffffff" },
-        jsPDF: { unit:"mm", format:"letter", orientation:"portrait" },
-        pagebreak: { mode:["css","legacy"], avoid:[".card",".sheet-title",".sheet-sub",".section-label"] },
-      };
-      return await html2pdf().set(opts).from(target).outputPdf("blob");
-    } finally {
-      if(wasHidden) target.classList.add("print-hidden");
+  const PDF_LAYOUT = { pageW:215.9, pageH:279.4, margin:14, colGap:6, rowGap:6, pad:4,
+    hHeader:7, hName:6, hClase:4.5, hField:11, hBrand:9, gapSmall:1.5 };
+  PDF_LAYOUT.cardW = (PDF_LAYOUT.pageW - PDF_LAYOUT.margin*2 - PDF_LAYOUT.colGap) / 2;
+  function pdfCardHeight(fieldRows){
+    const L = PDF_LAYOUT;
+    return L.pad + L.hHeader + L.gapSmall + L.hName + L.gapSmall + L.hClase + L.gapSmall
+         + L.hField*fieldRows + L.gapSmall + L.hBrand + L.pad;
+  }
+  function fitPdfText(doc, text, maxWidth){
+    let t = String(text||"—");
+    if(doc.getTextWidth(t) <= maxWidth) return t;
+    while(t.length>1 && doc.getTextWidth(t+"…") > maxWidth){ t = t.slice(0,-1); }
+    return t+"…";
+  }
+  function getLogoInfoForPdf(){
+    if(!logoDataURL || !logoImgInfo) return null;
+    const m = logoDataURL.match(/^data:image\/(\w+);/);
+    let fmt = m ? m[1].toUpperCase() : "PNG";
+    if(fmt==="JPG") fmt="JPEG";
+    if(!["PNG","JPEG","WEBP"].includes(fmt)) fmt="PNG";
+    return { dataURL:logoDataURL, format:fmt, w:logoImgInfo.w, h:logoImgInfo.h };
+  }
+
+  function drawPdfCard(doc, x, y, w, h, opts){
+    const L = PDF_LAYOUT;
+    doc.setLineDashPattern([1,1], 0);
+    doc.setDrawColor(...PDF_LINE2); doc.setLineWidth(0.25);
+    doc.roundedRect(x, y, w, h, 2, 2, "D");
+    doc.setLineDashPattern([], 0);
+
+    const innerX = x + L.pad, innerW = w - L.pad*2;
+    let cy = y + L.pad;
+
+    // Tag (esquina superior derecha)
+    doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+    const tagH = 5, tagW = doc.getTextWidth(opts.tag) + 5;
+    doc.setFillColor(...PDF_BRICK);
+    doc.roundedRect(x+w-L.pad-tagW, cy, tagW, tagH, tagH/2, tagH/2, "F");
+    doc.setTextColor(255,255,255);
+    doc.text(opts.tag, x+w-L.pad-tagW/2, cy+tagH/2+0.9, {align:"center"});
+
+    // Logo / marca (izquierda)
+    if(opts.logoInfo){
+      const maxLogoH = tagH+1.5, maxLogoW = innerW - tagW - 4;
+      const ratio = opts.logoInfo.w / opts.logoInfo.h;
+      let dh = maxLogoH, dw = dh*ratio;
+      if(dw > maxLogoW){ dw = maxLogoW; dh = dw/ratio; }
+      try{ doc.addImage(opts.logoInfo.dataURL, opts.logoInfo.format, innerX, cy+(tagH-dh)/2, dw, dh); }catch(e){ /* logo invalido, se omite */ }
+    } else {
+      doc.setFont("helvetica","bold"); doc.setFontSize(9);
+      doc.setTextColor(...PDF_INK);
+      doc.text("Macmillan", innerX, cy+3.6);
+      const w1 = doc.getTextWidth("Macmillan ");
+      doc.setTextColor(...PDF_BRICK);
+      doc.text("Castillo SI", innerX+w1, cy+3.6);
     }
+    cy += L.hHeader;
+
+    doc.setDrawColor(240,232,218); doc.setLineWidth(0.2);
+    doc.line(innerX, cy, x+w-L.pad, cy);
+    cy += L.gapSmall;
+
+    // Nombre
+    doc.setFont("helvetica","bold"); doc.setFontSize(11.5);
+    doc.setTextColor(...PDF_INK);
+    doc.text(fitPdfText(doc, opts.name, innerW), innerX, cy+L.hName*0.62);
+    cy += L.hName + L.gapSmall;
+
+    // Clase
+    if(opts.clase){
+      doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+      doc.setTextColor(...PDF_MUTED);
+      doc.text(fitPdfText(doc, String(opts.clase).toUpperCase(), innerW), innerX, cy+3);
+    }
+    cy += L.hClase + L.gapSmall;
+
+    // Caja de credenciales
+    const credsH = L.hField * opts.fields.length;
+    doc.setDrawColor(...PDF_LINE2); doc.setLineWidth(0.25);
+    doc.roundedRect(innerX, cy, innerW, credsH, 1.5, 1.5, "D");
+    opts.fields.forEach((f,i)=>{
+      const fy = cy + L.hField*i;
+      if(i>0){ doc.setDrawColor(...PDF_LINE2); doc.setLineWidth(0.2); doc.line(innerX, fy, innerX+innerW, fy); }
+      doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+      doc.setTextColor(...PDF_MUTED);
+      doc.text(f.label.toUpperCase(), innerX+2.5, fy+3.6);
+      doc.setFont("courier","bold"); doc.setFontSize(10.5);
+      doc.setTextColor(...PDF_INK);
+      doc.text(fitPdfText(doc, f.value, innerW-5), innerX+2.5, fy+8.3);
+    });
+    cy += credsH + L.gapSmall;
+
+    // Banda de marca
+    doc.setFillColor(...PDF_BRICK_SOFT);
+    doc.roundedRect(innerX, cy, innerW, L.hBrand, 1.5, 1.5, "F");
+    doc.setFont("helvetica","bold"); doc.setFontSize(7);
+    doc.setTextColor(...PDF_MUTED);
+    doc.text("Plataforma:", innerX+2.5, cy+3.6);
+    doc.setFontSize(8);
+    doc.setTextColor(...PDF_BRICK);
+    doc.text(fitPdfText(doc, "https://si.macmillaneducacion.com/", innerW-5), innerX+2.5, cy+7.2);
+  }
+
+  // Arma el PDF completo (todas las páginas necesarias) de UNA clase.
+  function buildClassPdfBlob(g, split, logoInfo){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:"mm", format:"letter", orientation:"portrait" });
+    const L = PDF_LAYOUT;
+    const state = { col:0, row:0, top:0, started:false };
+
+    function newPage(title, isFirstOfDoc, sectionLabel){
+      if(state.started) doc.addPage();
+      state.started = true;
+      state.col = 0; state.row = 0;
+      let y = L.margin;
+      if(isFirstOfDoc){
+        doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(...PDF_INK);
+        doc.text(title, L.pageW/2, y+6, {align:"center"});
+        doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(...PDF_MUTED);
+        const sub = (lastBuild && lastBuild.school ? lastBuild.school+" · " : "") + "Datos de acceso · recorta y entrega";
+        doc.text(sub, L.pageW/2, y+11, {align:"center"});
+        y += 17;
+      } else {
+        doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...PDF_MUTED);
+        doc.text(title, L.margin, y+3);
+        y += 8;
+      }
+      if(sectionLabel){
+        doc.setFont("helvetica","bold"); doc.setFontSize(8); doc.setTextColor(...PDF_MUTED);
+        doc.text(sectionLabel, L.margin, y+3);
+        y += 6;
+      }
+      state.top = y;
+    }
+
+    function place(cardOpts, cardH){
+      const rowStep = cardH + L.rowGap;
+      if(state.col === 2){ state.col = 0; state.row++; }
+      let x = L.margin + state.col*(L.cardW+L.colGap);
+      let y = state.top + state.row*rowStep;
+      if(y + cardH > L.pageH - L.margin){
+        newPage(g.clase, false, null);
+        x = L.margin; y = state.top;
+      }
+      drawPdfCard(doc, x, y, L.cardW, cardH, cardOpts);
+      state.col++;
+    }
+
+    if(split){
+      const h1 = pdfCardHeight(1);
+      newPage(g.clase, true, "USUARIOS");
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"USUARIO", logoInfo, fields:[{label:"Usuario",value:p.username}] }, h1));
+
+      newPage(g.clase, false, "CONTRASEÑAS");
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"CONTRASEÑA", logoInfo, fields:[{label:"Contraseña",value:p.password}] }, h1));
+    } else {
+      const h2 = pdfCardHeight(2);
+      newPage(g.clase, true, null);
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"ACCESO", logoInfo, fields:[{label:"Usuario",value:p.username},{label:"Contraseña",value:p.password}] }, h2));
+    }
+
+    return doc.output("blob");
   }
 
   async function downloadZip(){
@@ -587,15 +739,17 @@
       const zip = new JSZip();
       const used = new Set();
       const total = lastBuild.groups.length;
+      const logoInfo = getLogoInfoForPdf();
 
       for(let idx=0; idx<total; idx++){
         const g = lastBuild.groups[idx];
         setStatus(`Generando PDF ${idx+1}/${total}: ${g.clase}…`,"");
+        await new Promise(r=>setTimeout(r,0)); // deja pintar el status antes del trabajo
         const base = slugifyFile(g.clase);
         let name = base+".pdf", n=2;
         while(used.has(name)){ name = base+"-"+n+".pdf"; n++; }
         used.add(name);
-        const pdfBlob = await classToPdfBlob(idx);
+        const pdfBlob = buildClassPdfBlob(g, lastBuild.split, logoInfo);
         zip.file(name, pdfBlob);
       }
 
@@ -654,11 +808,17 @@
   logoInput.addEventListener("change",e=>{
     const f=e.target.files[0]; if(!f) return;
     const r=new FileReader();
-    r.onload=()=>{ logoDataURL=r.result; logoPrev.style.backgroundImage=`url(${logoDataURL})`; logoPrev.textContent=""; logoClear.style.display="block"; };
+    r.onload=()=>{
+      logoDataURL=r.result; logoPrev.style.backgroundImage=`url(${logoDataURL})`; logoPrev.textContent=""; logoClear.style.display="block";
+      const img=new Image();
+      img.onload=()=>{ logoImgInfo={w:img.naturalWidth,h:img.naturalHeight}; };
+      img.onerror=()=>{ logoImgInfo=null; };
+      img.src=logoDataURL;
+    };
     r.readAsDataURL(f);
   });
   logoClear.addEventListener("click",()=>{
-    logoDataURL=null; logoPrev.style.backgroundImage=""; logoPrev.textContent="Sin logo"; logoClear.style.display="none"; logoInput.value="";
+    logoDataURL=null; logoImgInfo=null; logoPrev.style.backgroundImage=""; logoPrev.textContent="Sin logo"; logoClear.style.display="none"; logoInput.value="";
   });
 
   genBtn.addEventListener("click",build);

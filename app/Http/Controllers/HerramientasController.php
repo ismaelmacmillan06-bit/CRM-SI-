@@ -51,6 +51,16 @@ class HerramientasController extends Controller
         return $this->servirHerramienta('eliminacion-bundles.html');
     }
 
+    public function reporteAccesos()
+    {
+        return $this->servirHerramienta('reporte-accesos.html');
+    }
+
+    public function vinculacionSso()
+    {
+        return $this->servirHerramienta('vinculacion-sso.html');
+    }
+
     public function templateBienvenida()
     {
         return $this->servirHerramienta('template-bienvenida.html');

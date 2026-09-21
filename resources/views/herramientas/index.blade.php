@@ -230,6 +230,34 @@
     </div>
 
     <div class="herramienta-card">
+        <div class="herramienta-icono">📊</div>
+        <div class="herramienta-titulo">Reporte de Accesos</div>
+        <span class="herramienta-tag">📥 Requiere Excel · Genera .html</span>
+        <p class="herramienta-desc">
+            Sube el Excel que entrega el script de accesos (consola) y genera un reporte
+            HTML navegable, listo para revisar o compartir con el colegio.
+        </p>
+        <a href="{{ route('herramientas.reporte-accesos') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
+</div>
+
+{{-- ══ BOTS ══ --}}
+<div style="margin-bottom:28px">
+    <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:22px; font-weight:700; color:var(--text); margin:0">
+        🤖 Bots
+    </h2>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:4px">
+        Generadores de archivos y solicitudes para los bots de administración MEE
+    </p>
+</div>
+
+<div class="herramientas-grid" style="margin-bottom:48px">
+
+    <div class="herramienta-card">
         <div class="herramienta-icono">🔄</div>
         <div class="herramienta-titulo">Cambio de Nombre de Usuario</div>
         <span class="herramienta-tag">📄 Genera .xlsx</span>
@@ -280,6 +308,20 @@
             y descarga el Excel listo para enviar al equipo.
         </p>
         <a href="{{ route('herramientas.borrar-usuarios') }}" target="_blank" class="btn-abrir">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Abrir herramienta
+        </a>
+    </div>
+
+    <div class="herramienta-card">
+        <div class="herramienta-icono">🔗</div>
+        <div class="herramienta-titulo">Vinculación SSO Servicios SI MEE</div>
+        <span class="herramienta-tag">✉️ Genera solicitud por correo</span>
+        <p class="herramienta-desc">
+            Genera el correo de solicitud para vincular el inicio de sesión único (SSO)
+            de Servicios SI en la plataforma MEE del colegio.
+        </p>
+        <a href="{{ route('herramientas.vinculacion-sso') }}" target="_blank" class="btn-abrir">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             Abrir herramienta
         </a>

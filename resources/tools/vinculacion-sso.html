@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vinculación SSO Servicios SI MEE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbeaf2; --surface:#ffffff; --surface-2:#fdf2f8;
+    --ink:#0e1726; --muted:#5b6680; --faint:#8b97ad;
+    --border:#f3d9e8; --border-strong:#eab8d6;
+    --primary:#db2777; --primary-d:#be185d; --primary-t:#fdf2f8;
+    --shadow-sm:0 1px 2px rgba(14,23,38,.06);
+    --shadow:0 1px 2px rgba(14,23,38,.05),0 10px 28px rgba(14,23,38,.07);
+    --radius:15px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;min-height:100vh}
+  body{
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:
+      radial-gradient(1100px 460px at 88% -8%, #fce7f3 0%, transparent 60%),
+      radial-gradient(900px 420px at 5% 0%, #fdf2f8 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column;
+  }
+
+  header.app{
+    background:linear-gradient(125deg,#500724 0%,#9d174d 55%,#db2777 100%);
+    color:#fff;box-shadow:0 10px 30px rgba(80,7,36,.28)}
+  .head-inner{max-width:700px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo{width:42px;height:42px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#f472b6,#db2777);display:grid;place-items:center;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(219,39,119,.4)}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand .kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#fbcfe8;font-weight:600}
+  .brand h1{font-family:"Space Grotesk",sans-serif;font-size:19px;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
+  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#fce7f3;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 11px;border-radius:999px}
+  .chip .dot{width:6px;height:6px;border-radius:50%;background:#f472b6}
+
+  .main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:520px;text-align:center}
+
+  .card-icon{width:72px;height:72px;border-radius:20px;margin:0 auto 22px;
+    background:linear-gradient(140deg,#f472b6,#db2777);display:grid;place-items:center;
+    box-shadow:0 8px 24px rgba(219,39,119,.3)}
+
+  .card h2{font-family:"Space Grotesk",sans-serif;font-size:21px;font-weight:700;margin:0 0 8px;letter-spacing:-.02em}
+  .card .sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}
+
+  .badge-soon{display:inline-flex;align-items:center;gap:8px;background:var(--primary-t);color:var(--primary-d);
+    border:1px solid var(--border-strong);padding:9px 18px;border-radius:999px;font-size:13px;font-weight:700}
+
+  footer.foot{text-align:center;padding:18px;font-size:12px;color:var(--faint)}
+</style>
+</head>
+<body>
+
+<header class="app">
+  <div class="head-inner">
+    <div class="logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="brand">
+      <span class="kicker">Bots · Solicitudes</span>
+      <h1>Vinculación SSO Servicios SI MEE</h1>
+    </div>
+    <span class="chip" style="margin-left:auto"><span class="dot"></span> Correo</span>
+  </div>
+</header>
+
+<main class="main">
+  <div class="card">
+    <div class="card-icon">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <h2>Vinculación SSO Servicios SI MEE</h2>
+    <p class="sub">
+      Genera el correo de solicitud para vincular el inicio de sesión único (SSO) de
+      Servicios SI en la plataforma MEE del colegio.
+    </p>
+    <span class="badge-soon">🚧 En preparación — próximamente</span>
+  </div>
+</main>
+
+<footer class="foot">Herramienta interna · MacmillanSI</footer>
+</body>
+</html>

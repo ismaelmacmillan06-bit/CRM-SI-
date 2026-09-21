@@ -24,6 +24,7 @@ use App\Http\Controllers\SeguimientoSicController;
 use App\Http\Controllers\AlumnosDocentesController;
 use App\Http\Controllers\AvanceColegiosController;
 use App\Http\Controllers\ProduccionController;
+use App\Http\Controllers\SeguimientoExternoController;
 
 
 Route::get('/', function () {
@@ -167,6 +168,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('produccion', [ProduccionController::class, 'index'])->name('produccion.index');
      Route::post('produccion/cargar', [ProduccionController::class, 'upload'])->name('produccion.upload');
      Route::delete('produccion', [ProduccionController::class, 'destroy'])->name('produccion.destroy');
+
+     // Seguimiento Externo (beta) — Meta, Read Roo Reads y Espacevirtuel por colegio (solo admin / consultor_digital)
+     Route::get('seguimiento-externo', [SeguimientoExternoController::class, 'index'])->name('seguimiento-externo.index');
+     Route::get('seguimiento-externo/{school}', [SeguimientoExternoController::class, 'platforms'])->name('seguimiento-externo.school');
+     Route::get('seguimiento-externo/{school}/{platform}', [SeguimientoExternoController::class, 'checklist'])->name('seguimiento-externo.checklist');
+     Route::post('seguimiento-externo/{school}/{platform}/{item}', [SeguimientoExternoController::class, 'update'])->name('seguimiento-externo.update');
 
      // Configuración — servicios contables por colegio (solo admin)
      Route::get('configuracion/servicios',                  [SchoolServiceTypeController::class, 'index'])  ->name('configuracion.servicios.index');

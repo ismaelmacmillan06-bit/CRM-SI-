@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             RolesAndUsersSeeder::class,
             LevelsSeeder::class,
             ProcessesSeeder::class,
+            ExternalPlatformsSeeder::class,
         ]);
 
     }

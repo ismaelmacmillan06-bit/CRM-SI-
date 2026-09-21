@@ -599,7 +599,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
           </div>
           <div class="file-drop-text">
             <strong id="excelFileName">Ningún archivo seleccionado</strong>
-            <span>Columnas esperadas: usuario, ultima_conexion, rol, clases (.csv, .xlsx o .xls)</span>
+            <span>Columnas esperadas: usuario, ultima_conexion, rol, clases — nombre es opcional (.csv, .xlsx o .xls)</span>
           </div>
           <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
         </div>
@@ -1057,6 +1057,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   // ---------------------------------------------------------------------
 
   const HEADER_ALIASES = {
+    nombre: ['nombre', 'name', 'nombrecompleto', 'nombre completo', 'fullname', 'full name', 'alumno', 'estudiante'],
     usuario: ['usuario', 'email', 'correo', 'user', 'username'],
     ultima_conexion: ['ultima_conexion', 'ultimaconexion', 'ultima conexion', 'last_login', 'lastconnection', 'last connection', 'ultimo_acceso'],
     rol: ['rol', 'role'],
@@ -1159,6 +1160,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
     rawRows.forEach((row) => {
       const usuario = String(row[map.usuario] || '').trim();
       if (!usuario) return;
+      const nombre = map.nombre ? String(row[map.nombre] || '').trim() : '';
       const rol = String(row[map.rol] || 'Sin rol').trim() || 'Sin rol';
       const fechaRaw = map.ultima_conexion ? row[map.ultima_conexion] : '';
       const fechaCruda = parseFecha(fechaRaw);
@@ -1173,7 +1175,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
       const clasesRaw = map.clases ? row[map.clases] : '';
       const clases = parseClases(clasesRaw);
 
-      const record = { usuario, rol, fecha, fechaCruda, preSso, fechaRaw: String(fechaRaw || ''), clases };
+      const record = { usuario, nombre, rol, fecha, fechaCruda, preSso, fechaRaw: String(fechaRaw || ''), clases };
       DATA.push(record);
 
       if (rol.toLowerCase() === 'student' || normalize(rol) === 'estudiante' || normalize(rol) === 'alumno') {
@@ -1292,7 +1294,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
     }
     if (state.search) {
       const q = normalize(state.search);
-      const hay = normalize(record.usuario).includes(q) || record.clases.some((c) => normalize(c.raw).includes(q));
+      const hay = normalize(record.usuario).includes(q) || normalize(record.nombre).includes(q) || record.clases.some((c) => normalize(c.raw).includes(q));
       if (!hay) return false;
     }
     return true;
@@ -1495,7 +1497,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
             ]),
             el('span', { style: 'font-size:12px;color:var(--text-secondary);font-variant-numeric:tabular-nums', text: pct + '%' }),
           ])]),
-        el('td', {}, [g.teachers.length ? tagList(g.teachers.map((t) => t.usuario), 2) : el('span', { class: 'cell-muted', text: 'Sin asignar' })]),
+        el('td', {}, [g.teachers.length ? tagList(g.teachers.map((t) => t.nombre || t.usuario), 2) : el('span', { class: 'cell-muted', text: 'Sin asignar' })]),
         el('td', { class: 'cell-muted', text: fmtFecha(g.lastConn) }),
         el('td', {}, [el('button', {
           class: 'expand-btn', type: 'button', text: isExpanded ? 'Ocultar' : 'Ver alumnos',
@@ -1506,13 +1508,13 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
 
       if (isExpanded) {
         const detailTable = el('table', { class: 'detail-table' }, [
-          el('thead', {}, [el('tr', {}, [el('th', { text: 'Usuario' }), el('th', { text: 'Última conexión' }), el('th', { text: 'Estado' })])]),
+          el('thead', {}, [el('tr', {}, [el('th', { text: 'Nombre' }), el('th', { text: 'Usuario' }), el('th', { text: 'Última conexión' }), el('th', { text: 'Estado' })])]),
           el('tbody', {}, g.students
             .slice()
             .sort((a, b) => (a.fecha && b.fecha ? b.fecha - a.fecha : a.fecha ? -1 : 1))
             .map((s) => {
               const est = estadoInfo(s, today);
-              return el('tr', {}, [el('td', { text: s.usuario }), el('td', { text: fmtFecha(s.fecha) }), el('td', {}, [statusChip(est)])]);
+              return el('tr', {}, [el('td', { text: s.nombre || '—' }), el('td', { text: s.usuario }), el('td', { text: fmtFecha(s.fecha) }), el('td', {}, [statusChip(est)])]);
             })),
         ]);
         resultsBody.appendChild(el('tr', { class: 'detail-row' }, [el('td', { colspan: '8' }, [el('div', { class: 'detail-inner' }, [detailTable])])]));
@@ -1523,7 +1525,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   function renderTableUsuario(rows, pageItems) {
     resultsHead.innerHTML = '';
     resultsHead.appendChild(el('tr', {}, [
-      el('th', { text: 'Usuario' }), el('th', { text: 'Rol' }), el('th', { text: 'Clase(s)' }),
+      el('th', { text: 'Nombre' }), el('th', { text: 'Usuario' }), el('th', { text: 'Rol' }), el('th', { text: 'Clase(s)' }),
       el('th', { text: 'Última conexión' }), el('th', { class: 'cell-num', text: 'Días inactivo' }), el('th', { text: 'Estado' }),
     ]));
     resultsBody.innerHTML = '';
@@ -1531,6 +1533,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
       const est = estadoInfo(r, today);
       const d = r.fecha ? daysSince(r.fecha, today) : null;
       resultsBody.appendChild(el('tr', {}, [
+        el('td', {}, [r.nombre ? el('span', { text: r.nombre }) : el('span', { class: 'cell-muted', text: '—' })]),
         el('td', { text: r.usuario }),
         el('td', { text: r.rol }),
         el('td', {}, [r.clases.length ? tagList(r.clases.map((c) => c.label), 3) : el('span', { class: 'cell-muted', text: '—' })]),
@@ -1591,9 +1594,9 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
       const rows = lastRows.map((g) => [g.nivel, g.label, g.totalStudents, g.conn, g.pct == null ? '' : g.pct, g.teachers.map((t) => t.usuario).join(' / '), fmtFecha(g.lastConn)]);
       downloadCsv('resumen_por_clase.csv', [header, ...rows]);
     } else {
-      const header = ['Usuario', 'Rol', 'Clases', 'Ultima conexion valida', 'Dias inactivo', 'Estado', 'Conexion excluida (pre-SSO)', 'Ultima conexion registrada (sin filtrar)'];
+      const header = ['Nombre', 'Usuario', 'Rol', 'Clases', 'Ultima conexion valida', 'Dias inactivo', 'Estado', 'Conexion excluida (pre-SSO)', 'Ultima conexion registrada (sin filtrar)'];
       const rows = lastRows.map((r) => [
-        r.usuario, r.rol, r.clases.map((c) => c.label).join(' / '), fmtFecha(r.fecha),
+        r.nombre, r.usuario, r.rol, r.clases.map((c) => c.label).join(' / '), fmtFecha(r.fecha),
         r.fecha ? daysSince(r.fecha, today) : '', estadoInfo(r, today).label,
         r.preSso ? 'Sí' : 'No', fmtFecha(r.fechaCruda),
       ]);

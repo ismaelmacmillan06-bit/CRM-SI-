@@ -3,92 +3,1595 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Reporte de Accesos · MEE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<title>Reporte de Accesos y Conexión · MEE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
-  :root{
-    --bg:#eaf6f4; --surface:#ffffff; --surface-2:#f3fbfa;
-    --ink:#0e1726; --muted:#5b6680; --faint:#8b97ad;
-    --border:#dcece9; --border-strong:#bfe0db;
-    --primary:#0d9488; --primary-d:#0f766e; --primary-t:#ecfdf9;
-    --shadow-sm:0 1px 2px rgba(14,23,38,.06);
-    --shadow:0 1px 2px rgba(14,23,38,.05),0 10px 28px rgba(14,23,38,.07);
-    --radius:15px;
+/* ==========================================================================
+   Reporte de Accesos y Conexión — herramienta autocontenida
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+  --surface-page:   #f9f9f7;
+  --surface-1:      #fcfcfb;
+  --surface-2:      #ffffff;
+  --surface-raised: #ffffff;
+
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+
+  --border:         #e1e0d9;
+  --border-strong:  #c3c2b7;
+
+  --accent:         #0d9488;
+  --accent-soft:    #ccfbf1;
+  --accent-ink:     #0f766e;
+
+  --series-1: #0d9488;
+  --series-7: #0891b2;
+
+  --good:     #0ca30c;
+  --good-bg:  #e7f6e7;
+  --warning:  #c98500;
+  --warning-bg: #fdf1da;
+  --serious:  #ec835a;
+  --serious-bg: #fdeae2;
+  --critical: #d03b3b;
+  --critical-bg: #fbe6e6;
+  --neutral-bg: #ececea;
+  --neutral-ink: #6b6a66;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(11,11,11,0.06);
+  --shadow-md: 0 4px 16px rgba(11,11,11,0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-page:   #0d0d0d;
+    --surface-1:      #1a1a19;
+    --surface-2:      #202020;
+    --surface-raised: #232322;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --border:         #2c2c2a;
+    --border-strong:  #383835;
+    --accent:         #2dd4bf;
+    --accent-soft:    #042f2e;
+    --accent-ink:     #5eead4;
+    --series-1: #2dd4bf;
+    --series-7: #22d3ee;
+    --good:     #0ca30c;
+    --good-bg:  #123312;
+    --warning:  #eda100;
+    --warning-bg: #3a2c0c;
+    --serious:  #ec835a;
+    --serious-bg: #3a2015;
+    --critical: #e66767;
+    --critical-bg: #3a1414;
+    --neutral-bg: #2c2c2a;
+    --neutral-ink: #a3a29c;
   }
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0;min-height:100vh}
-  body{
-    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-    background:
-      radial-gradient(1100px 460px at 88% -8%, #ccfbf1 0%, transparent 60%),
-      radial-gradient(900px 420px at 5% 0%, #f0fdfa 0%, transparent 55%),
-      var(--bg);
-    color:var(--ink); -webkit-font-smoothing:antialiased;
-    display:flex; flex-direction:column;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-page:   #0d0d0d;
+  --surface-1:      #1a1a19;
+  --surface-2:      #202020;
+  --surface-raised: #232322;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --border:         #2c2c2a;
+  --border-strong:  #383835;
+  --accent:         #2dd4bf;
+  --accent-soft:    #042f2e;
+  --accent-ink:     #5eead4;
+  --series-1: #2dd4bf;
+  --series-7: #22d3ee;
+  --good:     #0ca30c;
+  --good-bg:  #123312;
+  --warning:  #eda100;
+  --warning-bg: #3a2c0c;
+  --serious:  #ec835a;
+  --serious-bg: #3a2015;
+  --critical: #e66767;
+  --critical-bg: #3a1414;
+  --neutral-bg: #2c2c2a;
+  --neutral-ink: #a3a29c;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---------- Topbar ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo-mark {
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--series-1), var(--series-7));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; flex-shrink: 0; overflow: hidden;
+}
+.logo-mark img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.topbar-titles h1 { margin: 0; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.subtitle { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
+.topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.icon-btn {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.icon-btn:hover { background: var(--surface-raised); color: var(--text-primary); }
+.icon-moon { display: none; }
+:root[data-theme="dark"] .icon-sun { display: none; }
+:root[data-theme="dark"] .icon-moon { display: block; }
+
+.btn {
+  height: 36px; padding: 0 14px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-strong);
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.btn-ghost { background: var(--surface-1); color: var(--text-secondary); }
+.btn-ghost:hover { background: var(--surface-raised); color: var(--text-primary); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.06); }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+/* ---------- Setup screen ---------- */
+.setup-wrap {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 16px;
+}
+.setup-card {
+  width: 100%; max-width: 620px; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md); padding: 32px 32px 28px;
+}
+.setup-card h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.setup-card .setup-sub { margin: 0 0 22px; font-size: 13px; color: var(--text-muted); }
+
+/* ---------- Instrucciones (cómo obtener el archivo) ---------- */
+.instructions-box {
+  border: 1px solid var(--border-strong); border-radius: var(--radius-md);
+  background: var(--accent-soft); margin-bottom: 22px; overflow: hidden;
+}
+.instructions-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 13px 16px; background: none; border: none; cursor: pointer;
+  font-size: 13.5px; font-weight: 650; color: var(--accent-ink); font-family: inherit;
+}
+.instructions-toggle .chev { transition: transform .18s; flex-shrink: 0; }
+.instructions-toggle.is-open .chev { transform: rotate(180deg); }
+.instructions-body { padding: 2px 18px 18px; }
+.instructions-body ol { margin: 0 0 14px; padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.instructions-body ol li strong { color: var(--text-primary); }
+.instructions-body kbd {
+  background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: 4px;
+  padding: 1px 6px; font-size: 12px; font-family: inherit;
+}
+.script-box { position: relative; }
+.script-box pre {
+  margin: 0; max-height: 220px; overflow: auto; padding: 14px 16px;
+  background: #0d1117; color: #d4d8de; border-radius: var(--radius-sm);
+  font-size: 11.5px; line-height: 1.55; font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  white-space: pre; tab-size: 2;
+}
+.script-box .btn { margin-top: 10px; width: 100%; justify-content: center; }
+.copy-ok { color: var(--good) !important; border-color: var(--good) !important; }
+
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 12px; font-weight: 650; color: var(--text-secondary); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.03em; }
+.field .field-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 5px; }
+
+.field--sso { border: 1.5px solid var(--warning); background: var(--warning-bg); border-radius: var(--radius-md); padding: 14px 16px; }
+.field--sso label { color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.field--sso .field-hint { color: var(--text-secondary); }
+
+input[type="text"], input[type="date"] {
+  width: 100%; height: 42px; padding: 0 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong); background: var(--surface-1); color: var(--text-primary);
+  font-size: 14px; font-family: inherit;
+}
+input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+input[type="date"] { color-scheme: light; }
+:root[data-theme="dark"] input[type="date"] { color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) input[type="date"] { color-scheme: dark; } }
+
+.file-drop {
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-md);
+  background: var(--surface-1); padding: 16px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: border-color .15s, background .15s;
+}
+.file-drop:hover, .file-drop.is-dragover { border-color: var(--accent); background: var(--accent-soft); }
+.file-drop input[type="file"] { display: none; }
+.file-drop-icon {
+  width: 38px; height: 38px; border-radius: 50%; background: var(--surface-2);
+  border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.file-drop-text { font-size: 13px; color: var(--text-secondary); min-width: 0; }
+.file-drop-text strong { color: var(--text-primary); display: block; font-size: 13.5px; margin-bottom: 1px; word-break: break-all; }
+
+.logo-preview-row { display: flex; align-items: center; gap: 12px; }
+.logo-preview {
+  width: 56px; height: 56px; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface-1); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+}
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+
+.setup-error {
+  background: var(--critical-bg); color: var(--critical); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-size: 12.5px; margin-bottom: 18px; display: none; line-height: 1.5;
+}
+.setup-error.is-visible { display: block; }
+
+.setup-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+.setup-actions .btn { width: 100%; justify-content: center; height: 44px; font-size: 14px; }
+
+.privacy-note { display: flex; gap: 8px; align-items: flex-start; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.privacy-note svg { flex-shrink: 0; margin-top: 1px; color: var(--text-muted); }
+.privacy-note p { margin: 0; font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+
+/* ---------- Report screen ---------- */
+.content { flex: 1; width: 100%; max-width: 1320px; margin: 0 auto; padding: 22px 28px 48px; display: flex; flex-direction: column; gap: 20px; }
+.report-hidden { display: none !important; }
+
+.report-banner {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 18px 22px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: var(--shadow-sm);
+}
+.report-banner .banner-logo { width: 52px; height: 52px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-1); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+.report-banner .banner-logo img { width: 100%; height: 100%; object-fit: contain; }
+.report-banner .banner-logo .initials { font-weight: 700; font-size: 17px; color: var(--accent-ink); }
+.banner-titles { flex: 1; min-width: 180px; }
+.banner-titles h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; word-break: break-word; }
+.banner-titles p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.sso-note {
+  display: flex; gap: 10px; align-items: flex-start; background: var(--accent-soft); color: var(--accent-ink);
+  border-radius: var(--radius-lg); padding: 12px 16px; font-size: 12.5px; line-height: 1.5;
+}
+.sso-note svg { flex-shrink: 0; margin-top: 2px; }
+.sso-note strong { font-weight: 650; }
+
+.sso-note--missing { background: var(--warning-bg); color: #7a5400; }
+
+.panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px 20px; box-shadow: var(--shadow-sm); }
+.panel-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 14px; }
+.panel-head h3 { margin: 0; font-size: 14.5px; font-weight: 650; }
+.panel-sub { font-size: 12px; color: var(--text-muted); }
+
+/* stat tiles */
+.stats-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+.stat-tile { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; box-shadow: var(--shadow-sm); }
+.stat-label { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+.stat-value { font-size: 23px; font-weight: 650; letter-spacing: -0.01em; }
+.stat-tile--good .stat-value { color: var(--good); }
+.stat-tile--critical .stat-value { color: var(--critical); }
+
+/* charts row */
+.charts-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.chart { display: flex; flex-direction: column; gap: 10px; }
+.chart-row { display: grid; grid-template-columns: 150px 1fr 74px; align-items: center; gap: 10px; }
+.chart-row-label { font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chart-track { position: relative; height: 14px; background: var(--surface-1); border-radius: 4px; overflow: hidden; }
+.chart-fill { position: absolute; inset: 0 auto 0 0; height: 100%; border-radius: 4px; }
+.chart-row-value { font-size: 12px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* status chip */
+.status-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 650; white-space: nowrap; }
+.status-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.status-good { background: var(--good-bg); color: var(--good); }
+.status-good .dot { background: var(--good); }
+.status-warning { background: var(--warning-bg); color: var(--warning); }
+.status-warning .dot { background: var(--warning); }
+.status-serious { background: var(--serious-bg); color: var(--serious); }
+.status-serious .dot { background: var(--serious); }
+.status-critical { background: var(--critical-bg); color: var(--critical); }
+.status-critical .dot { background: var(--critical); }
+.status-neutral { background: var(--neutral-bg); color: var(--neutral-ink); }
+.status-neutral .dot { background: var(--neutral-ink); }
+
+/* filters */
+.filters-grid { display: grid; grid-template-columns: 1.5fr 0.8fr 0.9fr 0.9fr auto; gap: 14px; align-items: end; }
+.filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.filter-field label { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+select { width: 100%; height: 36px; padding: 0 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface-1); color: var(--text-primary); font-size: 13px; font-family: inherit; }
+select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.filters-grid input[type="text"] { height: 36px; font-size: 13px; }
+
+/* results */
+.results-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.results-actions { display: flex; align-items: center; gap: 10px; }
+.view-toggle { display: flex; background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 2px; }
+.toggle-btn { border: none; background: transparent; color: var(--text-secondary); font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
+.toggle-btn.is-active { background: var(--surface-2); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table thead th { text-align: left; font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); background: var(--surface-1); padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table tbody tr { border-bottom: 1px solid var(--border); }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr.group-row:hover { background: var(--surface-1); }
+.data-table td { padding: 9px 12px; vertical-align: top; color: var(--text-primary); }
+.cell-muted { color: var(--text-muted); }
+.cell-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-mono { font-size: 12px; color: var(--text-secondary); }
+.expand-btn { border: none; background: transparent; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; }
+.expand-btn:hover { text-decoration: underline; }
+.detail-row td { background: var(--surface-1); padding: 0; }
+.detail-inner { padding: 10px 14px 14px 16px; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.detail-table th { text-align: left; color: var(--text-muted); font-weight: 600; padding: 4px 8px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.02em; }
+.detail-table td { padding: 4px 8px; color: var(--text-secondary); }
+
+.empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 13.5px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 14px; flex-wrap: wrap; }
+.page-btn { min-width: 30px; height: 30px; padding: 0 8px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); font-size: 12.5px; cursor: pointer; }
+.page-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 650; }
+.page-btn:disabled { opacity: 0.4; cursor: default; }
+
+.app-footer { padding: 16px 28px 28px; text-align: center; font-size: 11px; color: var(--text-muted); }
+
+/* Print styles — siempre en claro, sin importar el tema elegido en pantalla */
+@media print {
+  :root, :root[data-theme="dark"], :root:where(:not([data-theme="light"])) {
+    color-scheme: light !important;
+    --surface-page: #ffffff; --surface-1: #f7f7f5; --surface-2: #ffffff; --surface-raised: #ffffff;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #6b6a66;
+    --border: #dedcd5; --border-strong: #c3c2b7;
+    --accent: #0d9488; --accent-soft: #ccfbf1; --accent-ink: #0f766e;
+    --good: #0ca30c; --good-bg: #e7f6e7; --warning: #a86a00; --warning-bg: #fdf1da;
+    --serious: #c1552f; --serious-bg: #fdeae2; --critical: #c1272d; --critical-bg: #fbe6e6;
+    --neutral-bg: #ececea; --neutral-ink: #52514e;
   }
+  .topbar, .filters-panel, .results-actions .view-toggle ~ *, .banner-actions, .pagination, .icon-btn { display: none !important; }
+  body, .app, .content { background: #fff !important; }
+  .panel, .report-banner { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+  .content { max-width: 100%; padding: 0 12px; }
+  .expand-btn { display: none !important; }
+}
 
-  header.app{
-    background:linear-gradient(125deg,#022c22 0%,#0f766e 55%,#0d9488 100%);
-    color:#fff;box-shadow:0 10px 30px rgba(2,44,34,.28)}
-  .head-inner{max-width:700px;margin:0 auto;padding:15px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-  .logo{width:42px;height:42px;border-radius:12px;flex:none;
-    background:linear-gradient(140deg,#2dd4bf,#0d9488);display:grid;place-items:center;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 6px 16px rgba(13,148,136,.4)}
-  .brand{display:flex;flex-direction:column;gap:1px}
-  .brand .kicker{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#99f6e4;font-weight:600}
-  .brand h1{font-family:"Space Grotesk",sans-serif;font-size:20px;line-height:1.1;margin:0;font-weight:600;letter-spacing:-.01em}
-  .chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#ccfbf1;
-    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);padding:5px 11px;border-radius:999px}
-  .chip .dot{width:6px;height:6px;border-radius:50%;background:#2dd4bf}
-
-  .main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
-    box-shadow:var(--shadow);padding:40px 36px;width:100%;max-width:520px;text-align:center}
-
-  .card-icon{width:72px;height:72px;border-radius:20px;margin:0 auto 22px;
-    background:linear-gradient(140deg,#2dd4bf,#0d9488);display:grid;place-items:center;
-    box-shadow:0 8px 24px rgba(13,148,136,.3)}
-
-  .card h2{font-family:"Space Grotesk",sans-serif;font-size:22px;font-weight:700;margin:0 0 8px;letter-spacing:-.02em}
-  .card .sub{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px}
-
-  .badge-soon{display:inline-flex;align-items:center;gap:8px;background:var(--primary-t);color:var(--primary-d);
-    border:1px solid var(--border-strong);padding:9px 18px;border-radius:999px;font-size:13px;font-weight:700}
-
-  footer.foot{text-align:center;padding:18px;font-size:12px;color:var(--faint)}
+@media (max-width: 1080px) {
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .charts-row { grid-template-columns: 1fr; }
+  .filters-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 10px 14px; }
+  .topbar-titles h1 { font-size: 14px; }
+  .subtitle { display: none; }
+  .content { padding: 14px 12px 28px; gap: 14px; }
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-tile { padding: 12px; }
+  .stat-value { font-size: 20px; }
+  .filters-grid { grid-template-columns: 1fr; }
+  .setup-card { padding: 22px 18px; }
+  .report-banner { padding: 14px 16px; }
+  .banner-actions { width: 100%; }
+  .banner-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .results-head { flex-direction: column; align-items: stretch; }
+  .results-actions { justify-content: space-between; }
+  .chart-row { grid-template-columns: 92px 1fr 64px; gap: 6px; }
+  .chart-row-label { font-size: 11.5px; }
+  .chart-row-value { font-size: 11px; }
+  .panel { padding: 14px 14px 16px; }
+  .data-table { font-size: 12px; }
+}
+@media (max-width: 420px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .view-toggle { flex: 1; }
+  .toggle-btn { flex: 1; text-align: center; }
+}
 </style>
 </head>
 <body>
 
-<header class="app">
-  <div class="head-inner">
-    <div class="logo">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M9 15l2 2 4-4"/></svg>
-    </div>
-    <div class="brand">
-      <span class="kicker">Herramientas SI</span>
-      <h1>Reporte de Accesos</h1>
-    </div>
-    <span class="chip" style="margin-left:auto"><span class="dot"></span> MEE</span>
-  </div>
-</header>
+<div class="app">
 
-<main class="main">
-  <div class="card">
-    <div class="card-icon">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><path d="M9 15l2 2 4-4"/></svg>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark" id="topbarLogoMark">SI</div>
+      <div class="topbar-titles">
+        <h1 id="topbarTitle">Reporte de Accesos — Generador</h1>
+        <p class="subtitle" id="topbarSub">Uso y conexión a MEE por colegio</p>
+      </div>
     </div>
-    <h2>Reporte de Accesos</h2>
-    <p class="sub">
-      Sube el Excel que entrega el script de accesos (consola) y genera un reporte HTML
-      navegable, listo para revisar o compartir con el colegio.
-    </p>
-    <span class="badge-soon">🚧 En preparación — próximamente</span>
-  </div>
-</main>
+    <div class="topbar-right">
+      <button id="themeToggle" class="icon-btn" type="button" aria-label="Cambiar tema" title="Cambiar tema">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+      </button>
+    </div>
+  </header>
 
-<footer class="foot">Herramienta interna · MacmillanSI</footer>
+  <!-- ======================= SETUP SCREEN ======================= -->
+  <div class="setup-wrap" id="setupScreen">
+    <div class="setup-card">
+      <h2>Generar reporte de accesos</h2>
+      <p class="setup-sub">Completa los datos del colegio y carga el archivo exportado de MEE para generar el reporte.</p>
+
+      <div class="instructions-box">
+        <button type="button" class="instructions-toggle" id="instructionsToggle">
+          <span>📋 ¿Cómo obtengo el archivo de conexión?</span>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="instructions-body" id="instructionsBody" hidden>
+          <ol>
+            <li>Entra a <strong>Users</strong> dentro de MEE.</li>
+            <li>Clic derecho → <strong>Inspeccionar</strong> → pestaña <strong>Console</strong>.</li>
+            <li>Pega el script de abajo y presiona <kbd>Enter</kbd>.</li>
+            <li>Espera a que termine de recorrer a todos los usuarios (verás el avance en la consola) — al terminar descarga un <strong>CSV</strong> automáticamente.</li>
+            <li>Sube ese CSV en el campo de abajo.</li>
+          </ol>
+          <div class="script-box">
+            <pre id="scriptCode">(async () =&gt; {
+  // ====== CONFIGURACIÓN — edita esto según tu panel ======
+  const CONFIG = {
+    listUrlTemplate: (page, limit) =&gt; `${location.origin}/users?page=${page}&amp;limit=${limit}`,
+    pageLimit: 100,
+    detailLinkSelector: '[data-testid="user-view-link"]',
+    detailLinkText: null,
+    fields: {
+      usuario: '[data-testid="user-username"]',
+      ultima_conexion: '[data-testid="user-last-login"]',
+      rol: '[data-testid="role-content"] .role-title',
+      clases: { selector: '[data-testid="classes-table"] .class-name', joinWith: '; ' },
+    },
+    paginationRegex: /\d+-\d+\s+(?:de|of)\s+(\d+)/i,
+    concurrency: 8,
+    outputFileName: 'export.csv',
+  };
+  // ========================================================
+
+  async function fetchDoc(url) {
+    const res = await fetch(url, { credentials: 'include' });
+    const html = await res.text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  function extractField(doc, def) {
+    if (typeof def === 'string') {
+      return doc.querySelector(def)?.textContent.trim() ?? '';
+    }
+    const els = [...doc.querySelectorAll(def.selector)];
+    return els.map(el =&gt; el.textContent.trim()).filter(Boolean).join(def.joinWith ?? '; ');
+  }
+
+  // 1. Detectar total de páginas
+  let doc = await fetchDoc(CONFIG.listUrlTemplate(1, CONFIG.pageLimit));
+  let total = null;
+  const paginationText = [...doc.querySelectorAll('*')]
+    .map(el =&gt; el.textContent)
+    .find(t =&gt; CONFIG.paginationRegex.test(t || ''));
+  if (paginationText) total = parseInt(paginationText.match(CONFIG.paginationRegex)[1], 10);
+  const totalPages = total ? Math.ceil(total / CONFIG.pageLimit) : 1;
+  console.log(`Detectados ${total ?? '??'} registros, ${totalPages} páginas`);
+
+  // 2. Recolectar links de detalle en todas las páginas
+  let links = [];
+  for (let page = 1; page &lt;= totalPages; page++) {
+    const pageDoc = page === 1 ? doc : await fetchDoc(CONFIG.listUrlTemplate(page, CONFIG.pageLimit));
+    const pageLinks = [...pageDoc.querySelectorAll(CONFIG.detailLinkSelector)]
+      .filter(a =&gt; !CONFIG.detailLinkText || a.textContent.trim() === CONFIG.detailLinkText)
+      .map(a =&gt; new URL(a.getAttribute('href'), location.origin).href);
+    links.push(...pageLinks);
+    console.log(`Página ${page}: ${pageLinks.length} registros`);
+  }
+  console.log(`Total recolectado: ${links.length}`);
+
+  // 3. Visitar cada detalle con concurrencia limitada
+  const results = [];
+  let idx = 0;
+  async function worker() {
+    while (idx &lt; links.length) {
+      const myIdx = idx++;
+      const url = links[myIdx];
+      try {
+        const udoc = await fetchDoc(url);
+        const row = {};
+        for (const [key, def] of Object.entries(CONFIG.fields)) {
+          row[key] = extractField(udoc, def);
+        }
+        results.push(row);
+      } catch (e) {
+        console.error('Error en', url, e);
+      }
+      if (myIdx % 25 === 0) console.log(`Procesados ${myIdx}/${links.length}`);
+    }
+  }
+  await Promise.all(Array.from({ length: CONFIG.concurrency }, worker));
+
+  // 4. Generar CSV y descargar
+  const headers = Object.keys(CONFIG.fields);
+  const csvRows = [
+    headers.join(','),
+    ...results.map(r =&gt; headers.map(h =&gt; `"${(r[h] || '').replace(/"/g, '""')}"`).join(',')),
+  ];
+  const blob = new Blob(['﻿' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = CONFIG.outputFileName;
+  a.click();
+
+  console.log(`Listo: ${results.length} registros exportados a ${CONFIG.outputFileName}.`);
+})();</pre>
+            <button type="button" class="btn btn-ghost" id="copyScriptBtn">📋 Copiar script</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-error" id="setupError"></div>
+
+      <div class="field">
+        <label for="colegioNombre">Nombre del colegio</label>
+        <input type="text" id="colegioNombre" placeholder="Ej. Colegio Ana Frank" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="logoInput">Logo del colegio (opcional)</label>
+        <div class="file-drop" id="logoDrop">
+          <div class="logo-preview-row" style="width:100%">
+            <div class="logo-preview" id="logoPreviewBox">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--text-muted)"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9" r="1.6"/><path d="M21 15l-5-5-9 9"/></svg>
+            </div>
+            <div class="file-drop-text">
+              <strong id="logoFileName">Sin logo seleccionado</strong>
+              <span>PNG o JPG · se usará en el encabezado del reporte</span>
+            </div>
+          </div>
+          <input type="file" id="logoInput" accept="image/png,image/jpeg,image/svg+xml">
+        </div>
+      </div>
+
+      <div class="field field--sso">
+        <label for="ssoDateInput">⚠️ Fecha de activación de SSO</label>
+        <input type="date" id="ssoDateInput">
+        <p class="field-hint">Nuestro equipo entra a todos los perfiles para validar el acceso antes de entregar el colegio. <strong>Indica siempre esta fecha</strong> — si la dejas vacía, esas conexiones de verificación se contarán como uso real y el reporte dirá que todos ya entraron aunque no sea cierto.</p>
+      </div>
+
+      <div class="field">
+        <label for="excelInput">Archivo de conexión (CSV o Excel)</label>
+        <div class="file-drop" id="excelDrop">
+          <div class="file-drop-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <div class="file-drop-text">
+            <strong id="excelFileName">Ningún archivo seleccionado</strong>
+            <span>Columnas esperadas: usuario, ultima_conexion, rol, clases (.csv, .xlsx o .xls)</span>
+          </div>
+          <input type="file" id="excelInput" accept=".xlsx,.xls,.csv">
+        </div>
+        <p class="field-hint">Es el CSV que descarga el script de la consola — súbelo tal cual, sin modificarlo.</p>
+      </div>
+
+      <div class="setup-actions">
+        <button class="btn btn-primary" id="generateBtn" type="button" disabled>Generar reporte</button>
+      </div>
+
+      <div class="privacy-note">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5z"/></svg>
+        <p>Todo el procesamiento ocurre en este navegador: el archivo y los datos de alumnos no se suben a ningún servidor.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= REPORT SCREEN ======================= -->
+  <main class="content report-hidden" id="reportScreen">
+
+    <section class="report-banner">
+      <div class="banner-logo" id="bannerLogo"><span class="initials" id="bannerInitials">CO</span></div>
+      <div class="banner-titles">
+        <h2 id="bannerColegio">Colegio</h2>
+        <p id="bannerMeta">Reporte de conexión y uso de la plataforma</p>
+      </div>
+      <div class="banner-actions">
+        <button class="btn btn-ghost" id="backBtn" type="button">Nuevo reporte</button>
+        <button class="btn btn-ghost" id="downloadHtmlBtn" type="button">Descargar HTML</button>
+        <button class="btn btn-ghost" id="printBtn" type="button">Imprimir / PDF</button>
+      </div>
+    </section>
+
+    <section class="sso-note" id="ssoNote" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+      <p id="ssoNoteText"></p>
+    </section>
+
+    <section class="stats-row" id="statsRow"></section>
+
+    <section class="charts-row">
+      <div class="panel chart-panel">
+        <div class="panel-head">
+          <h3>% de conexión por clase</h3>
+          <span class="panel-sub">Alumnos con al menos una conexión registrada</span>
+        </div>
+        <div id="chartClases" class="chart"></div>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-head">
+          <h3>Distribución de actividad</h3>
+          <span class="panel-sub">Todos los usuarios importados</span>
+        </div>
+        <div id="chartEstado" class="chart"></div>
+      </div>
+    </section>
+
+    <section class="panel filters-panel">
+      <div class="panel-head">
+        <h3>Filtrar información</h3>
+        <span class="panel-sub">Combina nivel, rol, estado de conexión y búsqueda</span>
+      </div>
+      <div class="filters-grid">
+        <div class="filter-field">
+          <label for="searchInput">Buscar</label>
+          <input type="text" id="searchInput" placeholder="Usuario o clase…" autocomplete="off">
+        </div>
+        <div class="filter-field">
+          <label for="nivelSelect">Nivel</label>
+          <select id="nivelSelect"><option value="">Todos</option></select>
+        </div>
+        <div class="filter-field">
+          <label for="rolSelect">Rol</label>
+          <select id="rolSelect"><option value="">Todos</option></select>
+        </div>
+        <div class="filter-field">
+          <label for="estadoSelect">Estado</label>
+          <select id="estadoSelect">
+            <option value="">Todos</option>
+            <option value="activo">Activo (≤7 días)</option>
+            <option value="moderado">Moderado (8–30 días)</option>
+            <option value="inactivo">Inactivo (31–60 días)</option>
+            <option value="prolongado">Inactivo prolongado (&gt;60 días)</option>
+            <option value="nunca">Nunca conectado</option>
+            <option value="pre_sso">Solo antes de SSO (no válida)</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label>&nbsp;</label>
+          <button id="clearFilters" class="btn btn-ghost" type="button">Limpiar</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel results-panel">
+      <div class="panel-head results-head">
+        <div>
+          <h3 id="resultsTitle">Resumen por clase</h3>
+          <span class="panel-sub" id="resultsSub"></span>
+        </div>
+        <div class="results-actions">
+          <div class="view-toggle" role="tablist">
+            <button class="toggle-btn is-active" data-group="clase" type="button">Por clase</button>
+            <button class="toggle-btn" data-group="usuario" type="button">Por usuario</button>
+          </div>
+          <button id="exportCsv" class="btn btn-ghost" type="button">Exportar CSV</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table" id="resultsTable">
+          <thead id="resultsHead"></thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+        <p class="empty-state" id="emptyState" hidden>No hay resultados para esta combinación de filtros.</p>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <span>Herramienta de reporte de accesos — funciona sin conexión a internet una vez cargada. Los datos permanecen en tu equipo.</span>
+  </footer>
+
+</div>
+
+<script>
+/* ==================== Lógica del generador de reportes ==================== */
+(function () {
+  'use strict';
+
+  // Copia intacta del documento tal como se cargó (antes de cualquier mutación),
+  // usada por "Descargar HTML" para generar una copia autocontenida y compartible.
+  const ORIGINAL_HTML = document.documentElement.outerHTML;
+
+  // ---------------------------------------------------------------------
+  // 0) Estado y helpers generales
+  // ---------------------------------------------------------------------
+
+  const NIVEL_ORDER = ['Maternal', 'Preescolar', 'Primaria', 'Secundaria', 'Preparatoria', 'Bachillerato', 'Licenciatura'];
+  function sortNiveles(a, b) {
+    const ia = NIVEL_ORDER.indexOf(a), ib = NIVEL_ORDER.indexOf(b);
+    if (ia === -1 && ib === -1) return String(a).localeCompare(String(b));
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  }
+
+  const MONTHS = {
+    ene: 0, jan: 0, feb: 1, mar: 2, abr: 3, apr: 3, may: 4, jun: 5, jul: 6,
+    ago: 7, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dic: 11, dec: 11,
+  };
+
+  function normalize(str) {
+    return String(str == null ? '' : str)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim();
+  }
+
+  function parseFecha(raw) {
+    if (raw == null) return null;
+    let s = String(raw).trim();
+    if (!s || /^(none|null|n\/a|-|nunca|sin conexion)$/i.test(s)) return null;
+
+    // Excel serial date number
+    if (/^\d+(\.\d+)?$/.test(s) && Number(s) > 20000 && Number(s) < 80000) {
+      const epoch = new Date(Date.UTC(1899, 11, 30));
+      const d = new Date(epoch.getTime() + Number(s) * 86400000);
+      if (!isNaN(d)) return d;
+    }
+
+    // "26 Aug 2026"
+    let m = s.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ]{3,})\.?\s+(\d{4})$/);
+    if (m) {
+      const mon = MONTHS[normalize(m[2]).slice(0, 3)];
+      if (mon !== undefined) return new Date(Number(m[3]), mon, Number(m[1]));
+    }
+
+    // "11-sep-26" or "11-sep-2026"
+    m = s.match(/^(\d{1,2})[-\/]([A-Za-zÀ-ÿ]{3,})\.?[-\/](\d{2,4})$/);
+    if (m) {
+      const mon = MONTHS[normalize(m[2]).slice(0, 3)];
+      let yr = Number(m[3]);
+      if (yr < 100) yr += 2000;
+      if (mon !== undefined) return new Date(yr, mon, Number(m[1]));
+    }
+
+    // ISO "2026-09-11" or "2026-09-11T..."
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+
+    // "11/09/2026" (dd/mm/yyyy) — try, but fall back to native parse if ambiguous
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) {
+      let yr = Number(m[3]); if (yr < 100) yr += 2000;
+      const d = Number(m[1]), mo = Number(m[2]);
+      if (mo <= 12) return new Date(yr, mo - 1, d);
+    }
+
+    const native = new Date(s);
+    if (!isNaN(native)) return native;
+
+    return null;
+  }
+
+  function fmtFecha(d) {
+    if (!d) return '—';
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function fmt(n) { return Number(n || 0).toLocaleString('es-MX'); }
+
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach((k) => {
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'html') node.innerHTML = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else if (k.startsWith('on') && typeof attrs[k] === 'function') node.addEventListener(k.slice(2), attrs[k]);
+        else node.setAttribute(k, attrs[k]);
+      });
+    }
+    (children || []).forEach((c) => c && node.appendChild(c));
+    return node;
+  }
+
+  function csvEscape(v) {
+    const s = String(v == null ? '' : v);
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function downloadCsv(filename, rows) {
+    const csv = rows.map((r) => r.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------------------------------------------------------------------
+  // 1) Tema
+  // ---------------------------------------------------------------------
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+  });
+
+  // ---------------------------------------------------------------------
+  // 1b) Instrucciones colapsables + copiar script
+  // ---------------------------------------------------------------------
+  const instructionsToggle = document.getElementById('instructionsToggle');
+  const instructionsBody = document.getElementById('instructionsBody');
+  instructionsToggle.addEventListener('click', () => {
+    const open = !instructionsBody.hidden;
+    instructionsBody.hidden = open;
+    instructionsToggle.classList.toggle('is-open', !open);
+  });
+
+  document.getElementById('copyScriptBtn').addEventListener('click', function () {
+    const texto = document.getElementById('scriptCode').textContent;
+    const btn = this;
+    const original = btn.textContent;
+    const marcarCopiado = () => {
+      btn.textContent = '✅ Copiado';
+      btn.classList.add('copy-ok');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copy-ok'); }, 1500);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(texto).then(marcarCopiado).catch(() => {});
+    } else {
+      const tmp = document.createElement('textarea');
+      tmp.value = texto; tmp.style.position = 'fixed'; tmp.style.opacity = '0';
+      document.body.appendChild(tmp); tmp.focus(); tmp.select();
+      try { document.execCommand('copy'); marcarCopiado(); } catch (e) {}
+      document.body.removeChild(tmp);
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // 2) Pantalla de configuración (nombre, logo, archivo)
+  // ---------------------------------------------------------------------
+
+  const setupScreen = document.getElementById('setupScreen');
+  const reportScreen = document.getElementById('reportScreen');
+  const setupError = document.getElementById('setupError');
+
+  const colegioNombreInput = document.getElementById('colegioNombre');
+  const logoInput = document.getElementById('logoInput');
+  const excelInput = document.getElementById('excelInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const logoFileName = document.getElementById('logoFileName');
+  const excelFileName = document.getElementById('excelFileName');
+  const logoPreviewBox = document.getElementById('logoPreviewBox');
+
+  let logoDataUrl = null;
+  let excelFile = null;
+
+  function updateGenerateEnabled() {
+    generateBtn.disabled = !(colegioNombreInput.value.trim() && excelFile);
+  }
+
+  colegioNombreInput.addEventListener('input', updateGenerateEnabled);
+
+  document.getElementById('logoDrop').addEventListener('click', (e) => {
+    if (e.target === logoInput) return;
+    logoInput.click();
+  });
+  document.getElementById('excelDrop').addEventListener('click', (e) => {
+    if (e.target === excelInput) return;
+    excelInput.click();
+  });
+
+  logoInput.addEventListener('change', () => {
+    const f = logoInput.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      logoDataUrl = ev.target.result;
+      logoFileName.textContent = f.name;
+      logoPreviewBox.innerHTML = '';
+      logoPreviewBox.appendChild(el('img', { src: logoDataUrl, alt: 'Logo' }));
+    };
+    reader.readAsDataURL(f);
+  });
+
+  excelInput.addEventListener('change', () => {
+    const f = excelInput.files[0];
+    if (!f) return;
+    excelFile = f;
+    excelFileName.textContent = f.name;
+    updateGenerateEnabled();
+  });
+
+  function showSetupError(msg) {
+    setupError.textContent = msg;
+    setupError.classList.add('is-visible');
+  }
+  function clearSetupError() {
+    setupError.textContent = '';
+    setupError.classList.remove('is-visible');
+  }
+
+  generateBtn.addEventListener('click', () => {
+    clearSetupError();
+    if (!excelFile) return;
+
+    const ssoDateStr = document.getElementById('ssoDateInput').value; // '' o 'YYYY-MM-DD'
+
+    // Aviso de seguridad: sin fecha de SSO, las conexiones de verificación del
+    // equipo SI se contarían como uso real del colegio (falso positivo).
+    if (!ssoDateStr) {
+      const seguir = confirm(
+        'No indicaste la fecha de activación de SSO.\n\n' +
+        'Sin esa fecha, las conexiones que hizo nuestro equipo para verificar los ' +
+        'perfiles se contarán como uso real del colegio, y el reporte dirá que ' +
+        'todos ya entraron aunque no sea así.\n\n' +
+        '¿Deseas continuar de todas formas?'
+      );
+      if (!seguir) return;
+    }
+
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Procesando…';
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: false });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        // raw:true preserva el texto original de cada celda (evita que SheetJS
+        // reformatee fechas como "11-sep-26" a "9/11/26" con el locale del sistema).
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: true });
+        buildReport(rows, colegioNombreInput.value.trim(), logoDataUrl, ssoDateStr);
+      } catch (err) {
+        showSetupError('No se pudo leer el archivo. Verifica que sea un CSV o Excel válido. Detalle: ' + err.message);
+        generateBtn.disabled = false;
+        generateBtn.textContent = 'Generar reporte';
+      }
+    };
+    reader.onerror = () => {
+      showSetupError('No se pudo leer el archivo seleccionado.');
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generar reporte';
+    };
+    reader.readAsArrayBuffer(excelFile);
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    reportScreen.classList.add('report-hidden');
+    setupScreen.style.display = 'flex';
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generar reporte';
+    excelFile = null;
+    excelInput.value = '';
+    excelFileName.textContent = 'Ningún archivo seleccionado';
+    updateGenerateEnabled();
+  });
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  // ---------------------------------------------------------------------
+  // 2b) Descargar el reporte como HTML autocontenido y compartible
+  // ---------------------------------------------------------------------
+
+  function slugify(str) {
+    return String(str || 'colegio')
+      .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '') || 'colegio';
+  }
+
+  document.getElementById('downloadHtmlBtn').addEventListener('click', () => {
+    const payload = {
+      colegioNombre: currentColegioNombre,
+      logoDataUrl: currentLogoUrl,
+      ssoDateStr: currentSsoDateStr,
+      rawRows: currentRawRows,
+      generatedAtIso: today.toISOString(),
+    };
+    // Escapa "</" para que el JSON no pueda cerrar la etiqueta <script> que lo contiene.
+    const json = JSON.stringify(payload).replace(/<\//g, '<\\/');
+    const preloadedTag = '<scr' + 'ipt>window.__PRELOADED_REPORT__ = ' + json + ';</scr' + 'ipt>\n';
+
+    // Si este documento ya era una descarga previa, quita su bloque precargado
+    // para no ir acumulando copias del mismo dato en cada nueva descarga.
+    const cleanHtml = ORIGINAL_HTML.replace(/<script>window\.__PRELOADED_REPORT__[\s\S]*?<\/script>\s*/, '');
+    const scriptIdx = cleanHtml.indexOf('<script>');
+    const finalHtml = '<!DOCTYPE html>\n' + cleanHtml.slice(0, scriptIdx) + preloadedTag + cleanHtml.slice(scriptIdx);
+
+    const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'reporte-accesos-' + slugify(currentColegioNombre) + '.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------------------------------------------------------------------
+  // 3) Mapeo flexible de columnas
+  // ---------------------------------------------------------------------
+
+  const HEADER_ALIASES = {
+    usuario: ['usuario', 'email', 'correo', 'user', 'username'],
+    ultima_conexion: ['ultima_conexion', 'ultimaconexion', 'ultima conexion', 'last_login', 'lastconnection', 'last connection', 'ultimo_acceso'],
+    rol: ['rol', 'role'],
+    clases: ['clases', 'clase', 'grupo', 'grupos', 'classes', 'class'],
+  };
+
+  function mapHeaders(rows) {
+    if (!rows.length) return {};
+    const sample = rows[0];
+    const keys = Object.keys(sample);
+    const map = {};
+    Object.keys(HEADER_ALIASES).forEach((target) => {
+      const aliases = HEADER_ALIASES[target].map(normalize);
+      const found = keys.find((k) => aliases.includes(normalize(k)));
+      if (found) map[target] = found;
+    });
+    return map;
+  }
+
+  // ---------------------------------------------------------------------
+  // 4) Parseo de "clases": "2°C_Primaria_2026" -> {nivel, grado, grupo, anio}
+  // ---------------------------------------------------------------------
+
+  function parseClaseToken(token) {
+    const t = token.trim();
+    if (!t) return null;
+    let m = t.match(/^(\d+)\s*°\s*([^_]+)_([^_]+)_(\d{4})$/);
+    if (m) return { grado: m[1], grupo: m[2], nivel: m[3], anio: m[4], raw: t, label: m[1] + '°' + m[2], claseKey: m[3] + '||' + m[1] + '°' + m[2] };
+    m = t.match(/^(\d+)\s*°\s*([^_]+)_([^_]+)$/);
+    if (m) return { grado: m[1], grupo: m[2], nivel: m[3], anio: '', raw: t, label: m[1] + '°' + m[2], claseKey: m[3] + '||' + m[1] + '°' + m[2] };
+    return { grado: '', grupo: '', nivel: 'Sin clasificar', anio: '', raw: t, label: t, claseKey: 'Sin clasificar||' + t };
+  }
+
+  function parseClases(raw) {
+    if (!raw) return [];
+    return String(raw).split(';').map((s) => parseClaseToken(s)).filter(Boolean);
+  }
+
+  // ---------------------------------------------------------------------
+  // 5) Estado de conexión (buckets)
+  // ---------------------------------------------------------------------
+
+  function daysSince(date, today) {
+    return Math.floor((today - date) / 86400000);
+  }
+
+  function estadoInfo(record, today) {
+    if (!record.fecha) {
+      if (record.preSso) return { key: 'pre_sso', label: 'Solo antes de SSO', cls: 'status-neutral' };
+      return { key: 'nunca', label: 'Nunca conectado', cls: 'status-neutral' };
+    }
+    const d = daysSince(record.fecha, today);
+    if (d <= 7) return { key: 'activo', label: 'Activo', cls: 'status-good' };
+    if (d <= 30) return { key: 'moderado', label: 'Moderado', cls: 'status-warning' };
+    if (d <= 60) return { key: 'inactivo', label: 'Inactivo', cls: 'status-serious' };
+    return { key: 'prolongado', label: 'Inactivo prolongado', cls: 'status-critical' };
+  }
+
+  const ESTADO_COLOR_VAR = {
+    activo: '--good', moderado: '--warning', inactivo: '--serious', prolongado: '--critical',
+    nunca: '--neutral-ink', pre_sso: '--neutral-ink',
+  };
+
+  // ---------------------------------------------------------------------
+  // 6) Construcción del reporte a partir de las filas parseadas
+  // ---------------------------------------------------------------------
+
+  let DATA = [];          // registros individuales (uno por usuario)
+  let CLASE_INDEX = new Map(); // claseKey -> { nivel, grado, grupo, label, students:[], teachers:[] }
+  let today = new Date();
+  let ssoActivationDate = null;
+
+  // Parámetros del reporte actualmente generado (para "Descargar HTML")
+  let currentRawRows = null;
+  let currentColegioNombre = '';
+  let currentLogoUrl = null;
+  let currentSsoDateStr = '';
+
+  const state = { nivel: '', rol: '', estado: '', search: '', groupBy: 'clase', page: 1, expanded: new Set() };
+
+  function buildReport(rawRows, colegioNombre, logoUrl, ssoDateStr, frozenTodayIso) {
+    const map = mapHeaders(rawRows);
+    if (!map.usuario || !map.rol) {
+      showSetupError('No se encontraron las columnas esperadas (usuario, rol, ultima_conexion, clases). Revisa el archivo e inténtalo de nuevo.');
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generar reporte';
+      return;
+    }
+
+    currentRawRows = rawRows;
+    currentColegioNombre = colegioNombre;
+    currentLogoUrl = logoUrl;
+    currentSsoDateStr = ssoDateStr || '';
+
+    today = frozenTodayIso ? new Date(frozenTodayIso) : new Date();
+    ssoActivationDate = ssoDateStr ? new Date(ssoDateStr + 'T00:00:00') : null;
+    DATA = [];
+    CLASE_INDEX = new Map();
+
+    rawRows.forEach((row) => {
+      const usuario = String(row[map.usuario] || '').trim();
+      if (!usuario) return;
+      const rol = String(row[map.rol] || 'Sin rol').trim() || 'Sin rol';
+      const fechaRaw = map.ultima_conexion ? row[map.ultima_conexion] : '';
+      const fechaCruda = parseFecha(fechaRaw);
+      // Las conexiones registradas el día de activación de SSO o antes suelen ser
+      // la verificación de perfiles que hace el equipo SI, no uso real del colegio.
+      let fecha = fechaCruda;
+      let preSso = false;
+      if (ssoActivationDate && fechaCruda && fechaCruda <= ssoActivationDate) {
+        fecha = null;
+        preSso = true;
+      }
+      const clasesRaw = map.clases ? row[map.clases] : '';
+      const clases = parseClases(clasesRaw);
+
+      const record = { usuario, rol, fecha, fechaCruda, preSso, fechaRaw: String(fechaRaw || ''), clases };
+      DATA.push(record);
+
+      if (rol.toLowerCase() === 'student' || normalize(rol) === 'estudiante' || normalize(rol) === 'alumno') {
+        clases.forEach((c) => {
+          if (!CLASE_INDEX.has(c.claseKey)) {
+            CLASE_INDEX.set(c.claseKey, { nivel: c.nivel, grado: c.grado, grupo: c.grupo, label: c.label, students: [], teachers: [] });
+          }
+          CLASE_INDEX.get(c.claseKey).students.push(record);
+        });
+      } else if (rol.toLowerCase() === 'teacher' || normalize(rol) === 'docente' || normalize(rol) === 'profesor') {
+        // Un docente con muchas clases a la vez (>6) probablemente es cuenta administrativa: se excluye de "docente por clase"
+        if (clases.length > 0 && clases.length <= 6) {
+          clases.forEach((c) => {
+            if (!CLASE_INDEX.has(c.claseKey)) {
+              CLASE_INDEX.set(c.claseKey, { nivel: c.nivel, grado: c.grado, grupo: c.grupo, label: c.label, students: [], teachers: [] });
+            }
+            CLASE_INDEX.get(c.claseKey).teachers.push(record);
+          });
+        }
+      }
+    });
+
+    renderBannerAndScreen(colegioNombre, logoUrl);
+    renderSsoNote();
+    populateFilterSelects();
+    state.page = 1;
+    state.expanded.clear();
+    renderAll();
+
+    setupScreen.style.display = 'none';
+    reportScreen.classList.remove('report-hidden');
+  }
+
+  function renderSsoNote() {
+    const note = document.getElementById('ssoNote');
+    const text = document.getElementById('ssoNoteText');
+    if (!ssoActivationDate) {
+      note.hidden = false;
+      note.classList.add('sso-note--missing');
+      text.innerHTML = '<strong>No se indicó fecha de activación de SSO.</strong> Este reporte puede estar contando conexiones de verificación del equipo SI como uso real del colegio.';
+      return;
+    }
+    note.classList.remove('sso-note--missing');
+    const excluded = DATA.filter((r) => r.preSso).length;
+    text.innerHTML = '<strong>SSO activado el ' + fmtFecha(ssoActivationDate) + '.</strong> Se excluyeron ' +
+      fmt(excluded) + ' conexión(es) registradas ese día o antes — corresponden a la verificación inicial de perfiles del equipo SI y no cuentan como uso real del colegio.';
+    note.hidden = false;
+  }
+
+  function renderBannerAndScreen(colegioNombre, logoUrl) {
+    document.getElementById('bannerColegio').textContent = colegioNombre || 'Colegio';
+    document.getElementById('topbarTitle').textContent = colegioNombre || 'Reporte de Accesos';
+    const totalRegistros = DATA.length;
+    document.getElementById('bannerMeta').textContent =
+      'Reporte de conexión y uso de la plataforma · Generado el ' + fmtFecha(today) + ' · ' + fmt(totalRegistros) + ' usuarios importados';
+
+    const initials = (colegioNombre || 'CO').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    const bannerLogo = document.getElementById('bannerLogo');
+    const topbarLogo = document.getElementById('topbarLogoMark');
+    if (logoUrl) {
+      bannerLogo.innerHTML = ''; bannerLogo.appendChild(el('img', { src: logoUrl, alt: 'Logo' }));
+      topbarLogo.innerHTML = ''; topbarLogo.appendChild(el('img', { src: logoUrl, alt: 'Logo' }));
+    } else {
+      bannerLogo.innerHTML = ''; bannerLogo.appendChild(el('span', { class: 'initials', text: initials }));
+      topbarLogo.textContent = initials;
+    }
+  }
+
+  function populateFilterSelects() {
+    const niveles = new Set(); const roles = new Set();
+    DATA.forEach((r) => {
+      roles.add(r.rol);
+      r.clases.forEach((c) => niveles.add(c.nivel));
+    });
+    const nivelSelect = document.getElementById('nivelSelect');
+    const rolSelect = document.getElementById('rolSelect');
+    nivelSelect.innerHTML = '<option value="">Todos</option>';
+    Array.from(niveles).sort(sortNiveles).forEach((n) => nivelSelect.appendChild(el('option', { value: n, text: n })));
+    rolSelect.innerHTML = '<option value="">Todos</option>';
+    Array.from(roles).sort().forEach((r) => rolSelect.appendChild(el('option', { value: r, text: r })));
+  }
+
+  // ---------------------------------------------------------------------
+  // 7) Filtros
+  // ---------------------------------------------------------------------
+
+  document.getElementById('nivelSelect').addEventListener('change', (e) => { state.nivel = e.target.value; state.page = 1; renderAll(); });
+  document.getElementById('rolSelect').addEventListener('change', (e) => { state.rol = e.target.value; state.page = 1; renderAll(); });
+  document.getElementById('estadoSelect').addEventListener('change', (e) => { state.estado = e.target.value; state.page = 1; renderAll(); });
+  document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; state.page = 1; renderResults(); });
+  document.getElementById('clearFilters').addEventListener('click', () => {
+    state.nivel = ''; state.rol = ''; state.estado = ''; state.search = ''; state.page = 1;
+    document.getElementById('nivelSelect').value = '';
+    document.getElementById('rolSelect').value = '';
+    document.getElementById('estadoSelect').value = '';
+    document.getElementById('searchInput').value = '';
+    renderAll();
+  });
+
+  document.querySelectorAll('.toggle-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.toggle-btn').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      state.groupBy = btn.dataset.group;
+      state.page = 1; state.expanded.clear();
+      renderResults();
+    });
+  });
+
+  function matchesFilters(record) {
+    if (state.rol && record.rol !== state.rol) return false;
+    if (state.nivel && !record.clases.some((c) => c.nivel === state.nivel)) return false;
+    if (state.estado) {
+      const est = estadoInfo(record, today);
+      if (est.key !== state.estado) return false;
+    }
+    if (state.search) {
+      const q = normalize(state.search);
+      const hay = normalize(record.usuario).includes(q) || record.clases.some((c) => normalize(c.raw).includes(q));
+      if (!hay) return false;
+    }
+    return true;
+  }
+
+  function getFilteredData() {
+    return DATA.filter(matchesFilters);
+  }
+
+  // ---------------------------------------------------------------------
+  // 8) Stat tiles + gráficas
+  // ---------------------------------------------------------------------
+
+  function renderStats() {
+    const filtered = getFilteredData();
+    const students = filtered.filter((r) => r.rol.toLowerCase() === 'student' || normalize(r.rol) === 'estudiante');
+    const teachers = filtered.filter((r) => r.rol.toLowerCase() === 'teacher' || normalize(r.rol) === 'docente');
+    const withConn = filtered.filter((r) => r.fecha);
+    const studentsWithConn = students.filter((r) => r.fecha);
+
+    const pctGeneral = filtered.length ? Math.round((withConn.length / filtered.length) * 100) : 0;
+    const pctAlumnos = students.length ? Math.round((studentsWithConn.length / students.length) * 100) : 0;
+
+    const tiles = [
+      { label: 'Usuarios importados', value: fmt(filtered.length) },
+      { label: 'Estudiantes', value: fmt(students.length) },
+      { label: 'Docentes', value: fmt(teachers.length) },
+      { label: '% Conexión general', value: pctGeneral + '%', accent: pctGeneral >= 70 ? 'good' : pctGeneral < 40 ? 'critical' : '' },
+      { label: '% Conexión alumnos', value: pctAlumnos + '%', accent: pctAlumnos >= 70 ? 'good' : pctAlumnos < 40 ? 'critical' : '' },
+      { label: 'Sin conexión registrada', value: fmt(filtered.length - withConn.length), accent: (filtered.length - withConn.length) > 0 ? 'critical' : '' },
+    ];
+
+    const row = document.getElementById('statsRow');
+    row.innerHTML = '';
+    tiles.forEach((t) => {
+      row.appendChild(el('div', { class: 'stat-tile' + (t.accent ? ' stat-tile--' + t.accent : '') }, [
+        el('span', { class: 'stat-label', text: t.label }),
+        el('span', { class: 'stat-value', text: t.value }),
+      ]));
+    });
+  }
+
+  function renderBarChart(container, items, opts) {
+    container.innerHTML = '';
+    if (!items.length) {
+      container.appendChild(el('p', { class: 'cell-muted', text: 'Sin datos para mostrar.' }));
+      return;
+    }
+    const max = opts.max || Math.max(1, ...items.map((i) => i.value));
+    items.forEach((item) => {
+      const pct = Math.max(2, Math.round((item.value / max) * 100));
+      const row = el('div', { class: 'chart-row', title: item.label + ': ' + item.valueLabel }, [
+        el('span', { class: 'chart-row-label', text: item.label }),
+        el('div', { class: 'chart-track' }, [
+          el('div', { class: 'chart-fill', style: 'width:' + pct + '%; background:' + item.color }),
+        ]),
+        el('span', { class: 'chart-row-value', text: item.valueLabel }),
+      ]);
+      container.appendChild(row);
+    });
+  }
+
+  function colorForPct(pct) {
+    if (pct >= 70) return 'var(--good)';
+    if (pct >= 40) return 'var(--warning)';
+    return 'var(--critical)';
+  }
+
+  function renderCharts() {
+    const filtered = getFilteredData();
+
+    // % conexión por clase (sobre estudiantes)
+    const claseStats = [];
+    CLASE_INDEX.forEach((info, key) => {
+      const students = info.students.filter((r) => matchesFilters(r));
+      if (!students.length) return;
+      const conn = students.filter((r) => r.fecha).length;
+      const pct = Math.round((conn / students.length) * 100);
+      claseStats.push({ label: (info.nivel !== 'Sin clasificar' ? info.nivel + ' · ' : '') + info.label, value: pct, valueLabel: pct + '% (' + conn + '/' + students.length + ')', color: colorForPct(pct), sortKey: pct });
+    });
+    claseStats.sort((a, b) => a.sortKey - b.sortKey);
+    renderBarChart(document.getElementById('chartClases'), claseStats.slice(0, 12), { max: 100 });
+
+    // distribución de estado
+    const buckets = { activo: 0, moderado: 0, inactivo: 0, prolongado: 0, nunca: 0, pre_sso: 0 };
+    filtered.forEach((r) => { buckets[estadoInfo(r, today).key]++; });
+    const labels = {
+      activo: 'Activo (≤7 días)', moderado: 'Moderado (8–30 días)', inactivo: 'Inactivo (31–60 días)',
+      prolongado: 'Inactivo prolongado (>60 días)', nunca: 'Nunca conectado', pre_sso: 'Solo antes de SSO (no cuenta)',
+    };
+    const total = filtered.length || 1;
+    const estadoItems = Object.keys(buckets)
+      .filter((k) => k !== 'pre_sso' || buckets[k] > 0)
+      .map((k) => ({
+        label: labels[k], value: buckets[k], valueLabel: fmt(buckets[k]) + ' (' + Math.round((buckets[k] / total) * 100) + '%)',
+        color: 'var(' + ESTADO_COLOR_VAR[k] + ')',
+      }));
+    renderBarChart(document.getElementById('chartEstado'), estadoItems, {});
+  }
+
+  // ---------------------------------------------------------------------
+  // 9) Tabla — agrupación por clase o por usuario
+  // ---------------------------------------------------------------------
+
+  function tagList(items, limit) {
+    const arr = Array.from(items);
+    const shown = limit ? arr.slice(0, limit) : arr;
+    const wrap = el('div', { style: 'display:flex;flex-wrap:wrap;gap:4px' }, shown.map((v) =>
+      el('span', { style: 'display:inline-block;padding:2px 8px;border-radius:999px;background:var(--surface-1);border:1px solid var(--border);font-size:11px;color:var(--text-secondary);white-space:nowrap', text: String(v) })
+    ));
+    if (limit && arr.length > limit) wrap.appendChild(el('span', { style: 'font-size:11px;color:var(--text-muted)', text: '+' + (arr.length - limit) }));
+    return wrap;
+  }
+
+  function statusChip(est) {
+    return el('span', { class: 'status-chip ' + est.cls }, [el('span', { class: 'dot' }), el('span', { text: est.label })]);
+  }
+
+  function groupByClase() {
+    const rows = [];
+    CLASE_INDEX.forEach((info) => {
+      const students = info.students.filter(matchesFilters);
+      if (state.nivel && info.nivel !== state.nivel) return;
+      if (!students.length && (state.rol || state.estado || state.search || state.nivel)) {
+        // si hay filtros activos y no quedan alumnos que califiquen, omitir la clase
+        if (state.rol || state.estado || state.search) return;
+      }
+      const baseStudents = state.rol && state.rol !== '' && normalize(state.rol) !== 'student' ? [] : students;
+      const conn = baseStudents.filter((r) => r.fecha).length;
+      const pct = baseStudents.length ? Math.round((conn / baseStudents.length) * 100) : null;
+      const lastDates = baseStudents.filter((r) => r.fecha).map((r) => r.fecha);
+      const lastConn = lastDates.length ? new Date(Math.max.apply(null, lastDates)) : null;
+      rows.push({
+        key: info.nivel + '||' + info.label,
+        nivel: info.nivel, label: info.label,
+        totalStudents: baseStudents.length, conn, pct,
+        teachers: info.teachers,
+        lastConn,
+        students: baseStudents,
+      });
+    });
+    rows.sort((a, b) => (a.pct == null ? 999 : a.pct) - (b.pct == null ? 999 : b.pct) || a.nivel.localeCompare(b.nivel) || a.label.localeCompare(b.label));
+    return rows;
+  }
+
+  function groupByUsuario() {
+    return getFilteredData()
+      .slice()
+      .sort((a, b) => {
+        const da = a.fecha ? daysSince(a.fecha, today) : 99999;
+        const db = b.fecha ? daysSince(b.fecha, today) : 99999;
+        return db - da || a.usuario.localeCompare(b.usuario);
+      });
+  }
+
+  const PAGE_SIZE = 20;
+  const resultsHead = document.getElementById('resultsHead');
+  const resultsBody = document.getElementById('resultsBody');
+  const emptyState = document.getElementById('emptyState');
+  const resultsTitle = document.getElementById('resultsTitle');
+  const resultsSub = document.getElementById('resultsSub');
+  const paginationEl = document.getElementById('pagination');
+
+  function renderHeadTitle(count) {
+    const parts = [];
+    if (state.nivel) parts.push(state.nivel);
+    if (state.rol) parts.push(state.rol);
+    if (state.estado) parts.push(document.getElementById('estadoSelect').selectedOptions[0].textContent);
+    if (state.search) parts.push('"' + state.search + '"');
+    resultsTitle.textContent = state.groupBy === 'clase' ? 'Resumen por clase' : 'Detalle por usuario';
+    resultsSub.textContent = (parts.length ? parts.join(' · ') + ' · ' : '') + fmt(count) + (state.groupBy === 'clase' ? ' clases' : ' usuarios');
+  }
+
+  function renderTableClase(rows, pageItems) {
+    resultsHead.innerHTML = '';
+    resultsHead.appendChild(el('tr', {}, [
+      el('th', { text: 'Nivel' }), el('th', { text: 'Clase' }),
+      el('th', { class: 'cell-num', text: 'Alumnos' }), el('th', { class: 'cell-num', text: 'Conectados' }),
+      el('th', { text: '% Conexión' }), el('th', { text: 'Docente(s)' }), el('th', { text: 'Última conexión' }), el('th', { text: '' }),
+    ]));
+    resultsBody.innerHTML = '';
+    pageItems.forEach((g) => {
+      const isExpanded = state.expanded.has(g.key);
+      const pct = g.pct == null ? null : g.pct;
+      const row = el('tr', { class: 'group-row' }, [
+        el('td', { text: g.nivel }),
+        el('td', { text: g.label }),
+        el('td', { class: 'cell-num', text: fmt(g.totalStudents) }),
+        el('td', { class: 'cell-num', text: fmt(g.conn) }),
+        el('td', {}, [pct == null ? el('span', { class: 'cell-muted', text: '—' }) :
+          el('div', { style: 'display:flex;align-items:center;gap:8px' }, [
+            el('div', { style: 'width:64px;height:8px;border-radius:4px;background:var(--surface-1);overflow:hidden' }, [
+              el('div', { style: 'height:100%;width:' + pct + '%;background:' + colorForPct(pct) + ';border-radius:4px' }),
+            ]),
+            el('span', { style: 'font-size:12px;color:var(--text-secondary);font-variant-numeric:tabular-nums', text: pct + '%' }),
+          ])]),
+        el('td', {}, [g.teachers.length ? tagList(g.teachers.map((t) => t.usuario), 2) : el('span', { class: 'cell-muted', text: 'Sin asignar' })]),
+        el('td', { class: 'cell-muted', text: fmtFecha(g.lastConn) }),
+        el('td', {}, [el('button', {
+          class: 'expand-btn', type: 'button', text: isExpanded ? 'Ocultar' : 'Ver alumnos',
+          onclick: () => { isExpanded ? state.expanded.delete(g.key) : state.expanded.add(g.key); renderResults(); },
+        })]),
+      ]);
+      resultsBody.appendChild(row);
+
+      if (isExpanded) {
+        const detailTable = el('table', { class: 'detail-table' }, [
+          el('thead', {}, [el('tr', {}, [el('th', { text: 'Usuario' }), el('th', { text: 'Última conexión' }), el('th', { text: 'Estado' })])]),
+          el('tbody', {}, g.students
+            .slice()
+            .sort((a, b) => (a.fecha && b.fecha ? b.fecha - a.fecha : a.fecha ? -1 : 1))
+            .map((s) => {
+              const est = estadoInfo(s, today);
+              return el('tr', {}, [el('td', { text: s.usuario }), el('td', { text: fmtFecha(s.fecha) }), el('td', {}, [statusChip(est)])]);
+            })),
+        ]);
+        resultsBody.appendChild(el('tr', { class: 'detail-row' }, [el('td', { colspan: '8' }, [el('div', { class: 'detail-inner' }, [detailTable])])]));
+      }
+    });
+  }
+
+  function renderTableUsuario(rows, pageItems) {
+    resultsHead.innerHTML = '';
+    resultsHead.appendChild(el('tr', {}, [
+      el('th', { text: 'Usuario' }), el('th', { text: 'Rol' }), el('th', { text: 'Clase(s)' }),
+      el('th', { text: 'Última conexión' }), el('th', { class: 'cell-num', text: 'Días inactivo' }), el('th', { text: 'Estado' }),
+    ]));
+    resultsBody.innerHTML = '';
+    pageItems.forEach((r) => {
+      const est = estadoInfo(r, today);
+      const d = r.fecha ? daysSince(r.fecha, today) : null;
+      resultsBody.appendChild(el('tr', {}, [
+        el('td', { text: r.usuario }),
+        el('td', { text: r.rol }),
+        el('td', {}, [r.clases.length ? tagList(r.clases.map((c) => c.label), 3) : el('span', { class: 'cell-muted', text: '—' })]),
+        el('td', { class: 'cell-muted', text: fmtFecha(r.fecha) }),
+        el('td', { class: 'cell-num', text: d == null ? '—' : fmt(d) }),
+        el('td', {}, [statusChip(est)]),
+      ]));
+    });
+  }
+
+  function renderPagination(totalItems) {
+    paginationEl.innerHTML = '';
+    const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+    if (state.page > totalPages) state.page = totalPages;
+    function pageBtn(label, page, opts) {
+      opts = opts || {};
+      const btn = el('button', { class: 'page-btn' + (opts.active ? ' is-active' : ''), type: 'button', text: label, onclick: () => { state.page = page; renderResults(); } });
+      if (opts.disabled) btn.disabled = true;
+      return btn;
+    }
+    paginationEl.appendChild(pageBtn('‹', Math.max(1, state.page - 1), { disabled: state.page === 1 }));
+    const pages = new Set([1, totalPages]);
+    for (let p = state.page - 2; p <= state.page + 2; p++) if (p >= 1 && p <= totalPages) pages.add(p);
+    const sorted = Array.from(pages).sort((a, b) => a - b);
+    let prev = 0;
+    sorted.forEach((p) => {
+      if (p - prev > 1) paginationEl.appendChild(el('span', { class: 'cell-muted', text: '…', style: 'padding:0 4px' }));
+      paginationEl.appendChild(pageBtn(String(p), p, { active: p === state.page }));
+      prev = p;
+    });
+    paginationEl.appendChild(pageBtn('›', Math.min(totalPages, state.page + 1), { disabled: state.page === totalPages }));
+  }
+
+  let lastRows = [];
+
+  function renderResults() {
+    const rows = state.groupBy === 'clase' ? groupByClase() : groupByUsuario();
+    lastRows = rows;
+    renderHeadTitle(rows.length);
+
+    const table = document.getElementById('resultsTable');
+    if (!rows.length) {
+      table.hidden = true; emptyState.hidden = false; paginationEl.innerHTML = '';
+      return;
+    }
+    table.hidden = false; emptyState.hidden = true;
+
+    const start = (state.page - 1) * PAGE_SIZE;
+    const pageItems = rows.slice(start, start + PAGE_SIZE);
+    if (state.groupBy === 'clase') renderTableClase(rows, pageItems);
+    else renderTableUsuario(rows, pageItems);
+    renderPagination(rows.length);
+  }
+
+  document.getElementById('exportCsv').addEventListener('click', () => {
+    if (state.groupBy === 'clase') {
+      const header = ['Nivel', 'Clase', 'Alumnos', 'Conectados', '% Conexion', 'Docentes', 'Ultima conexion'];
+      const rows = lastRows.map((g) => [g.nivel, g.label, g.totalStudents, g.conn, g.pct == null ? '' : g.pct, g.teachers.map((t) => t.usuario).join(' / '), fmtFecha(g.lastConn)]);
+      downloadCsv('resumen_por_clase.csv', [header, ...rows]);
+    } else {
+      const header = ['Usuario', 'Rol', 'Clases', 'Ultima conexion valida', 'Dias inactivo', 'Estado', 'Conexion excluida (pre-SSO)', 'Ultima conexion registrada (sin filtrar)'];
+      const rows = lastRows.map((r) => [
+        r.usuario, r.rol, r.clases.map((c) => c.label).join(' / '), fmtFecha(r.fecha),
+        r.fecha ? daysSince(r.fecha, today) : '', estadoInfo(r, today).label,
+        r.preSso ? 'Sí' : 'No', fmtFecha(r.fechaCruda),
+      ]);
+      downloadCsv('detalle_por_usuario.csv', [header, ...rows]);
+    }
+  });
+
+  function renderAll() {
+    renderStats();
+    renderCharts();
+    renderResults();
+  }
+
+  // ---------------------------------------------------------------------
+  // 10) Auto-carga si el archivo se abrió con un reporte ya generado
+  //     (descargado previamente con "Descargar HTML")
+  // ---------------------------------------------------------------------
+
+  if (window.__PRELOADED_REPORT__ && window.__PRELOADED_REPORT__.rawRows) {
+    const pre = window.__PRELOADED_REPORT__;
+    colegioNombreInput.value = pre.colegioNombre || '';
+    document.getElementById('ssoDateInput').value = pre.ssoDateStr || '';
+    if (pre.logoDataUrl) {
+      logoDataUrl = pre.logoDataUrl;
+      logoFileName.textContent = 'Logo cargado';
+      logoPreviewBox.innerHTML = '';
+      logoPreviewBox.appendChild(el('img', { src: logoDataUrl, alt: 'Logo' }));
+    }
+    buildReport(pre.rawRows, pre.colegioNombre, pre.logoDataUrl, pre.ssoDateStr, pre.generatedAtIso);
+  }
+
+  updateGenerateEnabled();
+})();
+
+</script>
 </body>
 </html>

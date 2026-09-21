@@ -63,6 +63,10 @@ html, body {
 }
 
 .app { min-height: 100vh; display: flex; flex-direction: column; }
+/* Cuando se muestra el reporte (tema claro), el fondo del body también
+   debe ser claro; si no, quedan márgenes oscuros a los lados del contenido
+   centrado (max-width). El topbar sigue oscuro encima de este fondo. */
+body.is-report-view { background: #F3F4F6; }
 
 /* ---------- Topbar ---------- */
 .topbar {
@@ -221,8 +225,8 @@ input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--ac
   --accent-soft:    #FBE3E2;
   --accent-ink:     #B31810;
 
-  --good:       #17181A;
-  --good-bg:    #EEEEEE;
+  --good:       #1E8E3E;
+  --good-bg:    #E3F5E7;
   --warning:    #E2685F;
   --warning-bg: #FCEAE9;
   --serious:    #E2231A;
@@ -994,6 +998,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   });
 
   document.getElementById('backBtn').addEventListener('click', () => {
+    document.body.classList.remove('is-report-view');
     reportScreen.classList.add('report-hidden');
     setupScreen.style.display = 'flex';
     generateBtn.disabled = false;
@@ -1107,7 +1112,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   }
 
   const ESTADO_COLOR_VAR = {
-    activo: '--accent', moderado: '--accent', inactivo: '--accent', prolongado: '--accent',
+    activo: '--good', moderado: '--accent', inactivo: '--accent', prolongado: '--accent',
     nunca: '--neutral-ink', pre_sso: '--neutral-ink',
   };
 
@@ -1215,6 +1220,7 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   }
 
   function renderBannerAndScreen(colegioNombre, logoUrl) {
+    document.body.classList.add('is-report-view');
     document.getElementById('bannerColegio').textContent = colegioNombre || 'Colegio';
     document.getElementById('topbarTitle').textContent = colegioNombre || 'Reporte de Accesos';
     const totalRegistros = DATA.length;

@@ -55,14 +55,14 @@
         }
 
         .sidebar-brand {
-            padding: 24px 28px;
+            padding: 16px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.08);
             text-align: center;
         }
 
         .sidebar-brand h1 {
             font-family: 'Bricolage Grotesque', sans-serif;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #fff;
             letter-spacing: -0.5px;
@@ -73,39 +73,49 @@
         }
 
         .sidebar-brand p {
-            font-size: 11px;
+            font-size: 10px;
             color: rgba(255,255,255,0.4);
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .sidebar-nav {
             flex: 1;
-            padding: 20px 16px;
+            padding: 12px 12px;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.22) transparent;
         }
 
+        .sidebar-nav::-webkit-scrollbar { width: 6px; }
+        .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+        .sidebar-nav::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+
         .nav-label {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1.5px;
             color: rgba(255,255,255,0.3);
-            padding: 0 12px;
-            margin: 16px 0 8px;
+            padding: 0 10px;
+            margin: 10px 0 5px;
         }
+
+        .nav-label:first-child { margin-top: 2px; }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
+            gap: 9px;
+            padding: 7px 10px;
+            border-radius: 7px;
             color: rgba(255,255,255,0.6);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 400;
             transition: all 0.2s;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .nav-item:hover, .nav-item.active {
@@ -118,7 +128,7 @@
             color: #fff;
         }
 
-        .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-icon { font-size: 14px; width: 18px; text-align: center; }
 
         .sidebar-footer {
             padding: 10px 12px;

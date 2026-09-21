@@ -154,6 +154,67 @@ class DashboardController extends Controller
             ];
         });
 
+        // Acciones de arranque: progreso agregado por acción, sumado en todos los colegios
+        $procesoIconos = [
+            'alta_bundles'            => '🔓',
+            'capacitacion_admin'      => '🎓',
+            'registrar_profesores'    => '👩‍🏫',
+            'creacion_clases'         => '🏫',
+            'libro_profesor'          => '📘',
+            'alta_alumnos'            => '🧑‍🎓',
+            'asignacion_libro_alumno' => '📗',
+            'generar_contrasenas'     => '🔑',
+            'alta_servicios_alumno'   => '🧾',
+            'entrega_colegio'         => '✅',
+        ];
+        // Interpola un color de rojo (<=55%) a verde (100%) según el % de avance
+        $pctColor = function (int $pct): string {
+            $t   = max(0, min(1, ($pct - 55) / 45));
+            $hue = round($t * 145);
+            return "hsl({$hue}, 68%, 42%)";
+        };
+
+        $accionesArranque = \DB::table('school_level_process')
+            ->join('processes', 'processes.id', '=', 'school_level_process.process_id')
+            ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
+            ->selectRaw('processes.id, processes.name, processes.slug, processes.order, COUNT(*) as total,
+                         SUM(CASE WHEN school_level_process.status = "done" THEN 1 ELSE 0 END) as done')
+            ->groupBy('processes.id', 'processes.name', 'processes.slug', 'processes.order')
+            ->orderBy('processes.order')
+            ->get()
+            ->map(function ($row) use ($procesoIconos, $pctColor) {
+                $total = (int) $row->total;
+                $done  = (int) $row->done;
+                $pct   = $total > 0 ? (int) round($done / $total * 100) : 0;
+                return [
+                    'slug'  => $row->slug,
+                    'name'  => $row->name,
+                    'icon'  => $procesoIconos[$row->slug] ?? '📌',
+                    'total' => $total,
+                    'done'  => $done,
+                    'pct'   => $pct,
+                    'color' => $pctColor($pct),
+                ];
+            });
+
+        // Cards de "Formatos y capacitaciones": mismas acciones, resaltadas aparte
+        $formatosCapacitaciones = collect([
+            ['slug' => 'registrar_profesores', 'label' => 'Formatos Docentes',        'icon' => '📝', 'color' => '#3b82f6'],
+            ['slug' => 'alta_alumnos',         'label' => 'Formatos Alumno',          'icon' => '🧑‍🎓', 'color' => '#10b981'],
+            ['slug' => 'capacitacion_admin',   'label' => 'Capacitaciones realizadas', 'icon' => '🎓', 'color' => '#8b5cf6'],
+        ])->map(function ($cfg) use ($accionesArranque) {
+            $row = $accionesArranque->firstWhere('slug', $cfg['slug']);
+            return [
+                'label' => $cfg['label'],
+                'icon'  => $cfg['icon'],
+                'color' => $cfg['color'],
+                'total' => $row['total'] ?? 0,
+                'done'  => $row['done'] ?? 0,
+                'pct'   => $row['pct'] ?? 0,
+            ];
+        });
+
         return view('dashboard', compact(
             'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
@@ -165,7 +226,8 @@ class DashboardController extends Controller
             'totalResurtidos',
             'colegiosEntregados',
             'colegiosPorNivel', 'colegiosPorServicio',
-            'colegiosDocentesRegistrados', 'libroProfesorDetalle'
+            'colegiosDocentesRegistrados', 'libroProfesorDetalle',
+            'accionesArranque', 'formatosCapacitaciones'
         ));
     }
 }

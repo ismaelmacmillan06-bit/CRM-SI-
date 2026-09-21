@@ -606,6 +606,90 @@ document.addEventListener('click', function(e) {
 
 </div>
 
+{{-- ── Acciones de arranque (agregado global por acción, todos los colegios) ── --}}
+@if($accionesArranque->isNotEmpty())
+<style>
+    .acc-card { background:var(--surface); border:1px solid var(--border); border-radius:14px;
+                overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+    .acc-head { padding:18px 22px 14px; }
+    .acc-head-title { font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:700; color:var(--text); }
+    .acc-head-sub { font-size:12.5px; color:var(--text-muted); margin-top:2px; }
+    .acc-colhead { padding:9px 22px; font-size:11px; font-weight:700; text-transform:uppercase;
+                   letter-spacing:.5px; color:var(--text-muted); background:var(--surface2);
+                   border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .acc-row { display:flex; align-items:center; gap:14px; padding:13px 22px; border-bottom:1px solid var(--border); }
+    .acc-row:last-child { border-bottom:none; }
+    .acc-icon { font-size:16px; flex-shrink:0; width:20px; text-align:center; }
+    .acc-name { flex:1; font-size:13.5px; font-weight:600; color:var(--text); min-width:0; }
+    .acc-frac { font-size:12.5px; color:var(--text-muted); font-variant-numeric:tabular-nums;
+                width:76px; flex-shrink:0; }
+    .acc-bar-wrap { flex:1; max-width:260px; height:8px; border-radius:99px; background:var(--border);
+                    overflow:hidden; flex-shrink:1; }
+    .acc-pct { font-size:13px; font-weight:700; width:42px; text-align:right; flex-shrink:0;
+               font-variant-numeric:tabular-nums; }
+    @media (max-width: 720px) {
+        .acc-frac { display:none; }
+        .acc-bar-wrap { max-width:none; }
+    }
+</style>
+<div style="margin-bottom:24px">
+    <div class="acc-card">
+        <div class="acc-head">
+            <div class="acc-head-title">🚀 Acciones de arranque</div>
+            <div class="acc-head-sub">Avance de cada acción, sumado en todos los colegios</div>
+        </div>
+        <div class="acc-colhead">Acción</div>
+        @foreach($accionesArranque as $accion)
+        <div class="acc-row">
+            <span class="acc-icon">{{ $accion['icon'] }}</span>
+            <span class="acc-name">{{ $accion['name'] }}</span>
+            <span class="acc-frac">{{ $accion['done'] }} / {{ $accion['total'] }}</span>
+            <div class="acc-bar-wrap">
+                <div style="width:{{ $accion['pct'] }}%; height:100%; border-radius:99px;
+                            background:{{ $accion['color'] }}; transition:width .4s ease"></div>
+            </div>
+            <span class="acc-pct" style="color:{{ $accion['color'] }}">{{ $accion['pct'] }}%</span>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
+{{-- ── Formatos y capacitaciones (cards de acciones clave) ── --}}
+@if($formatosCapacitaciones->isNotEmpty())
+<div style="margin-bottom:24px">
+    <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600;
+                color:var(--text); margin-bottom:14px">
+        📋 Formatos y capacitaciones
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px">
+        @foreach($formatosCapacitaciones as $card)
+        <div style="background:{{ $card['color'] }}12; border:1px solid {{ $card['color'] }}30;
+                    border-left:4px solid {{ $card['color'] }}; border-radius:14px; padding:20px">
+            <div style="width:38px; height:38px; border-radius:10px; background:{{ $card['color'] }}22;
+                        display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:12px">
+                {{ $card['icon'] }}
+            </div>
+            <div style="font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:4px">
+                {{ $card['label'] }}
+            </div>
+            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800;
+                        color:{{ $card['color'] }}; margin-bottom:10px; line-height:1">
+                {{ $card['pct'] }}%
+            </div>
+            <div style="height:6px; border-radius:99px; background:var(--border); overflow:hidden; margin-bottom:8px">
+                <div style="width:{{ $card['pct'] }}%; height:100%; border-radius:99px;
+                            background:{{ $card['color'] }}; transition:width .4s ease"></div>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums">
+                {{ number_format($card['done']) }} / {{ number_format($card['total']) }}
+            </div>
+        </div>
+        @endforeach
+    </div>
+</div>
+@endif
+
 {{-- Avance por colegio: ahora vive en su propio apartado --}}
 <a href="{{ route('avance-colegios.index') }}" class="card" style="display:flex; align-items:center; justify-content:space-between;
         gap:12px; padding:18px 24px; margin-bottom:24px; text-decoration:none; transition:background 0.15s"

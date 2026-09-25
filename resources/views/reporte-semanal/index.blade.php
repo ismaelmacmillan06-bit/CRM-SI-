@@ -36,9 +36,16 @@
     .rs-save-status { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
     .rs-save-dot { width:7px; height:7px; border-radius:50%; background:#f59e0b; }
     .rs-save-status.is-saved .rs-save-dot { background:#16a34a; }
+
+    .rs-week-nav { display:flex; align-items:center; gap:6px; }
+    .rs-week-btn { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface);
+        color:var(--text); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; text-decoration:none; }
+    .rs-week-btn:hover { background:var(--surface2); }
+    .rs-week-select { height:34px; padding:0 10px; border-radius:8px; border:1px solid var(--border);
+        background:var(--surface); color:var(--text); font-size:13px; font-family:inherit; font-weight:600; }
 </style>
 
-<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap">
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap">
     <div>
         <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:22px; font-weight:700; color:var(--text); margin:0">
             🗓️ Reporte Semanal
@@ -50,10 +57,27 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap">
         <button type="button" onclick="document.getElementById('modal-vista-previa').style.display='flex'; renderVistaPrevia()"
                 class="btn btn-secondary">👁️ Vista previa</button>
-        <a href="{{ route('reporte-semanal.exportar') }}" class="btn btn-secondary">⬇️ Exportar CSV</a>
+        <a href="{{ route('reporte-semanal.exportar', ['week' => $weekStart->toDateString()]) }}" class="btn btn-secondary">⬇️ Exportar CSV</a>
         @hasanyrole('admin|consultor_digital')
         <button type="submit" form="form-reporte-semanal" class="btn btn-primary">✅ Guardar reporte</button>
         @endhasanyrole
+    </div>
+</div>
+
+<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; flex-wrap:wrap">
+    <div class="rs-week-nav">
+        <a href="{{ route('reporte-semanal.index', ['week' => $weekPrev]) }}" class="rs-week-btn" title="Semana anterior">←</a>
+        <select class="rs-week-select" onchange="if(this.value) location.href = '{{ route('reporte-semanal.index') }}?week=' + this.value">
+            @foreach($weekOptions as $option)
+                <option value="{{ $option['value'] }}" {{ $option['value'] === $weekStart->toDateString() ? 'selected' : '' }}>
+                    {{ $option['label'] }}
+                </option>
+            @endforeach
+        </select>
+        <a href="{{ route('reporte-semanal.index', ['week' => $weekNext]) }}" class="rs-week-btn" title="Semana siguiente">→</a>
+        @unless($esSemanaActual)
+            <a href="{{ route('reporte-semanal.index') }}" class="btn btn-secondary" style="padding:6px 12px; font-size:12.5px">Semana actual</a>
+        @endunless
     </div>
 </div>
 
@@ -134,6 +158,7 @@
 @else
 <form id="form-reporte-semanal" method="POST" action="{{ route('reporte-semanal.store') }}">
     @csrf
+    <input type="hidden" name="week" value="{{ $weekStart->toDateString() }}">
     <input type="hidden" name="payload" id="rs-payload">
     <div class="card">
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">

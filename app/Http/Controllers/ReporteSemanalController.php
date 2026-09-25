@@ -20,10 +20,10 @@ class ReporteSemanalController extends Controller
         'extras'            => ['label' => 'Extras',              'icon' => '✨'],
     ];
 
-    public function index()
+    public function index(Request $request)
     {
-        $weekStart = now()->startOfWeek(Carbon::MONDAY);
-        $weekEnd   = $weekStart->copy()->addDays(4);
+        [$weekStart, $weekEnd] = $this->resolverSemana($request->query('week'));
+        $weekOptions = $this->opcionesDeSemana($weekStart);
 
         $consultores = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
             ->with('user')
@@ -58,6 +58,10 @@ class ReporteSemanalController extends Controller
             'weekStart'           => $weekStart,
             'weekEnd'             => $weekEnd,
             'weekLabel'           => $this->formatearRangoSemana($weekStart, $weekEnd),
+            'weekOptions'         => $weekOptions,
+            'esSemanaActual'      => $weekStart->toDateString() === now()->startOfWeek(Carbon::MONDAY)->toDateString(),
+            'weekPrev'            => $weekStart->copy()->subWeek()->toDateString(),
+            'weekNext'            => $weekStart->copy()->addWeek()->toDateString(),
             'ultimoGuardado'      => $ultimoGuardado,
             'colegiosSinAlumno'   => $colegiosSinAlumno,
             'colegiosSinDocente'  => $colegiosSinDocente,
@@ -73,6 +77,7 @@ class ReporteSemanalController extends Controller
 
         $request->validate([
             'payload' => 'required|string',
+            'week'    => 'required|date',
         ]);
 
         $entradas = json_decode($request->input('payload'), true);
@@ -80,7 +85,7 @@ class ReporteSemanalController extends Controller
             return back()->with('error', 'No se pudo leer la información enviada.');
         }
 
-        $weekStart = now()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $weekStart = Carbon::parse($request->input('week'))->startOfWeek(Carbon::MONDAY)->toDateString();
         $categoriasValidas = array_keys(self::CATEGORIAS);
         $consultorIdsValidos = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
             ->pluck('id')
@@ -112,10 +117,9 @@ class ReporteSemanalController extends Controller
         return back()->with('success', "Reporte guardado ({$guardados} celda(s) actualizadas).");
     }
 
-    public function exportar()
+    public function exportar(Request $request)
     {
-        $weekStart = now()->startOfWeek(Carbon::MONDAY);
-        $weekEnd   = $weekStart->copy()->addDays(4);
+        [$weekStart, $weekEnd] = $this->resolverSemana($request->query('week'));
 
         $consultores = Consultant::whereHas('user', fn($q) => $q->role('consultor_digital'))
             ->with('user')
@@ -175,6 +179,71 @@ class ReporteSemanalController extends Controller
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    /**
+     * Convierte el parámetro ?week= (cualquier fecha) en el lunes de esa
+     * semana; si no viene o es inválido, usa la semana actual.
+     */
+    private function resolverSemana(?string $weekParam): array
+    {
+        $weekStart = now()->startOfWeek(Carbon::MONDAY);
+
+        if ($weekParam) {
+            try {
+                $weekStart = Carbon::parse($weekParam)->startOfWeek(Carbon::MONDAY);
+            } catch (\Throwable $e) {
+                // fecha inválida: se queda con la semana actual
+            }
+        }
+
+        return [$weekStart, $weekStart->copy()->addDays(4)];
+    }
+
+    /**
+     * Opciones para el selector de semana: un rango fijo relativo a hoy
+     * (12 semanas atrás, 4 adelante) más cualquier semana que ya tenga
+     * datos guardados, para no perder acceso al historial aunque quede
+     * fuera de ese rango.
+     */
+    private function opcionesDeSemana(Carbon $semanaSeleccionada): \Illuminate\Support\Collection
+    {
+        $hoyLunes = now()->startOfWeek(Carbon::MONDAY);
+
+        $fechas = collect(range(-12, 4))
+            ->map(fn($i) => $hoyLunes->copy()->addWeeks($i)->toDateString());
+
+        $conDatos = WeeklyReportEntry::query()
+            ->selectRaw('DISTINCT week_start')
+            ->pluck('week_start')
+            ->map(fn($d) => Carbon::parse($d)->toDateString());
+
+        return $fechas->merge($conDatos)
+            ->push($semanaSeleccionada->toDateString())
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->map(function ($fecha) use ($hoyLunes) {
+                $inicio = Carbon::parse($fecha);
+                $fin = $inicio->copy()->addDays(4);
+                $label = $this->formatearRangoCorto($inicio, $fin);
+                if ($fecha === $hoyLunes->toDateString()) {
+                    $label .= ' (actual)';
+                }
+                return ['value' => $fecha, 'label' => $label];
+            });
+    }
+
+    private function formatearRangoCorto(Carbon $inicio, Carbon $fin): string
+    {
+        $meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+        if ($inicio->month === $fin->month) {
+            return $inicio->day . '–' . $fin->day . ' ' . $meses[$fin->month - 1] . ' ' . $fin->year;
+        }
+
+        return $inicio->day . ' ' . $meses[$inicio->month - 1]
+             . ' – ' . $fin->day . ' ' . $meses[$fin->month - 1] . ' ' . $fin->year;
     }
 
     private function formatearRangoSemana(Carbon $inicio, Carbon $fin): string

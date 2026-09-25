@@ -503,6 +503,35 @@ function backToStep1() {
         </form>
     </div>
 </div>
+
+{{-- Modal Confirmar Eliminar Resurtido --}}
+<div id="modal-confirmar-eliminar-resurtido" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:1100; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:28px; width:420px; max-width:100%">
+        <div style="display:flex; align-items:flex-start; gap:12px; margin-bottom:18px">
+            <div style="flex-shrink:0; width:36px; height:36px; border-radius:10px; background:#fff5f5;
+                        color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:18px">
+                🗑️
+            </div>
+            <div>
+                <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px; font-weight:600; margin-bottom:4px">
+                    ¿Eliminar este resurtido?
+                </h3>
+                <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin:0">
+                    Las cantidades del bundle se recalcularán automáticamente. Esta acción no se puede deshacer.
+                </p>
+            </div>
+        </div>
+        <form id="form-eliminar-resurtido" method="POST" action="" style="display:flex; gap:10px; justify-content:flex-end">
+            @csrf @method('DELETE')
+            <button type="button" onclick="cerrarConfirmarEliminarResurtido()" class="btn btn-secondary">Cancelar</button>
+            <button type="submit" style="padding:9px 18px; background:#dc2626; color:#fff; border:none;
+                                          border-radius:8px; font-size:13px; font-weight:500; cursor:pointer">
+                Eliminar
+            </button>
+        </form>
+    </div>
+</div>
 @endhasanyrole
 
 @php
@@ -592,13 +621,13 @@ function cerrarEditarResurtido() {
 }
 
 function eliminarResurtido(bundleId, resurtidoId) {
-    if (!confirm('¿Eliminar este resurtido? Las cantidades se recalcularán automáticamente.')) return;
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = baseResurtidoUrl + '/' + bundleId + '/resurtido/' + resurtidoId;
-    form.innerHTML = `@csrf @method('DELETE')`;
-    document.body.appendChild(form);
-    form.submit();
+    document.getElementById('form-eliminar-resurtido').action =
+        baseResurtidoUrl + '/' + bundleId + '/resurtido/' + resurtidoId;
+    document.getElementById('modal-confirmar-eliminar-resurtido').style.display = 'flex';
+}
+
+function cerrarConfirmarEliminarResurtido() {
+    document.getElementById('modal-confirmar-eliminar-resurtido').style.display = 'none';
 }
 </script>
 

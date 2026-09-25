@@ -123,6 +123,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.bundles.destroy-all');
     Route::post('schools/{school}/bundles/{bundle}/resurtido', [BundleResurtidoController::class, 'store'])
          ->name('schools.bundles.resurtido');
+    Route::put('schools/{school}/bundles/{bundle}/resurtido/{resurtido}', [BundleResurtidoController::class, 'update'])
+         ->name('schools.bundles.resurtido.update');
+    Route::delete('schools/{school}/bundles/{bundle}/resurtido/{resurtido}', [BundleResurtidoController::class, 'destroy'])
+         ->name('schools.bundles.resurtido.destroy');
     Route::get('api/bundles-by-series', [SchoolBundleController::class, 'getBundlesBySeries'])
         ->name('api.bundles.by.series');
      

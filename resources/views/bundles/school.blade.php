@@ -451,6 +451,9 @@ function backToStep1() {
                     <th>Nueva cantidad</th>
                     <th>Autorizado por</th>
                     <th>Registrado por</th>
+                    @hasanyrole('admin|consultor_digital')
+                    <th>Acciones</th>
+                    @endhasanyrole
                 </tr>
             </thead>
             <tbody id="historial-tbody"></tbody>
@@ -458,21 +461,70 @@ function backToStep1() {
     </div>
 </div>
 
+@hasanyrole('admin|consultor_digital')
+{{-- Modal Editar Resurtido --}}
+<div id="modal-editar-resurtido" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:1100; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:480px; max-width:100%">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:600">
+                ✏️ Editar Resurtido
+            </h3>
+            <button onclick="cerrarEditarResurtido()"
+                    style="background:none; border:none; font-size:20px; cursor:pointer; color:#666">✕</button>
+        </div>
+        <p id="editar-resurtido-bundle-nombre" style="font-size:13px; color:var(--text-muted); margin-bottom:20px"></p>
+
+        <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px;
+                    padding:12px 16px; font-size:13px; color:#92400e; margin-bottom:20px">
+            Al guardar se recalculan automáticamente las cantidades de este y los resurtidos posteriores.
+        </div>
+
+        <form id="form-editar-resurtido" method="POST" action="">
+            @csrf @method('PUT')
+            <div class="form-group">
+                <label class="form-label">Cantidad resurtida <span style="color:red">*</span></label>
+                <input type="number" name="cantidad_resurtido" id="editar-resurtido-cantidad" class="form-control"
+                       min="1" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Autorizado por</label>
+                <input type="text" name="autorizado_por" id="editar-resurtido-autorizado" class="form-control"
+                       placeholder="Nombre del director o responsable">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Fecha <span style="color:red">*</span></label>
+                <input type="date" name="fecha" id="editar-resurtido-fecha" class="form-control" required>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px">
+                <button type="button" onclick="cerrarEditarResurtido()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">💾 Guardar cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endhasanyrole
+
 @php
 $resurtidosJson = $resurtidosPorBundle->map(fn($items) => $items->map(fn($r) => [
+    'id'                => $r->id,
     'fecha'             => $r->fecha->format('d/m/Y'),
+    'fecha_input'       => $r->fecha->format('Y-m-d'),
     'cantidad_anterior' => $r->cantidad_anterior,
     'cantidad_resurtido'=> $r->cantidad_resurtido,
     'cantidad_nueva'    => $r->cantidad_nueva,
     'autorizado_por'    => $r->autorizado_por ?? '—',
+    'autorizado_por_raw'=> $r->autorizado_por ?? '',
     'registrado_por'    => $r->user?->name ?? '—',
 ]))->toJson();
 @endphp
 
 <script>
 const resurtidosData = @json(json_decode($resurtidosJson));
+const puedeEditarResurtido = @json(auth()->user()->hasAnyRole(['admin', 'consultor_digital']));
 
 const baseResurtidoUrl = '{{ url("schools/{$school->id}/bundles") }}';
+let historialBundleActual = null;
 
 function abrirResurtido(bundleId, nombre, cantidadActual) {
     document.getElementById('resurtido-bundle-nombre').textContent = nombre;
@@ -488,7 +540,13 @@ function cerrarResurtido() {
 }
 
 function verHistorial(bundleId, nombre) {
+    historialBundleActual = bundleId;
     document.getElementById('historial-bundle-nombre').textContent = nombre;
+    renderHistorial(bundleId);
+    document.getElementById('modal-historial').style.display = 'flex';
+}
+
+function renderHistorial(bundleId) {
     const registros = resurtidosData[bundleId] || [];
     let html = '';
     registros.forEach(r => {
@@ -499,13 +557,49 @@ function verHistorial(bundleId, nombre) {
             <td><strong>${r.cantidad_nueva}</strong></td>
             <td>${r.autorizado_por}</td>
             <td style="color:var(--text-muted)">${r.registrado_por}</td>
+            ${puedeEditarResurtido ? `<td style="display:flex; gap:6px; white-space:nowrap">
+                <button onclick='abrirEditarResurtido(${bundleId}, ${r.id})'
+                        style="padding:4px 9px; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;
+                               border-radius:6px; font-size:11.5px; font-weight:500; cursor:pointer">
+                    Editar
+                </button>
+                <button onclick="eliminarResurtido(${bundleId}, ${r.id})"
+                        style="padding:4px 9px; background:#fff5f5; color:#dc2626; border:1px solid #fecaca;
+                               border-radius:6px; font-size:11.5px; font-weight:500; cursor:pointer">
+                    Eliminar
+                </button>
+            </td>` : ''}
         </tr>`;
     });
     document.getElementById('historial-tbody').innerHTML = html;
-    document.getElementById('modal-historial').style.display = 'flex';
 }
 
+function abrirEditarResurtido(bundleId, resurtidoId) {
+    const registro = (resurtidosData[bundleId] || []).find(r => r.id === resurtidoId);
+    if (!registro) return;
+    document.getElementById('editar-resurtido-bundle-nombre').textContent =
+        document.getElementById('historial-bundle-nombre').textContent;
+    document.getElementById('editar-resurtido-cantidad').value = registro.cantidad_resurtido;
+    document.getElementById('editar-resurtido-autorizado').value = registro.autorizado_por_raw;
+    document.getElementById('editar-resurtido-fecha').value = registro.fecha_input;
+    document.getElementById('form-editar-resurtido').action =
+        baseResurtidoUrl + '/' + bundleId + '/resurtido/' + resurtidoId;
+    document.getElementById('modal-editar-resurtido').style.display = 'flex';
+}
 
+function cerrarEditarResurtido() {
+    document.getElementById('modal-editar-resurtido').style.display = 'none';
+}
+
+function eliminarResurtido(bundleId, resurtidoId) {
+    if (!confirm('¿Eliminar este resurtido? Las cantidades se recalcularán automáticamente.')) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = baseResurtidoUrl + '/' + bundleId + '/resurtido/' + resurtidoId;
+    form.innerHTML = `@csrf @method('DELETE')`;
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 
 @endsection

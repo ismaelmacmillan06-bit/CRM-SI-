@@ -75,6 +75,54 @@
 </div>
 @endif
 
+{{-- Modal confirmación eliminar un bundle --}}
+<div id="modal-delete-bundle" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+     z-index:999; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:32px; width:460px; max-width:100%;
+                box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+        <div style="text-align:center; margin-bottom:24px">
+            <div style="width:56px; height:56px; border-radius:50%; background:#fff5f5;
+                        display:flex; align-items:center; justify-content:center;
+                        margin:0 auto 16px; font-size:26px">
+                🗑️
+            </div>
+            <h3 style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px;
+                       font-weight:700; margin:0 0 8px; color:#111">
+                ¿Eliminar este bundle?
+            </h3>
+            <p style="font-size:14px; color:var(--text-muted); margin:0; line-height:1.6">
+                Se eliminará <strong id="delete-bundle-nombre"></strong> de <strong>{{ $school->name }}</strong>.<br>
+                Esta acción no se puede deshacer.
+            </p>
+        </div>
+        <form id="form-delete-bundle" method="POST" action="" style="display:flex; gap:10px; justify-content:center">
+            @csrf @method('DELETE')
+            <button type="button"
+                    onclick="cerrarEliminarBundle()"
+                    class="btn btn-secondary">
+                Cancelar
+            </button>
+            <button type="submit"
+                    style="padding:10px 24px; background:#dc2626; color:#fff; border:none;
+                           border-radius:8px; font-size:14px; font-weight:600; cursor:pointer">
+                Sí, eliminar
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function abrirEliminarBundle(url, nombre) {
+    document.getElementById('delete-bundle-nombre').textContent = nombre;
+    document.getElementById('form-delete-bundle').action = url;
+    document.getElementById('modal-delete-bundle').style.display = 'flex';
+}
+
+function cerrarEliminarBundle() {
+    document.getElementById('modal-delete-bundle').style.display = 'none';
+}
+</script>
+
 {{-- Modal importación masiva --}}
 <div id="modal-import" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
      z-index:999; align-items:center; justify-content:center; padding:20px">
@@ -283,12 +331,11 @@
                                    border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap">
                         🔄 Resurtido
                     </button>
-                    <form method="POST"
-                          action="{{ route('schools.bundles.destroy', [$school, $bundle]) }}"
-                          onsubmit="return confirm('¿Eliminar este bundle?')">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-danger btn-sm">Eliminar</button>
-                    </form>
+                    <button type="button"
+                            onclick="abrirEliminarBundle({{ json_encode(route('schools.bundles.destroy', [$school, $bundle])) }}, {{ json_encode($bundle->name) }})"
+                            class="btn btn-danger btn-sm">
+                        Eliminar
+                    </button>
                     @endhasanyrole
                 </td>
             </tr>

@@ -11,8 +11,6 @@
             class="btn btn-secondary">📊 Carga masiva Excel/CSV</button>
     <button onclick="document.getElementById('modal-pdf').style.display='flex'"
             class="btn btn-secondary">📄 Carga masiva PDF</button>
-    @endhasanyrole
-    @role('admin')
     <form method="POST" action="{{ route('schools.students.destroy-all', $school) }}"
           id="form-borrar-todos-alumnos">
         @csrf @method('DELETE')
@@ -21,7 +19,7 @@
             🗑️ Borrar todos
         </button>
     </form>
-    @endrole
+    @endhasanyrole
 </div>
 
 {{-- Modal Excel --}}

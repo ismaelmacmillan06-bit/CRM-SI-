@@ -51,7 +51,12 @@ class ReporteSemanalController extends Controller
         $novedadesCapturadas = $entradas->filter(fn($e) => trim((string) $e->content) !== '')->count();
         $avance = $totalCampos > 0 ? (int) round($novedadesCapturadas / $totalCampos * 100) : 0;
 
+        $esAdmin = auth()->user()->hasRole('admin');
+        $miConsultorId = optional(Consultant::where('user_id', auth()->id())->first())->id;
+
         return view('reporte-semanal.index', [
+            'esAdmin'             => $esAdmin,
+            'miConsultorId'       => $miConsultorId,
             'categorias'          => self::CATEGORIAS,
             'consultores'         => $consultores,
             'grid'                => $grid,
@@ -91,12 +96,21 @@ class ReporteSemanalController extends Controller
             ->pluck('id')
             ->toArray();
 
+        $esAdmin = auth()->user()->hasRole('admin');
+        $miConsultorId = optional(Consultant::where('user_id', auth()->id())->first())->id;
+
         $guardados = 0;
         foreach ($entradas as $entrada) {
             $categoria = $entrada['category'] ?? null;
             $consultantId = $entrada['consultant_id'] ?? null;
 
             if (!in_array($categoria, $categoriasValidas, true) || !in_array((int) $consultantId, $consultorIdsValidos, true)) {
+                continue;
+            }
+
+            // Cada consultor digital solo puede guardar su propia columna;
+            // el admin puede editar todas.
+            if (!$esAdmin && (int) $consultantId !== (int) $miConsultorId) {
                 continue;
             }
 
@@ -132,53 +146,81 @@ class ReporteSemanalController extends Controller
 
         [$colegiosSinAlumno, $colegiosSinDocente] = $this->colegiosPendientes();
 
-        $filename = 'reporte_semanal_' . $weekStart->format('Y-m-d') . '.csv';
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Reporte semanal');
 
-        $callback = function () use ($consultores, $entradas, $weekStart, $weekEnd, $colegiosSinAlumno, $colegiosSinDocente) {
-            $out = fopen('php://output', 'w');
-            fwrite($out, "\xEF\xBB\xBF"); // BOM para acentos en Excel
-            $csv = fn(array $row) => fputcsv($out, $row, ',', '"', '\\');
+        $col = fn(int $index) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+        $ultimaCol = $col($consultores->count()); // 0 = "Seguimiento"
 
-            $csv(['Reporte semanal — ' . $weekStart->format('d/m/Y') . ' al ' . $weekEnd->format('d/m/Y')]);
-            $csv([]);
-            $csv(['Colegios que aún no envían su formato de alumno', $colegiosSinAlumno->count()]);
-            $csv(['Colegios que aún no envían su formato de docente', $colegiosSinDocente->count()]);
-            $csv([]);
+        $sheet->setCellValue('A1', 'Reporte semanal — ' . $weekStart->format('d/m/Y') . ' al ' . $weekEnd->format('d/m/Y'));
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(13);
 
-            $header = ['Seguimiento'];
-            foreach ($consultores as $consultor) {
-                $header[] = $consultor->user->name;
-            }
-            $csv($header);
+        $sheet->setCellValue('A3', 'Colegios que aún no envían su formato de alumno');
+        $sheet->setCellValue('B3', $colegiosSinAlumno->count());
+        $sheet->setCellValue('A4', 'Colegios que aún no envían su formato de docente');
+        $sheet->setCellValue('B4', $colegiosSinDocente->count());
+        $sheet->getStyle('A3:A4')->getFont()->setBold(true);
 
-            foreach (self::CATEGORIAS as $slug => $meta) {
-                $fila = [$meta['label']];
-                foreach ($consultores as $consultor) {
-                    $entrada = $entradas->get($slug . '_' . $consultor->id);
-                    $fila[] = $entrada->content ?? '';
-                }
-                $csv($fila);
-            }
-
-            $csv([]);
-            $csv(['Listado de colegios que faltan de entregar formato docente']);
-            foreach ($colegiosSinDocente as $colegio) {
-                $csv([$colegio->name]);
-            }
-
-            $csv([]);
-            $csv(['Listado de colegios que faltan de entregar formato alumno']);
-            foreach ($colegiosSinAlumno as $colegio) {
-                $csv([$colegio->name]);
-            }
-
-            fclose($out);
-        };
-
-        return response()->stream($callback, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        $filaHeader = 6;
+        $sheet->setCellValue('A' . $filaHeader, 'Seguimiento');
+        foreach ($consultores as $i => $consultor) {
+            $sheet->setCellValue($col($i + 1) . $filaHeader, $consultor->user->name);
+        }
+        $sheet->getStyle("A{$filaHeader}:{$ultimaCol}{$filaHeader}")->applyFromArray([
+            'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'C0392B']],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
         ]);
+
+        $fila = $filaHeader + 1;
+        foreach (self::CATEGORIAS as $slug => $meta) {
+            $sheet->setCellValue('A' . $fila, $meta['label']);
+            $sheet->getStyle('A' . $fila)->getFont()->setBold(true);
+            foreach ($consultores as $i => $consultor) {
+                $entrada = $entradas->get($slug . '_' . $consultor->id);
+                $celda = $col($i + 1) . $fila;
+                $sheet->setCellValue($celda, $entrada->content ?? '');
+                $sheet->getStyle($celda)->getAlignment()->setWrapText(true)->setVertical(\PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_TOP);
+            }
+            $sheet->getRowDimension($fila)->setRowHeight(45);
+            $fila++;
+        }
+
+        $fila += 1;
+        $sheet->setCellValue('A' . $fila, 'Listado de colegios que faltan de entregar formato docente');
+        $sheet->getStyle('A' . $fila)->getFont()->setBold(true);
+        $fila++;
+        foreach ($colegiosSinDocente as $colegio) {
+            $sheet->setCellValue('A' . $fila, $colegio->name);
+            $fila++;
+        }
+
+        $fila += 1;
+        $sheet->setCellValue('A' . $fila, 'Listado de colegios que faltan de entregar formato alumno');
+        $sheet->getStyle('A' . $fila)->getFont()->setBold(true);
+        $fila++;
+        foreach ($colegiosSinAlumno as $colegio) {
+            $sheet->setCellValue('A' . $fila, $colegio->name);
+            $fila++;
+        }
+
+        $sheet->getColumnDimension('A')->setWidth(30);
+        foreach (range(1, $consultores->count()) as $i) {
+            $sheet->getColumnDimension($col($i))->setWidth(32);
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'reporte_semanal_');
+        try {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tempFile);
+            $filename = 'reporte_semanal_' . $weekStart->format('Y-m-d') . '.xlsx';
+            return response()->download($tempFile, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            @unlink($tempFile);
+            return back()->with('error', 'No se pudo generar el Excel. Intenta de nuevo.');
+        }
     }
 
     /**

@@ -22,16 +22,21 @@
     .rs-pending-empty { font-size:12.5px; color:var(--text-muted); padding:10px 2px; }
 
     .rs-table-wrap { overflow-x:auto; }
-    table.rs-table { width:100%; border-collapse:collapse; font-size:13px; min-width:720px; }
+    table.rs-table { border-collapse:collapse; font-size:13px; }
     table.rs-table thead th { text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
         color:var(--text-muted); background:var(--surface2); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+    table.rs-table th:first-child, table.rs-table td:first-child { min-width:160px; }
+    table.rs-table th:not(:first-child), table.rs-table td:not(:first-child) { min-width:210px; }
     table.rs-table td { padding:8px; vertical-align:top; border-bottom:1px solid var(--border); }
     table.rs-table tbody tr:last-child td { border-bottom:none; }
     .rs-cat-cell { white-space:nowrap; font-weight:600; padding-top:14px !important; }
     .rs-cat-icon { margin-right:6px; }
-    .rs-textarea { width:100%; min-width:180px; min-height:64px; padding:8px 10px; border:1px solid var(--border);
+    .rs-textarea { width:100%; min-height:64px; padding:8px 10px; border:1px solid var(--border);
         border-radius:8px; font-size:12.5px; font-family:inherit; color:var(--text); resize:vertical; background:var(--surface); }
     .rs-textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+    .rs-textarea:disabled { background:var(--surface2); color:var(--text-muted); cursor:not-allowed; resize:none; }
+    .rs-th-mine { color:var(--accent) !important; }
+    .rs-mine-badge { font-size:9.5px; font-weight:700; color:var(--accent); margin-left:4px; text-transform:none; letter-spacing:0; }
 
     .rs-save-status { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
     .rs-save-dot { width:7px; height:7px; border-radius:50%; background:#f59e0b; }
@@ -57,7 +62,7 @@
     <div style="display:flex; gap:10px; flex-wrap:wrap">
         <button type="button" onclick="document.getElementById('modal-vista-previa').style.display='flex'; renderVistaPrevia()"
                 class="btn btn-secondary">👁️ Vista previa</button>
-        <a href="{{ route('reporte-semanal.exportar', ['week' => $weekStart->toDateString()]) }}" class="btn btn-secondary">⬇️ Exportar CSV</a>
+        <a href="{{ route('reporte-semanal.exportar', ['week' => $weekStart->toDateString()]) }}" class="btn btn-secondary">⬇️ Exportar Excel</a>
         @hasanyrole('admin|consultor_digital')
         <button type="submit" form="form-reporte-semanal" class="btn btn-primary">✅ Guardar reporte</button>
         @endhasanyrole
@@ -164,11 +169,19 @@
         <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px">
             <div>
                 <span class="card-title">📝 Captura de novedades</span>
-                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Una columna por consultor digital · una fila por seguimiento</div>
+                <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
+                    Una columna por consultor digital · una fila por seguimiento
+                    @unless($esAdmin)
+                        · solo puedes editar tu propia columna
+                    @endunless
+                </div>
             </div>
-            <div class="rs-save-status is-saved" id="rs-save-status">
-                <span class="rs-save-dot"></span>
-                <span id="rs-save-status-text">Sin cambios sin guardar</span>
+            <div style="display:flex; align-items:center; gap:14px">
+                <span class="rs-scroll-hint">↔️ Desliza para ver a todos</span>
+                <div class="rs-save-status is-saved" id="rs-save-status">
+                    <span class="rs-save-dot"></span>
+                    <span id="rs-save-status-text">Sin cambios sin guardar</span>
+                </div>
             </div>
         </div>
         <div class="card-body" style="padding:0">
@@ -176,9 +189,13 @@
                 <table class="rs-table">
                     <thead>
                         <tr>
-                            <th style="width:170px">Seguimiento</th>
+                            <th>Seguimiento</th>
                             @foreach($consultores as $consultor)
-                                <th>{{ $consultor->user->name }}</th>
+                                @php $esMiColumna = !$esAdmin && $miConsultorId && $consultor->id === $miConsultorId; @endphp
+                                <th class="{{ $esMiColumna ? 'rs-th-mine' : '' }}">
+                                    {{ $consultor->user->name }}
+                                    @if($esMiColumna)<span class="rs-mine-badge">(tú)</span>@endif
+                                </th>
                             @endforeach
                         </tr>
                     </thead>
@@ -187,11 +204,13 @@
                         <tr>
                             <td class="rs-cat-cell"><span class="rs-cat-icon">{{ $meta['icon'] }}</span>{{ $meta['label'] }}</td>
                             @foreach($consultores as $consultor)
+                                @php $puedeEditar = $esAdmin || ($miConsultorId && $consultor->id === $miConsultorId); @endphp
                             <td>
                                 <textarea class="rs-textarea"
                                           data-category="{{ $slug }}"
                                           data-consultant="{{ $consultor->id }}"
-                                          placeholder="Escribe la novedad...">{{ $grid[$slug][$consultor->id] ?? '' }}</textarea>
+                                          placeholder="Escribe la novedad..."
+                                          @disabled(!$puedeEditar)>{{ $grid[$slug][$consultor->id] ?? '' }}</textarea>
                             </td>
                             @endforeach
                         </tr>

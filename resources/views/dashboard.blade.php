@@ -868,7 +868,10 @@ document.addEventListener('click', function(e) {
 @endif
 
 {{-- ── Línea de tiempo de arranque (día por día, filtro semana/mes) ── --}}
-@if($timelineArranque->isNotEmpty())
+{{-- Desactivada temporalmente a pedido del usuario (2026-09-24). El código se
+     deja completo para poder reactivarla después: solo cambiar "false" por
+     "$timelineArranque->isNotEmpty()". --}}
+@if(false && $timelineArranque->isNotEmpty())
 <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px;
             padding:20px 22px; margin-bottom:24px; box-shadow:0 1px 3px rgba(0,0,0,0.06)">
     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px">

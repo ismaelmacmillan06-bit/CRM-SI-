@@ -70,9 +70,9 @@
 
   /* ---------- Format preview ---------- */
   .format-preview{
-    display:inline-grid;grid-template-columns:1.3fr 1fr 1fr;
+    display:inline-grid;grid-template-columns:1.3fr 1fr;
     background:var(--surface-2);border:1px solid var(--border-strong);
-    border-radius:10px;overflow:hidden;margin-bottom:14px;font-variant-numeric:tabular-nums;min-width:460px}
+    border-radius:10px;overflow:hidden;margin-bottom:14px;font-variant-numeric:tabular-nums;min-width:340px}
   .col-header{background:#fce7f3;color:var(--primary-d);font-weight:700;font-size:13px;
     padding:8px 16px;border-bottom:2px solid var(--border-strong);letter-spacing:.02em}
   .col-header.b{border-left:1px solid var(--border-strong)}
@@ -84,15 +84,14 @@
   .format-desc{font-size:13px;color:var(--muted);line-height:1.6;margin:0}
   .format-desc b{color:var(--ink)}
 
-  /* ---------- Three-column input ---------- */
-  .cols-header{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:8px}
+  /* ---------- Two-column input ---------- */
+  .cols-header{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
   .col-label{font-size:12.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px}
   .col-label .badge{display:inline-flex;align-items:center;justify-content:center;
     width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;color:#fff;flex:none}
   .col-label .badge.a{background:#64748b}
   .col-label .badge.b{background:var(--primary)}
-  .col-label .badge.c{background:#9333ea}
-  .cols-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  .cols-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   textarea{width:100%;padding:13px 14px;border:1px solid var(--border-strong);border-radius:12px;
     font-size:13px;font-family:"Space Grotesk",monospace,"Space Grotesk",sans-serif;color:var(--ink);
     resize:vertical;min-height:220px;line-height:1.7;transition:border-color .15s,outline .15s;background:var(--surface-2)}
@@ -208,7 +207,7 @@
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
     </span>
-    <span>Ingresa el correo, la contraseña de <b>Servicios SI</b> y la contraseña de <b>MEE</b>, uno por línea. Las tres columnas deben tener el mismo número de filas. Descarga el archivo y envíalo al equipo MEE para procesar la vinculación.</span>
+    <span>Ingresa el correo y la contraseña, uno por línea. Las dos columnas deben tener el mismo número de filas. Descarga el archivo y envíalo al equipo MEE para procesar la vinculación.</span>
   </div>
 
   <div class="info-box strong">
@@ -217,7 +216,7 @@
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
       </svg>
     </span>
-    <span><b>Importante:</b> para que la vinculación SSO funcione, la contraseña de <b>Servicios SI</b> y la contraseña de <b>MEE</b> deben ser exactamente la misma para cada usuario.</span>
+    <span><b>Importante:</b> esta contraseña quedará vinculada por SSO tanto en <b>Servicios SI</b> como en <b>MEE</b> — es una sola, no dos distintas.</span>
   </div>
 
   <!-- Format preview -->
@@ -228,22 +227,18 @@
     </div>
     <div class="format-preview">
       <div class="col-header">Correo</div>
-      <div class="col-header b">Password Servicios</div>
-      <div class="col-header b">Password MEE</div>
+      <div class="col-header b">Password</div>
       <div class="col-row">75044025@star.edu.pe</div>
-      <div class="col-row b">75044025SPRO</div>
       <div class="col-row b">75044025SPRO</div>
       <div class="col-row">76494533@star.edu.pe</div>
       <div class="col-row b">76494533SPRO</div>
-      <div class="col-row b">76494533SPRO</div>
       <div class="col-row muted">...</div>
       <div class="col-row b muted">...</div>
-      <div class="col-row b muted">...</div>
     </div>
-    <p class="format-desc">Columna <b>Correo</b>: usuario a vincular. Columnas <b>Password Servicios</b> y <b>Password MEE</b>: deben tener <b>el mismo valor</b> — es la contraseña que quedará vinculada por SSO en ambas plataformas.</p>
+    <p class="format-desc">Columna <b>Correo</b>: usuario a vincular. Columna <b>Password</b>: la contraseña que quedará vinculada por SSO en ambas plataformas.</p>
   </div>
 
-  <!-- Three-column input -->
+  <!-- Two-column input -->
   <div class="section-card">
     <div class="cols-header">
       <div class="col-label">
@@ -252,27 +247,18 @@
       </div>
       <div class="col-label">
         <span class="badge b">B</span>
-        Password <span style="font-size:11px;font-weight:400;color:var(--muted)">(Servicios SI)</span>
-      </div>
-      <div class="col-label">
-        <span class="badge c">C</span>
-        Password <span style="font-size:11px;font-weight:400;color:var(--muted)">(MEE)</span>
+        Password
       </div>
     </div>
     <div class="cols-wrap">
       <textarea id="colA" placeholder="75044025@star.edu.pe&#10;76494533@star.edu.pe&#10;..."></textarea>
       <textarea id="colB" placeholder="75044025SPRO&#10;76494533SPRO&#10;..."></textarea>
-      <textarea id="colC" placeholder="75044025SPRO&#10;76494533SPRO&#10;..."></textarea>
     </div>
     <div class="status-bar">
       <span class="pair-count" id="pairCount">0 registros</span>
       <span class="mismatch-warn" id="mismatchWarn">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span id="mismatchMsg"></span>
-      </span>
-      <span class="mismatch-warn" id="passMismatchWarn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span id="passMismatchMsg"></span>
       </span>
     </div>
     <div class="hint">Pega los datos desde Excel, un registro por línea. Las filas se emparejan por posición.</div>
@@ -347,68 +333,46 @@ let lastFileName = '';
 const $ = s => document.querySelector(s);
 const colA      = $('#colA');
 const colB      = $('#colB');
-const colC      = $('#colC');
 const tallyEl   = $('#tallyN');
 const pairEl    = $('#pairCount');
 const warnEl    = $('#mismatchWarn');
 const warnMsgEl = $('#mismatchMsg');
-const passWarnEl    = $('#passMismatchWarn');
-const passWarnMsgEl = $('#passMismatchMsg');
 
 function parseCol(ta) {
   return ta.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
 }
 
-function countPasswordMismatches(a, b, c) {
-  const n = Math.min(a.length, b.length, c.length);
-  let mismatches = 0;
-  for (let i = 0; i < n; i++) {
-    if (b[i] !== c[i]) mismatches++;
-  }
-  return mismatches;
-}
-
 function updateTally() {
   const a = parseCol(colA);
   const b = parseCol(colB);
-  const c = parseCol(colC);
-  const rows = Math.min(a.length, b.length, c.length);
-  const n    = Math.max(a.length, b.length, c.length);
+  const rows = Math.min(a.length, b.length);
+  const n    = Math.max(a.length, b.length);
   tallyEl.textContent = rows;
   pairEl.textContent  = `${rows} registro${rows !== 1 ? 's' : ''}`;
-  pairEl.classList.toggle('ok', rows > 0 && a.length === b.length && b.length === c.length);
+  pairEl.classList.toggle('ok', rows > 0 && a.length === b.length);
 
-  const countMismatch = !(a.length === b.length && b.length === c.length) && n > 0;
+  const countMismatch = a.length !== b.length && n > 0;
   warnEl.classList.toggle('show', countMismatch);
   if (countMismatch) {
-    warnMsgEl.textContent = 'Las tres columnas no tienen el mismo número de filas';
+    warnMsgEl.textContent = 'Las dos columnas no tienen el mismo número de filas';
   }
   colA.classList.toggle('err', countMismatch && a.length !== n);
   colB.classList.toggle('err', countMismatch && b.length !== n);
-  colC.classList.toggle('err', countMismatch && c.length !== n);
-
-  const passMismatches = countPasswordMismatches(a, b, c);
-  passWarnEl.classList.toggle('show', passMismatches > 0);
-  if (passMismatches > 0) {
-    passWarnMsgEl.textContent = `${passMismatches} contraseña${passMismatches !== 1 ? 's' : ''} de Servicios y MEE no coincide${passMismatches !== 1 ? 'n' : ''}`;
-  }
 }
 
 colA.addEventListener('input', updateTally);
 colB.addEventListener('input', updateTally);
-colC.addEventListener('input', updateTally);
 
 $('#btnLimpiar').addEventListener('click', () => {
   colA.value = '';
   colB.value = '';
-  colC.value = '';
   updateTally();
   toast('Lista limpiada');
 });
 
 $('#btnPlantilla').addEventListener('click', () => {
-  const ws = XLSX.utils.aoa_to_sheet([['Correo', 'Password Servicios', 'Password MEE']]);
-  ws['!cols'] = [{wch: 36}, {wch: 22}, {wch: 22}];
+  const ws = XLSX.utils.aoa_to_sheet([['Correo', 'Password']]);
+  ws['!cols'] = [{wch: 36}, {wch: 22}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
   XLSX.writeFile(wb, 'vinculacionSSO_MEE.xlsx');
@@ -418,14 +382,13 @@ $('#btnPlantilla').addEventListener('click', () => {
 function buildAndDownload() {
   const a = parseCol(colA);
   const b = parseCol(colB);
-  const c = parseCol(colC);
-  const maxLen = Math.max(a.length, b.length, c.length, 1);
-  const rows = [['Correo', 'Password Servicios', 'Password MEE']];
+  const maxLen = Math.max(a.length, b.length, 1);
+  const rows = [['Correo', 'Password']];
   for (let i = 0; i < maxLen; i++) {
-    rows.push([a[i] || '', b[i] || '', c[i] || '']);
+    rows.push([a[i] || '', b[i] || '']);
   }
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch: 36}, {wch: 22}, {wch: 22}];
+  ws['!cols'] = [{wch: 36}, {wch: 22}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Hoja1');
   const d = new Date();
@@ -440,8 +403,7 @@ $('#doneAgain').addEventListener('click', buildAndDownload);
 function descargar() {
   const a = parseCol(colA);
   const b = parseCol(colB);
-  const c = parseCol(colC);
-  if (a.length === 0 && b.length === 0 && c.length === 0) {
+  if (a.length === 0 && b.length === 0) {
     buildAndDownload();
     $('#doneFile').textContent = lastFileName;
     $('#noteFile').textContent = lastFileName;
@@ -449,13 +411,8 @@ function descargar() {
     openOv('#ovDone');
     return;
   }
-  if (!(a.length === b.length && b.length === c.length)) {
-    toast('Las tres columnas deben tener el mismo número de registros', 'err');
-    return;
-  }
-  const mismatches = countPasswordMismatches(a, b, c);
-  if (mismatches > 0) {
-    toast(`Hay ${mismatches} contraseña(s) que no coinciden entre Servicios y MEE`, 'err');
+  if (a.length !== b.length) {
+    toast('Las dos columnas deben tener el mismo número de registros', 'err');
     return;
   }
   buildAndDownload();

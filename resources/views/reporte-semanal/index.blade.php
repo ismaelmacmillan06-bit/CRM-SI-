@@ -22,10 +22,10 @@
     .rs-pending-empty { font-size:12.5px; color:var(--text-muted); padding:10px 2px; }
 
     .rs-table-wrap { overflow-x:auto; }
-    table.rs-table { border-collapse:collapse; font-size:13px; }
+    table.rs-table { width:100%; border-collapse:collapse; font-size:13px; }
     table.rs-table thead th { text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
         color:var(--text-muted); background:var(--surface2); padding:10px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
-    table.rs-table th:first-child, table.rs-table td:first-child { min-width:160px; }
+    table.rs-table th:first-child, table.rs-table td:first-child { width:170px; min-width:170px; }
     table.rs-table th:not(:first-child), table.rs-table td:not(:first-child) { min-width:210px; }
     table.rs-table td { padding:8px; vertical-align:top; border-bottom:1px solid var(--border); }
     table.rs-table tbody tr:last-child td { border-bottom:none; }

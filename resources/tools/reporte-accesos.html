@@ -1247,10 +1247,13 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
   function renderSsoNote() {
     const note = document.getElementById('ssoNote');
     const text = document.getElementById('ssoNoteText');
+    // Sin fecha de SSO no se muestra ningún aviso en el reporte: este reporte
+    // se comparte tal cual con el colegio, y una alerta así ahí solo genera
+    // confusión/alarma innecesaria. El aviso a quien genera el reporte ya se
+    // dio antes, en el modal de la pantalla de configuración.
     if (!ssoActivationDate) {
-      note.hidden = false;
-      note.classList.add('sso-note--missing');
-      text.innerHTML = '<strong>No se indicó fecha de activación de SSO.</strong> Este reporte puede estar contando conexiones de verificación del equipo SI como uso real del colegio.';
+      note.hidden = true;
+      note.classList.remove('sso-note--missing');
       return;
     }
     note.classList.remove('sso-note--missing');

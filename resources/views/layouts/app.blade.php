@@ -507,6 +507,9 @@
         <a href="{{ route('seguimiento-externo.index') }}" class="nav-item {{ request()->routeIs('seguimiento-externo.*') ? 'active' : '' }}">
             <span class="nav-icon">🌐</span> Seguimiento Externo <span style="font-size:9px; font-weight:700; color:var(--accent); margin-left:4px">BETA</span>
         </a>
+        <a href="{{ route('reporte-semanal.index') }}" class="nav-item {{ request()->routeIs('reporte-semanal.*') ? 'active' : '' }}">
+            <span class="nav-icon">🗓️</span> Reporte Semanal
+        </a>
         @endhasanyrole
         @hasrole('admin')
         <a href="{{ route('configuracion.servicios.index') }}" class="nav-item {{ request()->routeIs('configuracion.*') ? 'active' : '' }}">

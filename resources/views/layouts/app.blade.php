@@ -130,6 +130,17 @@
 
         .nav-icon { font-size: 14px; width: 18px; text-align: center; }
 
+        .nav-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ef4444;
+            margin-left: 6px;
+            box-shadow: 0 0 0 2px rgba(239,68,68,0.25);
+            flex-shrink: 0;
+        }
+
         .sidebar-footer {
             padding: 10px 12px;
             border-top: 1px solid rgba(255,255,255,0.08);
@@ -463,10 +474,12 @@
         </a>
         <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
             <span class="nav-icon">✅</span> Tareas SI
+            @if($hayTareaNueva ?? false)<span class="nav-dot" title="Hay una tarea nueva"></span>@endif
         </a>
         @unlessrole('consultor_eca|consultor_elt|representante_ventas')
         <a href="{{ route('tablero.index') }}" class="nav-item {{ request()->routeIs('tablero.*') ? 'active' : '' }}">
             <span class="nav-icon">📌</span> Tablero SI
+            @if($hayComunicadoNuevo ?? false)<span class="nav-dot" title="Hay un comunicado nuevo"></span>@endif
         </a>
         <a href="{{ route('bitacora.index') }}" class="nav-item {{ request()->routeIs('bitacora.*') ? 'active' : '' }}">
             <span class="nav-icon">📋</span> Bitácora

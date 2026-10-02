@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Comunicado;
+use App\Models\TareaSI;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        View::composer('layouts.app', function ($view) {
+            if (!auth()->check()) {
+                return;
+            }
+
+            $desde = now()->subDays(5);
+
+            $view->with([
+                'hayComunicadoNuevo' => Comunicado::activos()->where('created_at', '>=', $desde)->exists(),
+                'hayTareaNueva'      => TareaSI::where('created_at', '>=', $desde)->exists(),
+            ]);
+        });
     }
 }

@@ -26,12 +26,16 @@ function statRow(string $color, string $label, $value): string {
         <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
                     color:var(--text-muted); margin-bottom:8px">Colegios</div>
         <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
-                    color:var(--text); line-height:1">{{ number_format($totalSchools) }}</div>
+                    color:var(--text); line-height:1">{{ number_format($totalColegiosActivos) }}</div>
         <div style="margin-top:10px">
             {!! statRow('#22c55e', 'activos',    $colegiosActivos)   !!}
             {!! statRow('#f59e0b', 'prospecto',  $colegiosProspecto) !!}
-            {!! statRow('#94a3b8', 'inactivos',  $colegiosInactivos) !!}
         </div>
+        @if($colegiosInactivos > 0)
+        <div style="margin-top:4px; font-size:11px; color:var(--text-muted)">
+            + {{ $colegiosInactivos }} inactivo{{ $colegiosInactivos > 1 ? 's' : '' }} (no contabilizados aquí)
+        </div>
+        @endif
     </div>
 
     {{-- Directores --}}

@@ -46,8 +46,7 @@ class DashboardController extends Controller
         $activeSchoolIds = $schoolScopeId(School::noInactivos())->pluck('id');
         $totalColegiosActivos = $activeSchoolIds->count();
 
-        // Cards principales
-        $totalSchools     = $schoolScopeId(School::query())->count();
+        // Cards principales (total de colegios excluye inactivos, igual que el resto del dashboard)
         $totalTeachers    = $schoolScope(Teacher::query())->count();
         $totalStudents    = $schoolScope(Student::query())->count();
         $totalConsultants = $schoolIds ? null : Consultant::count();
@@ -126,7 +125,7 @@ class DashboardController extends Controller
         // Colegios por zona (regiones reales de Macmillan SI)
         $colegiosPorZona = array_fill_keys(array_keys(Zonas::map()), 0);
         $colegiosPorZona['Sin zona'] = 0;
-        $schoolScopeId(School::select('id', 'city', 'state'))->get()->each(function ($school) use (&$colegiosPorZona) {
+        $schoolScopeId(School::noInactivos()->select('id', 'city', 'state'))->get()->each(function ($school) use (&$colegiosPorZona) {
             $zona = Zonas::detectZona($school->state ?? $school->city ?? '');
             $colegiosPorZona[$zona]++;
         });
@@ -177,7 +176,7 @@ class DashboardController extends Controller
         $timelineArranque = $this->computeTimelineArranque($schoolIds);
 
         return view('dashboard', compact(
-            'totalSchools', 'totalColegiosActivos', 'totalTeachers', 'totalStudents', 'totalConsultants',
+            'totalColegiosActivos', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
             'visitasPendientes', 'totalVisitas',
             'totalDirectores', 'totalAdminsMee',

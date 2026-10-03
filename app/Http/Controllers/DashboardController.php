@@ -60,6 +60,18 @@ class DashboardController extends Controller
         $visitasPendientes = $schoolScope(Visit::where('status', 'pendiente'))->count();
         $totalVisitas      = $schoolScope(Visit::query())->count();
 
+        // Detalle de visitas por colegio (pendientes / realizadas), para el ojito de la card
+        $visitasDetalle = [
+            'pendientes' => $schoolScope(Visit::with(['school', 'consultant.user']))
+                ->where('status', 'pendiente')
+                ->orderBy('scheduled_date')
+                ->get(),
+            'realizadas' => $schoolScope(Visit::with(['school', 'consultant.user']))
+                ->whereIn('status', ['en_curso', 'terminada'])
+                ->orderByDesc('visit_date')
+                ->get(),
+        ];
+
         // Directores y Admins MEE (via teacher_roles)
         $teacherScope = fn($q) => $schoolIds
             ? $q->whereHas('teacher', fn($tq) => $tq->whereIn('school_id', $schoolIds))
@@ -178,7 +190,7 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'totalColegiosActivos', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
-            'visitasPendientes', 'totalVisitas',
+            'visitasPendientes', 'totalVisitas', 'visitasDetalle',
             'totalDirectores', 'totalAdminsMee',
             'docentesELT', 'docentesECA',
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',

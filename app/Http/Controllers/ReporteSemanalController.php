@@ -310,13 +310,15 @@ class ReporteSemanalController extends Controller
         $procesoAlumnoId  = Process::where('slug', 'alta_alumnos')->value('id');
         $procesoDocenteId = Process::where('slug', 'registrar_profesores')->value('id');
 
-        $colegiosSinAlumno = School::whereDoesntHave('schoolLevels.processes', function ($q) use ($procesoAlumnoId) {
+        $colegiosSinAlumno = School::noInactivos()
+            ->whereDoesntHave('schoolLevels.processes', function ($q) use ($procesoAlumnoId) {
                 $q->where('process_id', $procesoAlumnoId)->where('status', 'done');
             })
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $colegiosSinDocente = School::whereDoesntHave('schoolLevels.processes', function ($q) use ($procesoDocenteId) {
+        $colegiosSinDocente = School::noInactivos()
+            ->whereDoesntHave('schoolLevels.processes', function ($q) use ($procesoDocenteId) {
                 $q->where('process_id', $procesoDocenteId)->where('status', 'done');
             })
             ->orderBy('name')

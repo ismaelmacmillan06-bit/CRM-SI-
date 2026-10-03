@@ -6,11 +6,14 @@ use App\Models\ActivityLog;
 use App\Models\Visit;
 use App\Models\School;
 use App\Models\Consultant;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class VisitController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(School $school)
     {
         $visits = $school->visits()->with('consultant.user')->latest()->get();
@@ -19,12 +22,20 @@ class VisitController extends Controller
 
     public function create(School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $consultants = Consultant::with('user')->get();
         return view('visits.create', compact('school', 'consultants'));
     }
 
     public function store(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'consultant_id'  => 'required|exists:consultants,id',
             'scheduled_date' => 'required|date',

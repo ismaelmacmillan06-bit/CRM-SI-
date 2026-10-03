@@ -78,8 +78,9 @@ class DashboardController extends Controller
         $colegiosInactivos = $schoolScopeId(School::where('status', 'inactivo'))->count();
 
         // Docentes Registrados Servicios: colegios con "Libro del profesor" completado en ≥1 nivel
+        // (no se cuentan colegios inactivos)
         $libroProfesorDetalle = $schoolScopeId(
-            School::with([
+            School::noInactivos()->with([
                 'schoolLevels.level',
                 'schoolLevels.processes' => fn($q) => $q->where('process_id', 5)->where('status', 'done'),
             ])
@@ -99,8 +100,10 @@ class DashboardController extends Controller
         $colegiosDocentesRegistrados = $libroProfesorDetalle->count();
 
         // Colegios entregados: tienen al menos un proceso y todos están en 'done'
+        // (no se cuentan colegios inactivos)
         $colegiosEntregados = $schoolScopeId(
-            School::whereHas('schoolLevels.processes')
+            School::noInactivos()
+                  ->whereHas('schoolLevels.processes')
                   ->whereDoesntHave('schoolLevels', fn($q) =>
                       $q->whereHas('processes', fn($q2) => $q2->where('status', '!=', 'done'))
                   )
@@ -214,7 +217,9 @@ class DashboardController extends Controller
         $rows = \DB::table('school_level_process')
             ->join('processes', 'processes.id', '=', 'school_level_process.process_id')
             ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->join('schools', 'schools.id', '=', 'school_level.school_id')
             ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
+            ->where('schools.status', '!=', 'inactivo')
             ->where('school_level_process.status', 'done')
             ->whereNotNull('school_level_process.completed_at')
             ->where('school_level_process.completed_at', '>=', $desde)
@@ -276,7 +281,9 @@ class DashboardController extends Controller
         $accionesArranque = \DB::table('school_level_process')
             ->join('processes', 'processes.id', '=', 'school_level_process.process_id')
             ->join('school_level', 'school_level.id', '=', 'school_level_process.school_level_id')
+            ->join('schools', 'schools.id', '=', 'school_level.school_id')
             ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
+            ->where('schools.status', '!=', 'inactivo')
             ->selectRaw('processes.id, processes.name, processes.slug, processes.order, COUNT(*) as total,
                          SUM(CASE WHEN school_level_process.status = "done" THEN 1 ELSE 0 END) as done')
             ->groupBy('processes.id', 'processes.name', 'processes.slug', 'processes.order')
@@ -329,6 +336,7 @@ class DashboardController extends Controller
             ->leftJoin('consultants', 'consultants.id', '=', 'school_consultants.consultant_id')
             ->leftJoin('users', 'users.id', '=', 'consultants.user_id')
             ->when($schoolIds, fn($q) => $q->whereIn('schools.id', $schoolIds))
+            ->where('schools.status', '!=', 'inactivo')
             ->select(
                 'school_level_process.process_id',
                 'school_level_process.status',

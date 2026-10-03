@@ -6,12 +6,15 @@ use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\SchoolLevelProcess;
 use App\Models\Consultant;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SchoolLevelProcessController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(School $school)
     {
         $school->load('schoolLevels.level', 'schoolLevels.processes.process');
@@ -20,6 +23,10 @@ class SchoolLevelProcessController extends Controller
 
     public function update(Request $request, School $school, SchoolLevelProcess $schoolLevelProcess)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         // Validador manual para poder re-keying el error de 'evidence' al proceso exacto
         // y mostrarlo en la fila correcta (no en una fila genérica sin contexto)
         $validator = Validator::make($request->all(), [

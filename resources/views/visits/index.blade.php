@@ -3,10 +3,20 @@
 @section('title', 'Visitas — ' . $school->name)
 
 @section('content')
+@if($school->status === 'inactivo')
+<div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:12px 16px;
+            border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    ⚠️ Este colegio está <strong>inactivo</strong> — actívalo en
+    <a href="{{ route('schools.edit', $school) }}" style="color:#92400e; text-decoration:underline">Editar colegio</a>
+    para poder agregar visitas aquí.
+</div>
+@endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     @hasanyrole('admin|consultor_digital')
+    @if($school->status !== 'inactivo')
     <a href="{{ route('schools.visits.create', $school) }}" class="btn btn-primary">+ Nueva Visita</a>
+    @endif
     @endhasanyrole
 </div>
 

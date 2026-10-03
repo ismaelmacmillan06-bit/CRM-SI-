@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Teacher;
 use App\Models\School;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -14,6 +15,8 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class TeacherController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(School $school)
     {
         $teachers = $school->teachers()->with('roles')->get();
@@ -22,11 +25,19 @@ class TeacherController extends Controller
 
     public function create(School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         return view('teachers.create', compact('school'));
     }
 
     public function store(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'name'      => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -110,6 +121,10 @@ class TeacherController extends Controller
 
     public function importarMasivo(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate(['archivo' => 'required|file|mimes:xlsx,xls,csv|max:20480']);
 
         $spreadsheet = IOFactory::load($request->file('archivo')->getPathname());

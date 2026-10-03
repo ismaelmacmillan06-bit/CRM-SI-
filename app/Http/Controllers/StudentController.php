@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Student;
 use App\Models\School;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use Smalot\PdfParser\Parser;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class StudentController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(Request $request, School $school)
     {
         $perPage = (int) $request->query('per_page', 50);
@@ -40,6 +43,10 @@ class StudentController extends Controller
 
     public function create(School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
             ->pluck('level.name')->filter()->sort()->values();
         return view('students.create', compact('school', 'nivelesDelColegio'));
@@ -47,6 +54,10 @@ class StudentController extends Controller
 
     public function store(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'name'         => 'required|string|max:255',
             'last_name'    => 'required|string|max:255',
@@ -69,6 +80,10 @@ class StudentController extends Controller
 
     public function uploadPdf(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'pdf_file' => 'required|file|mimes:pdf|max:10240',
             'grade'    => 'nullable|string|max:100',
@@ -270,6 +285,10 @@ private function extractStudentsFromPdf(string $text): array
 
     public function importarExcel(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'excel_file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
             'level'      => 'nullable|string|max:100',

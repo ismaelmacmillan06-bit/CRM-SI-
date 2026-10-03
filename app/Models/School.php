@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class School extends Model
@@ -14,6 +15,16 @@ class School extends Model
     protected $casts = [
         'custom_passwords' => 'boolean',
     ];
+
+    /**
+     * Excluye colegios inactivos — se usa en los agregados de acciones de
+     * arranque (dashboard, reportes, avance colegios) para que un colegio
+     * dado de baja no siga contando en esas estadísticas.
+     */
+    public function scopeNoInactivos(Builder $q): Builder
+    {
+        return $q->where('status', '!=', 'inactivo');
+    }
 
     public function consultant()
     {

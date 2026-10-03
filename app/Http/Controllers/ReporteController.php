@@ -32,7 +32,7 @@ class ReporteController extends Controller
                 ->where('role', 'digital')->pluck('school_id');
         }
 
-        $query = School::with([
+        $query = School::noInactivos()->with([
             'schoolConsultants.consultant.user',
             'schoolLevels.processes',
         ])->withCount('students');
@@ -473,8 +473,8 @@ class ReporteController extends Controller
 
         $this->setWidths($ws4, [22,22,30,32,20,14,36,10,22,22]);
 
-        // ── HOJA 5: COLEGIOS ENTREGADOS ──────────────────────────────────
-        $entregados = School::withCount('students')
+        // ── HOJA 5: COLEGIOS ENTREGADOS (no cuenta colegios inactivos) ────
+        $entregados = School::noInactivos()->withCount('students')
             ->with([
                 'schoolConsultants.consultant.user',
                 'schoolLevels.level',

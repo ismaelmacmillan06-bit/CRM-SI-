@@ -3,6 +3,14 @@
 @section('title', "Acciones de arranque — {$school->name}")
 
 @section('content')
+@if($school->status === 'inactivo')
+<div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:12px 16px;
+            border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    ⚠️ Este colegio está <strong>inactivo</strong> — actívalo en
+    <a href="{{ route('schools.edit', $school) }}" style="color:#92400e; text-decoration:underline">Editar colegio</a>
+    para poder avanzar sus acciones de arranque. Tampoco se cuentan en las estadísticas mientras siga inactivo.
+</div>
+@endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
 </div>
@@ -85,6 +93,7 @@
                               form="form-slp-{{ $slp->id }}"
                               rows="2"
                               placeholder="Sin notas..."
+                              @disabled($school->status === 'inactivo')
                               style="width:100%; font-size:12px; padding:5px 8px; border-radius:6px;
                                      background:var(--surface2); border:1px solid var(--border);
                                      color:var(--text); resize:vertical; min-height:36px;
@@ -124,6 +133,9 @@
                     @enderror
 
                     @hasanyrole('admin|consultor_digital')
+                    @if($school->status === 'inactivo')
+                        <span style="font-size:11px; color:var(--text-muted)">Colegio inactivo</span>
+                    @else
                     <form method="POST"
                           action="{{ route('schools.processes.update', [$school, $slp]) }}"
                           enctype="multipart/form-data"
@@ -171,6 +183,7 @@
                             Guardar
                         </button>
                     </form>
+                    @endif
                     @endhasanyrole
                 </td>
             </tr>

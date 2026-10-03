@@ -3,9 +3,18 @@
 @section('title', 'Bundles — ' . $school->name)
 
 @section('content')
+@if($school->status === 'inactivo')
+<div style="background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:12px 16px;
+            border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    ⚠️ Este colegio está <strong>inactivo</strong> — actívalo en
+    <a href="{{ route('schools.edit', $school) }}" style="color:#92400e; text-decoration:underline">Editar colegio</a>
+    para poder agregar o resurtir bundles aquí.
+</div>
+@endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     @hasanyrole('admin|consultor_digital')
+    @if($school->status !== 'inactivo')
     <button onclick="document.getElementById('modal-bundles').style.display='flex'"
             class="btn btn-primary">+ Agregar Bundles</button>
     <button onclick="document.getElementById('modal-import').style.display='flex'"
@@ -17,6 +26,7 @@
             onmouseout="this.style.background='#f0fdf4';this.style.color='#16a34a'">
         📥 Importación masiva Excel
     </button>
+    @endif
     @if($schoolBundles->isNotEmpty())
     <form method="POST" action="{{ route('schools.bundles.destroy-all', $school) }}"
           id="form-delete-all" style="margin:0">
@@ -326,11 +336,13 @@ function cerrarEliminarBundle() {
                 </td>
                 <td style="display:flex; gap:6px; flex-wrap:wrap">
                     @hasanyrole('admin|consultor_digital')
+                    @if($school->status !== 'inactivo')
                     <button onclick="abrirResurtido({{ $bundle->id }}, {{ json_encode($bundle->name) }}, {{ $bundle->pivot->quantity }})"
                             style="padding:5px 10px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
                                    border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap">
                         🔄 Resurtido
                     </button>
+                    @endif
                     <button type="button"
                             onclick="abrirEliminarBundle({{ json_encode(route('schools.bundles.destroy', [$school, $bundle])) }}, {{ json_encode($bundle->name) }})"
                             class="btn btn-danger btn-sm">
@@ -342,7 +354,11 @@ function cerrarEliminarBundle() {
             @empty
             <tr>
                 <td colspan="8" style="text-align:center; color:var(--text-muted); padding:40px">
-                    No hay bundles registrados. Usa el botón <strong>+ Agregar Bundles</strong>.
+                    @if($school->status === 'inactivo')
+                        No hay bundles registrados.
+                    @else
+                        No hay bundles registrados. Usa el botón <strong>+ Agregar Bundles</strong>.
+                    @endif
                 </td>
             </tr>
             @endforelse

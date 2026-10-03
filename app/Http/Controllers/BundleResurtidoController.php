@@ -6,12 +6,19 @@ use App\Models\ActivityLog;
 use App\Models\Bundle;
 use App\Models\BundleResurtido;
 use App\Models\School;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 
 class BundleResurtidoController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function store(Request $request, School $school, Bundle $bundle)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'cantidad_resurtido' => 'required|integer|min:1',
             'autorizado_por'     => 'nullable|string|max:255',

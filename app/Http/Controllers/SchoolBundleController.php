@@ -6,11 +6,14 @@ use App\Models\ActivityLog;
 use App\Models\BundleResurtido;
 use App\Models\School;
 use App\Models\Bundle;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SchoolBundleController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(School $school)
     {
         $schoolBundles = $school->bundles()->orderBy('type')->orderBy('serie')->get();
@@ -39,6 +42,10 @@ class SchoolBundleController extends Controller
 
     public function store(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'bundle_ids'   => 'required|array',
             'bundle_ids.*' => 'exists:bundles,id',
@@ -68,6 +75,10 @@ class SchoolBundleController extends Controller
 
     public function importarMasivo(Request $request, School $school)
     {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+
         $request->validate([
             'archivo'     => 'required|file|mimes:xlsx,xls,csv|max:20480',
             'acquired_at' => 'nullable|date',

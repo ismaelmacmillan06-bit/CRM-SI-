@@ -7,10 +7,13 @@ use App\Models\ExternalPlatform;
 use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolExternalPlatformStep;
+use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 
 class SeguimientoExternoController extends Controller
 {
+    use BloqueaColegioInactivo;
+
     public function index(Request $request)
     {
         $user = auth()->user();
@@ -82,6 +85,10 @@ class SeguimientoExternoController extends Controller
     public function update(Request $request, School $school, ExternalPlatform $platform, SchoolExternalPlatformStep $item)
     {
         abort_unless($item->school_id === $school->id, 404);
+
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
 
         $request->validate([
             'status' => 'required|in:pending,done',

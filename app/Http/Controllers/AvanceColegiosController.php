@@ -24,7 +24,7 @@ class AvanceColegiosController extends Controller
 
         $schoolScopeId = fn($q) => $schoolIds ? $q->whereIn('id', $schoolIds) : $q;
 
-        $schools = $schoolScopeId(School::with([
+        $schools = $schoolScopeId(School::noInactivos()->with([
             'schoolConsultants.consultant.user',
             'meeAdmins',
             'schoolLevels.level',

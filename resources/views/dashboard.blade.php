@@ -286,7 +286,7 @@ function statRow(string $color, string $label, $value): string {
         <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
             🏫 Colegios por Nivel
         </span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $totalColegiosActivos }} en total</span>
     </div>
     <div style="background:var(--surface); border-radius:14px; padding:6px 20px;
                 border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
@@ -295,7 +295,7 @@ function statRow(string $color, string $label, $value): string {
             @php
                 $color = $nivelColorMap[strtolower($nivel['name'])] ?? '#94a3b8';
                 $icon  = $nivelIconMap[strtolower($nivel['name'])] ?? '🏫';
-                $pct   = $totalSchools > 0 ? round($nivel['total'] / $totalSchools * 100) : 0;
+                $pct   = $totalColegiosActivos > 0 ? round($nivel['total'] / $totalColegiosActivos * 100) : 0;
             @endphp
             <div class="niv-row {{ $loop->last && !$dosColumnasNivel ? 'last-single' : '' }}">
                 <span style="width:9px; height:9px; border-radius:50%; background:{{ $color }};
@@ -383,7 +383,7 @@ function statRow(string $color, string $label, $value): string {
         <span style="font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:600; color:var(--text)">
             📦 Colegios por Servicio
         </span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $totalSchools }} en total</span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $totalColegiosActivos }} en total</span>
         @if(auth()->user()->hasRole('admin'))
         <a href="{{ route('configuracion.servicios.index') }}"
            style="margin-left:auto; font-size:11.5px; color:var(--accent); text-decoration:none; font-weight:500">
@@ -396,7 +396,7 @@ function statRow(string $color, string $label, $value): string {
                 border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.06)">
         <div class="srv-grid {{ $dosColumnas ? 'dos-cols' : '' }}">
             @foreach($colegiosPorServicio as $srvIdx => $srv)
-            @php $pct = $totalSchools > 0 ? round($srv['total'] / $totalSchools * 100) : 0; @endphp
+            @php $pct = $totalColegiosActivos > 0 ? round($srv['total'] / $totalColegiosActivos * 100) : 0; @endphp
             <div class="srv-row {{ $loop->last && !$dosColumnas ? 'last-single' : '' }}">
 
                 {{-- Dot --}}

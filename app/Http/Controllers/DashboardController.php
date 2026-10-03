@@ -40,6 +40,12 @@ class DashboardController extends Controller
         $schoolScope   = fn($q) => $schoolIds ? $q->whereIn('school_id', $schoolIds) : $q;
         $schoolScopeId = fn($q) => $schoolIds ? $q->whereIn('id', $schoolIds) : $q;
 
+        // IDs de colegios no inactivos (respetando el scoping por consultor), para los
+        // widgets agregados que no pueden usar el scope Eloquent directamente (queries
+        // crudas sobre school_level/school_service).
+        $activeSchoolIds = $schoolScopeId(School::noInactivos())->pluck('id');
+        $totalColegiosActivos = $activeSchoolIds->count();
+
         // Cards principales
         $totalSchools     = $schoolScopeId(School::query())->count();
         $totalTeachers    = $schoolScope(Teacher::query())->count();
@@ -110,7 +116,8 @@ class DashboardController extends Controller
         )->count();
 
         // Colegios por estado para el mapa (state tiene prioridad sobre city)
-        $colegiosPorEstado = $schoolScopeId(School::selectRaw('COALESCE(state, city) as estado, count(*) as total'))
+        // (no se cuentan colegios inactivos)
+        $colegiosPorEstado = $schoolScopeId(School::noInactivos()->selectRaw('COALESCE(state, city) as estado, count(*) as total'))
             ->whereRaw('COALESCE(state, city) IS NOT NULL')
             ->groupBy('estado')
             ->pluck('total', 'estado')
@@ -134,20 +141,19 @@ class DashboardController extends Controller
             ? BundleResurtido::whereIn('school_id', $schoolIds)->count()
             : BundleResurtido::count();
 
-        // Colegios por nivel educativo
+        // Colegios por nivel educativo (no se cuentan colegios inactivos)
         $levels = Level::orderBy('id')->get();
-        $colegiosPorNivel = $levels->map(function ($level) use ($schoolIds) {
-            $q = \DB::table('school_level')->where('level_id', $level->id);
-            if ($schoolIds) $q->whereIn('school_id', $schoolIds);
+        $colegiosPorNivel = $levels->map(function ($level) use ($activeSchoolIds) {
+            $q = \DB::table('school_level')->where('level_id', $level->id)->whereIn('school_id', $activeSchoolIds);
             return ['name' => $level->name, 'total' => $q->count()];
         });
 
-        // Colegios por servicio contable
+        // Colegios por servicio contable (no se cuentan colegios inactivos)
         $serviceTypes = SchoolServiceType::active()->get();
-        $colegiosPorServicio = $serviceTypes->map(function ($type) use ($schoolIds) {
+        $colegiosPorServicio = $serviceTypes->map(function ($type) use ($activeSchoolIds) {
             $ids = \DB::table('school_service')
                 ->where('school_service_type_id', $type->id)
-                ->when($schoolIds, fn($q) => $q->whereIn('school_id', $schoolIds))
+                ->whereIn('school_id', $activeSchoolIds)
                 ->pluck('school_id');
 
             $schoolsForType = School::whereIn('id', $ids)
@@ -171,7 +177,7 @@ class DashboardController extends Controller
         $timelineArranque = $this->computeTimelineArranque($schoolIds);
 
         return view('dashboard', compact(
-            'totalSchools', 'totalTeachers', 'totalStudents', 'totalConsultants',
+            'totalSchools', 'totalColegiosActivos', 'totalTeachers', 'totalStudents', 'totalConsultants',
             'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
             'visitasPendientes', 'totalVisitas',
             'totalDirectores', 'totalAdminsMee',

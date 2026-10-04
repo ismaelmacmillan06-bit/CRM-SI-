@@ -118,8 +118,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     // Carga masiva PDF
     Route::post('schools/{school}/students/upload-pdf', [StudentController::class, 'uploadPdf'])
         ->name('schools.students.upload-pdf');
-    Route::post('schools/{school}/students/import-excel', [StudentController::class, 'importarExcel'])
+    Route::post('schools/{school}/students/import-excel', [StudentController::class, 'previsualizarImportacion'])
         ->name('schools.students.import-excel');
+    Route::post('schools/{school}/students/import-confirm', [StudentController::class, 'confirmarImportacion'])
+        ->name('schools.students.import-confirm');
     
     // Bundles por colegio
     Route::get('schools/{school}/bundles', [SchoolBundleController::class, 'index'])

@@ -8,6 +8,9 @@ use App\Models\Student;
 use App\Models\School;
 use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Smalot\PdfParser\Parser;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -292,7 +295,7 @@ private function extractStudentsFromPdf(string $text): array
             : "Tu colegio no tiene estos niveles seleccionados: {$lista}. Selecciónalos antes de cargar tus alumnos.";
     }
 
-    public function importarExcel(Request $request, School $school)
+    public function previsualizarImportacion(Request $request, School $school)
     {
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
@@ -308,125 +311,56 @@ private function extractStudentsFromPdf(string $text): array
         ]);
 
         try {
-            $file = $request->file('excel_file');
-            $ext  = strtolower($file->getClientOriginalExtension());
+            $filas = $this->leerFilasImportacion($request->file('excel_file'), $request->level, $request->grade);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar el Excel: ' . $e->getMessage());
+        }
 
-            if (in_array($ext, ['csv', 'txt'], true)) {
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
-                $reader->setDelimiter(',');
-                $spreadsheet = $reader->load($file->getPathname());
-            } else {
-                $spreadsheet = IOFactory::load($file->getPathname());
-            }
-            $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        $faltantes = $this->nivelesFaltantes($school, array_column($filas, 'nivel'));
+        if ($faltantes) {
+            return back()->with('error', $this->mensajeNivelesFaltantes($faltantes));
+        }
 
-            // Detectar columnas por nombre de encabezado (fila 0), tolerante a
-            // acentos/mayúsculas. Soporta tanto el CSV que se usa para dar de
-            // alta alumnos en Macmillan (Nombre(s), Apellidos, Usuario,
-            // Password, ..., Nivel, Grado, Grupo) como la plantilla clásica
-            // (Nombre Completo, Usuario, Contraseña, Clase).
-            $NAME_KEYS     = ['nombre', 'nombres', 'nombrecompleto', 'name', 'fullname', 'alumno', 'estudiante'];
-            $LASTNAME_KEYS = ['apellidos', 'apellido', 'lastname', 'surname'];
-            $USER_KEYS     = ['usuario', 'username', 'user', 'login'];
-            $PASS_KEYS     = ['password', 'contrasena', 'contrasenia', 'clave', 'pass'];
-            $NIVEL_KEYS    = ['nivel', 'level'];
-            $GRADO_KEYS    = ['grado', 'gardo', 'grade'];
-            $GRUPO_KEYS    = ['grupo', 'group', 'seccion'];
-            $CLASE_KEYS    = ['clase', 'class', 'aula', 'salon'];
+        $token = (string) Str::uuid();
+        Storage::disk('local')->put(
+            "importaciones/{$token}.json",
+            json_encode(['school_id' => $school->id, 'filas' => $filas], JSON_UNESCAPED_UNICODE)
+        );
 
-            $cols   = [];
-            $header = $rows[0] ?? [];
-            foreach ($header as $ci => $cell) {
-                $h = $this->normalizarEncabezado($cell);
-                if ($h === '') continue;
-                if (!isset($cols['name'])     && in_array($h, $NAME_KEYS, true))     $cols['name'] = $ci;
-                if (!isset($cols['lastname']) && in_array($h, $LASTNAME_KEYS, true)) $cols['lastname'] = $ci;
-                if (!isset($cols['user'])     && in_array($h, $USER_KEYS, true))     $cols['user'] = $ci;
-                if (!isset($cols['pass'])     && in_array($h, $PASS_KEYS, true))     $cols['pass'] = $ci;
-                if (!isset($cols['nivel'])    && in_array($h, $NIVEL_KEYS, true))    $cols['nivel'] = $ci;
-                if (!isset($cols['grado'])    && in_array($h, $GRADO_KEYS, true))    $cols['grado'] = $ci;
-                if (!isset($cols['grupo'])    && in_array($h, $GRUPO_KEYS, true))    $cols['grupo'] = $ci;
-                if (!isset($cols['clase'])    && in_array($h, $CLASE_KEYS, true))    $cols['clase'] = $ci;
-            }
-            $usaEncabezados = isset($cols['name']) && isset($cols['user']);
+        return view('students.import-preview', [
+            'school'  => $school,
+            'token'   => $token,
+            'resumen' => $this->clasificarFilasImportacion($school, $filas),
+        ]);
+    }
 
-            // Saltar la fila de encabezado
-            array_shift($rows);
+    public function confirmarImportacion(Request $request, School $school)
+    {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
 
-            $level  = $request->level;
-            $grade  = $request->grade;
+        $request->validate([
+            'token' => 'required|uuid',
+            'modo'  => 'required|in:solo_nuevos,nuevos_y_actualizar',
+        ]);
 
-            // --- Primera pasada: parsear todas las filas sin tocar la base de datos ---
-            $filas = [];
-            foreach ($rows as $i => $row) {
-                if ($usaEncabezados) {
-                    $nombre    = trim((string) ($row[$cols['name']] ?? ''));
-                    $apellido  = isset($cols['lastname']) ? trim((string) ($row[$cols['lastname']] ?? '')) : '';
-                    $usuario   = trim((string) ($row[$cols['user']] ?? ''));
-                    $contrasena = isset($cols['pass'])  ? trim((string) ($row[$cols['pass']] ?? ''))  : '';
-                    $nivelFila = isset($cols['nivel'])  ? trim((string) ($row[$cols['nivel']] ?? '')) : '';
-                    $gradoFila = isset($cols['grado'])  ? trim((string) ($row[$cols['grado']] ?? '')) : '';
-                    $grupoFila = isset($cols['grupo'])  ? trim((string) ($row[$cols['grupo']] ?? '')) : '';
-                    $claseFila = isset($cols['clase'])  ? trim((string) ($row[$cols['clase']] ?? '')) : '';
+        $disk = Storage::disk('local');
+        $ruta = "importaciones/{$request->token}.json";
 
-                    // Sin columna de Apellidos: asumir que "Nombre" trae el nombre completo
-                    if (!isset($cols['lastname']) && $apellido === '' && str_contains($nombre, ' ')) {
-                        $partes   = preg_split('/\s+/', $nombre, 2);
-                        $nombre   = $partes[0];
-                        $apellido = $partes[1] ?? '';
-                    }
+        if (!$disk->exists($ruta)) {
+            return redirect()->route('schools.students.index', $school)
+                ->with('error', 'La validación ya expiró. Vuelve a subir el archivo.');
+        }
 
-                    // Combinar Grado + Grupo (ej. "1" + "A" = "1°A"); si no hay,
-                    // usar la columna Clase directa (formato clásico)
-                    $gradoFinal = $claseFila;
-                    if ($gradoFila !== '' || $grupoFila !== '') {
-                        $gradoFinal = trim($gradoFila . ($grupoFila !== '' ? '°' . $grupoFila : ''));
-                    }
-                } else {
-                    // Formato clásico posicional: Nombre Completo | Usuario | Contraseña | Clase
-                    $nombreCompleto = trim((string) ($row[0] ?? ''));
-                    $usuario        = trim((string) ($row[1] ?? ''));
-                    $contrasena     = trim((string) ($row[2] ?? ''));
-                    $claseFila      = isset($row[3]) ? trim((string) $row[3]) : '';
+        $datos = json_decode($disk->get($ruta), true);
+        abort_unless(($datos['school_id'] ?? null) === $school->id, 403);
 
-                    $partes   = preg_split('/\s+/', $nombreCompleto, 2);
-                    $nombre   = $partes[0] ?? '';
-                    $apellido = $partes[1] ?? '';
-                    $nivelFila  = '';
-                    $gradoFinal = $claseFila;
-                }
+        $resumen    = $this->clasificarFilasImportacion($school, $datos['filas']);
+        $actualizar = $request->modo === 'nuevos_y_actualizar';
 
-                if ($nombre === '' || $usuario === '' || $contrasena === '') {
-                    continue; // Fila vacía o incompleta — saltar silenciosamente
-                }
-
-                $filas[] = [
-                    'fila'       => $i + 2,
-                    'nombre'     => $nombre,
-                    'apellido'   => $apellido,
-                    'usuario'    => $usuario,
-                    'contrasena' => $contrasena,
-                    'nivel'      => $nivelFila !== '' ? $nivelFila : $level,
-                    'grado'      => $gradoFinal !== '' ? $gradoFinal : $grade,
-                ];
-            }
-
-            // --- Validar que el colegio tenga seleccionados los niveles que se van a cargar ---
-            $faltantes = $this->nivelesFaltantes($school, array_column($filas, 'nivel'));
-            if ($faltantes) {
-                return back()->with('error', $this->mensajeNivelesFaltantes($faltantes));
-            }
-
-            // --- Segunda pasada: crear los alumnos ---
-            $count    = 0;
-            $omitidos = [];
-            foreach ($filas as $f) {
-                // Evitar duplicados por username MEE
-                if ($school->students()->where('mee_username', $f['usuario'])->exists()) {
-                    $omitidos[] = "Fila {$f['fila']}: usuario «{$f['usuario']}» ya existe — omitido.";
-                    continue;
-                }
-
+        DB::transaction(function () use ($school, $resumen, $actualizar) {
+            foreach ($resumen['nuevos'] as $f) {
                 $school->students()->create([
                     'name'         => $f['nombre'],
                     'last_name'    => $f['apellido'],
@@ -435,25 +369,211 @@ private function extractStudentsFromPdf(string $text): array
                     'level'        => $f['nivel'],
                     'grade'        => $f['grado'],
                 ]);
-                $count++;
             }
 
-            $msg = "✅ Se registraron {$count} alumno(s) correctamente.";
-            if ($omitidos) {
-                $msg .= ' ' . count($omitidos) . ' omitido(s) por duplicado.';
+            if ($actualizar) {
+                foreach ($resumen['actualizar'] as $item) {
+                    $school->students()->where('mee_username', $item['usuario'])->first()?->update($item['valores']);
+                }
             }
+        });
 
-            if ($count > 0) {
-                ActivityLog::log('alumno', "Importación Excel: {$count} alumno(s) registrados en {$school->name}", $school->id, '📊');
-            }
+        $disk->delete($ruta);
 
-            return redirect()->route('schools.students.index', $school)
-                             ->with('success', $msg)
-                             ->with('excel_omitidos', $omitidos);
+        $creados     = count($resumen['nuevos']);
+        $actualizados = $actualizar ? count($resumen['actualizar']) : 0;
 
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error al procesar el Excel: ' . $e->getMessage());
+        $omitidos = [];
+        foreach ($resumen['duplicados'] as $f) {
+            $omitidos[] = "Fila {$f['fila']}: usuario «{$f['usuario']}» aparece repetido en el archivo — omitido.";
         }
+        foreach ($resumen['sin_cambios'] as $f) {
+            $omitidos[] = "Fila {$f['fila']}: usuario «{$f['usuario']}» ya existe sin cambios — omitido.";
+        }
+        if (!$actualizar) {
+            foreach ($resumen['actualizar'] as $item) {
+                $omitidos[] = "Fila {$item['fila']}: usuario «{$item['usuario']}» ya existe — no se actualizó.";
+            }
+        }
+
+        $msg = "✅ Se registraron {$creados} alumno(s) nuevo(s)";
+        $msg .= $actualizar ? " y se actualizaron {$actualizados}." : '.';
+
+        if ($creados > 0 || $actualizados > 0) {
+            ActivityLog::log('alumno', "Importación Excel en {$school->name}: {$creados} nuevo(s), {$actualizados} actualizado(s)", $school->id, '📊');
+        }
+
+        return redirect()->route('schools.students.index', $school)
+                         ->with('success', $msg)
+                         ->with('excel_omitidos', $omitidos);
+    }
+
+    private function leerFilasImportacion($file, $level, $grade): array
+    {
+        $ext = strtolower($file->getClientOriginalExtension());
+
+        if (in_array($ext, ['csv', 'txt'], true)) {
+            $reader = new \PhpOffice\PhpSpreadsheet\Reader\Csv();
+            $reader->setDelimiter(',');
+            $spreadsheet = $reader->load($file->getPathname());
+        } else {
+            $spreadsheet = IOFactory::load($file->getPathname());
+        }
+        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+
+        // Detectar columnas por nombre de encabezado (fila 0), tolerante a
+        // acentos/mayúsculas. Soporta tanto el CSV que se usa para dar de
+        // alta alumnos en Macmillan (Nombre(s), Apellidos, Usuario,
+        // Password, ..., Nivel, Grado, Grupo) como la plantilla clásica
+        // (Nombre Completo, Usuario, Contraseña, Clase).
+        $NAME_KEYS     = ['nombre', 'nombres', 'nombrecompleto', 'name', 'fullname', 'alumno', 'estudiante'];
+        $LASTNAME_KEYS = ['apellidos', 'apellido', 'lastname', 'surname'];
+        $USER_KEYS     = ['usuario', 'username', 'user', 'login'];
+        $PASS_KEYS     = ['password', 'contrasena', 'contrasenia', 'clave', 'pass'];
+        $NIVEL_KEYS    = ['nivel', 'level'];
+        $GRADO_KEYS    = ['grado', 'gardo', 'grade'];
+        $GRUPO_KEYS    = ['grupo', 'group', 'seccion'];
+        $CLASE_KEYS    = ['clase', 'class', 'aula', 'salon'];
+
+        $cols   = [];
+        $header = $rows[0] ?? [];
+        foreach ($header as $ci => $cell) {
+            $h = $this->normalizarEncabezado($cell);
+            if ($h === '') continue;
+            if (!isset($cols['name'])     && in_array($h, $NAME_KEYS, true))     $cols['name'] = $ci;
+            if (!isset($cols['lastname']) && in_array($h, $LASTNAME_KEYS, true)) $cols['lastname'] = $ci;
+            if (!isset($cols['user'])     && in_array($h, $USER_KEYS, true))     $cols['user'] = $ci;
+            if (!isset($cols['pass'])     && in_array($h, $PASS_KEYS, true))     $cols['pass'] = $ci;
+            if (!isset($cols['nivel'])    && in_array($h, $NIVEL_KEYS, true))    $cols['nivel'] = $ci;
+            if (!isset($cols['grado'])    && in_array($h, $GRADO_KEYS, true))    $cols['grado'] = $ci;
+            if (!isset($cols['grupo'])    && in_array($h, $GRUPO_KEYS, true))    $cols['grupo'] = $ci;
+            if (!isset($cols['clase'])    && in_array($h, $CLASE_KEYS, true))    $cols['clase'] = $ci;
+        }
+        $usaEncabezados = isset($cols['name']) && isset($cols['user']);
+
+        // Saltar la fila de encabezado
+        array_shift($rows);
+
+        $filas = [];
+        foreach ($rows as $i => $row) {
+            if ($usaEncabezados) {
+                $nombre     = trim((string) ($row[$cols['name']] ?? ''));
+                $apellido   = isset($cols['lastname']) ? trim((string) ($row[$cols['lastname']] ?? '')) : '';
+                $usuario    = trim((string) ($row[$cols['user']] ?? ''));
+                $contrasena = isset($cols['pass'])  ? trim((string) ($row[$cols['pass']] ?? ''))  : '';
+                $nivelFila  = isset($cols['nivel']) ? trim((string) ($row[$cols['nivel']] ?? '')) : '';
+                $gradoFila  = isset($cols['grado']) ? trim((string) ($row[$cols['grado']] ?? '')) : '';
+                $grupoFila  = isset($cols['grupo']) ? trim((string) ($row[$cols['grupo']] ?? '')) : '';
+                $claseFila  = isset($cols['clase']) ? trim((string) ($row[$cols['clase']] ?? '')) : '';
+
+                // Sin columna de Apellidos: asumir que "Nombre" trae el nombre completo
+                if (!isset($cols['lastname']) && $apellido === '' && str_contains($nombre, ' ')) {
+                    $partes   = preg_split('/\s+/', $nombre, 2);
+                    $nombre   = $partes[0];
+                    $apellido = $partes[1] ?? '';
+                }
+
+                // Combinar Grado + Grupo (ej. "1" + "A" = "1°A"); si no hay,
+                // usar la columna Clase directa (formato clásico)
+                $gradoFinal = $claseFila;
+                if ($gradoFila !== '' || $grupoFila !== '') {
+                    $gradoFinal = trim($gradoFila . ($grupoFila !== '' ? '°' . $grupoFila : ''));
+                }
+            } else {
+                // Formato clásico posicional: Nombre Completo | Usuario | Contraseña | Clase
+                $nombreCompleto = trim((string) ($row[0] ?? ''));
+                $usuario        = trim((string) ($row[1] ?? ''));
+                $contrasena     = trim((string) ($row[2] ?? ''));
+                $claseFila      = isset($row[3]) ? trim((string) $row[3]) : '';
+
+                $partes   = preg_split('/\s+/', $nombreCompleto, 2);
+                $nombre   = $partes[0] ?? '';
+                $apellido = $partes[1] ?? '';
+                $nivelFila  = '';
+                $gradoFinal = $claseFila;
+            }
+
+            if ($nombre === '' || $usuario === '' || $contrasena === '') {
+                continue; // Fila vacía o incompleta — saltar silenciosamente
+            }
+
+            $filas[] = [
+                'fila'       => $i + 2,
+                'nombre'     => $nombre,
+                'apellido'   => $apellido,
+                'usuario'    => $usuario,
+                'contrasena' => $contrasena,
+                'nivel'      => $nivelFila !== '' ? $nivelFila : $level,
+                'grado'      => $gradoFinal !== '' ? $gradoFinal : $grade,
+            ];
+        }
+
+        return $filas;
+    }
+
+    /**
+     * Clasifica las filas del archivo contra los alumnos que ya existen en el colegio:
+     * nuevos (se crean), actualizar (existen y tienen cambios), sin_cambios y duplicados
+     * (el mismo usuario aparece más de una vez en el archivo; se toma solo la primera).
+     */
+    private function clasificarFilasImportacion(School $school, array $filas): array
+    {
+        $existentes = $school->students()
+            ->whereIn('mee_username', array_column($filas, 'usuario'))
+            ->get()
+            ->keyBy('mee_username');
+
+        $resumen = ['nuevos' => [], 'actualizar' => [], 'sin_cambios' => [], 'duplicados' => []];
+        $vistos  = [];
+
+        foreach ($filas as $f) {
+            if (isset($vistos[$f['usuario']])) {
+                $resumen['duplicados'][] = $f;
+                continue;
+            }
+            $vistos[$f['usuario']] = true;
+
+            $existente = $existentes->get($f['usuario']);
+            if (!$existente) {
+                $resumen['nuevos'][] = $f;
+                continue;
+            }
+
+            $comparar = [
+                'name'         => ['Nombre',     $f['nombre'],     $existente->name],
+                'last_name'    => ['Apellidos',  $f['apellido'],   $existente->last_name],
+                'mee_password' => ['Contraseña', $f['contrasena'], $existente->mee_password],
+                'level'        => ['Nivel',      $f['nivel'],      $existente->level],
+                'grade'        => ['Grado',      $f['grado'],      $existente->grade],
+            ];
+
+            $valores = [];
+            $cambios = [];
+            foreach ($comparar as $campo => [$etiqueta, $nuevo, $anterior]) {
+                // Nivel y grado vacíos en el archivo no borran lo que ya existe
+                if (in_array($campo, ['level', 'grade'], true) && (string) $nuevo === '') {
+                    continue;
+                }
+                if ((string) $nuevo !== (string) $anterior) {
+                    $valores[$campo] = $nuevo;
+                    $cambios[] = ['campo' => $etiqueta, 'antes' => $anterior, 'despues' => $nuevo];
+                }
+            }
+
+            if ($cambios) {
+                $resumen['actualizar'][] = [
+                    'fila'    => $f['fila'],
+                    'usuario' => $f['usuario'],
+                    'nombre'  => trim($f['nombre'] . ' ' . $f['apellido']),
+                    'cambios' => $cambios,
+                    'valores' => $valores,
+                ];
+            } else {
+                $resumen['sin_cambios'][] = $f;
+            }
+        }
+
+        return $resumen;
     }
 
     public function destroyAll(School $school)

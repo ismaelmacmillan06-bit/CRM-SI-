@@ -85,6 +85,7 @@
 
             <div style="background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:12px; margin-bottom:20px; font-size:13px; color:#0369a1">
                 💡 Si el archivo trae Nivel/Grado/Grupo (o Clase) por alumno, esos valores se usan por fila y sobreescriben los campos de arriba.
+            <br>Antes de cargar te mostraremos cuántos alumnos son nuevos y cuántos ya existen y se actualizarían (por ejemplo, si cambió su contraseña), para que decidas qué hacer.
             </div>
 
             <div style="display:flex; gap:10px; justify-content:flex-end">

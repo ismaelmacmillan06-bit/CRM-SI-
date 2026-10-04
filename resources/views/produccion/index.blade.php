@@ -105,6 +105,7 @@
     <div class="alert alert-danger" style="margin-bottom:16px">❌ {{ session('error') }}</div>
 @endif
 
+@hasanyrole('admin|consultor_digital')
 {{-- Modal cargar / reemplazar Excel --}}
 <div id="modal-cargar-produccion" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
      z-index:999; align-items:center; justify-content:center; padding:20px">
@@ -141,6 +142,7 @@
         </form>
     </div>
 </div>
+@endhasanyrole
 
 @if(!$meta)
     {{-- ESTADO VACÍO --}}
@@ -153,9 +155,11 @@
             Sube el Excel de producción (Nivel, Grado, Colegio ID, Colegio, Tipo Pago, Serie, Empresa, Titulo,
             Codigo ISBN, Codigo GS1, Cantidad) para generar el dashboard de series por colegio.
         </p>
+        @hasanyrole('admin|consultor_digital')
         <button onclick="document.getElementById('modal-cargar-produccion').style.display='flex'" class="btn btn-primary">
             📤 Cargar Excel
         </button>
+        @endhasanyrole
     </div>
 @else
     {{-- BARRA DE INFO + ACCIONES --}}
@@ -172,6 +176,7 @@
                 &nbsp;·&nbsp; {{ number_format($meta->total_filas) }} filas
             </div>
         </div>
+        @hasanyrole('admin|consultor_digital')
         <div style="display:flex; gap:10px">
             <button onclick="document.getElementById('modal-cargar-produccion').style.display='flex'" class="btn btn-secondary">
                 🔄 Cargar nuevo Excel
@@ -184,6 +189,7 @@
                 </button>
             </form>
         </div>
+        @endhasanyrole
     </div>
 
     {{-- STAT TILES --}}

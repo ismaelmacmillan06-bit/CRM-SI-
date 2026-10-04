@@ -42,8 +42,9 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Producción: solo admin y consultor_digital
-        if ($request->routeIs('produccion.*') && !$user->hasRole('consultor_digital')) {
+        // Producción: admin, consultor_digital y coordinador (este último solo lectura,
+        // ver más abajo la rama de coordinador que bloquea los métodos de escritura)
+        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
@@ -54,8 +55,9 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Reporte Semanal: solo admin y consultor_digital
-        if ($request->routeIs('reporte-semanal.*') && !$user->hasRole('consultor_digital')) {
+        // Reporte Semanal: admin, consultor_digital y coordinador (este último solo
+        // puede consultar/exportar, no guardar — ver rama de coordinador más abajo)
+        if ($request->routeIs('reporte-semanal.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
@@ -77,6 +79,42 @@ class VerificarAccesoRol
             // No pueden generar el Report Master
             if ($request->routeIs('schools.reporte-master')) {
                 abort(403, 'No tienes permisos para generar este reporte.');
+            }
+            return $next($request);
+        }
+
+        // Coordinador: lectura amplia (Dashboard incl. Excel de arranque, Avance
+        // Colegios, Colegios y todo dentro de un colegio, Alumnos Docentes, Equipo
+        // SI, Bundles SI, Producción, Reporte Semanal incl. exportar, Tareas/
+        // Tablero/Bitácora) + escritura solo en SSA y Mis Notas SI (ya permitido
+        // arriba). Sin acceso a Seguimiento SIC/Externo, Herramientas SI ni
+        // Configuración (quedan bloqueados por los checks de arriba, que exigen
+        // consultor_digital/admin y no incluyen a coordinador).
+        if ($user->hasRole('coordinador')) {
+            if ($request->routeIs('ssa.*')) {
+                return $next($request);
+            }
+            if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
+            }
+            $rutasPermitidas = [
+                'dashboard', 'dashboard.acciones-arranque.excel',
+                'avance-colegios.*',
+                'alumnos-docentes.*',
+                'reporte-semanal.index', 'reporte-semanal.exportar',
+                'schools.index', 'schools.show',
+                'schools.processes.index',
+                'schools.teachers.index', 'schools.tickets.index',
+                'schools.visits.index', 'schools.students.index',
+                'schools.bundles.index',
+                'consultants.index', 'consultants.show',
+                'bundles.index',
+                'produccion.index',
+                'tareas.index', 'tablero.index', 'bitacora.index',
+            ];
+            if (!$request->routeIs($rutasPermitidas)) {
+                return redirect()->route('dashboard')
+                    ->with('error_acceso', 'No tienes acceso a esta sección.');
             }
             return $next($request);
         }

@@ -488,7 +488,7 @@
         <a href="{{ route('avance-colegios.index') }}" class="nav-item {{ request()->routeIs('avance-colegios.*') ? 'active' : '' }}">
             <span class="nav-icon">🚀</span> Avance Colegios
         </a>
-        @hasanyrole('admin|consultor_digital')
+        @hasanyrole('admin|consultor_digital|coordinador')
         <a href="{{ route('reporte-semanal.index') }}" class="nav-item {{ request()->routeIs('reporte-semanal.*') ? 'active' : '' }}">
             <span class="nav-icon">🗓️</span> Reporte Semanal
         </a>
@@ -500,7 +500,7 @@
         <a href="{{ route('alumnos-docentes.index') }}" class="nav-item {{ request()->routeIs('alumnos-docentes.*') ? 'active' : '' }}">
             <span class="nav-icon">🎓</span> Alumnos Docentes
         </a>
-        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas')
+        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador')
         <a href="{{ route('ssa.index') }}" class="nav-item {{ request()->routeIs('ssa.*') ? 'active' : '' }}">
             <span class="nav-icon">📅</span> Calendario SSA
         </a>
@@ -516,9 +516,13 @@
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
+        @endhasanyrole
+        @hasanyrole('admin|consultor_digital|coordinador')
         <a href="{{ route('produccion.index') }}" class="nav-item {{ request()->routeIs('produccion.*') ? 'active' : '' }}">
             <span class="nav-icon">📦</span> Producción
         </a>
+        @endhasanyrole
+        @hasanyrole('admin|consultor_digital')
         <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
             <span class="nav-icon">📈</span> Seguimiento SIC
         </a>

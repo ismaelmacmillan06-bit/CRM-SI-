@@ -44,16 +44,25 @@
                 </div>
             </div>
             <div style="display:flex; gap:8px; flex-wrap:wrap">
+                @if(!empty($contactoConsultor['email']))
                 <button type="button" onclick="contactarConsultorPorCorreo()"
                         style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#0078d4; color:#fff;
                                border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit">
                     ✉️ Contactar por Correo
                 </button>
+                @endif
+                @if(!empty($contactoConsultor['phone']))
                 <button type="button" onclick="contactarConsultorPorWhatsApp()"
                         style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#25d366; color:#fff;
                                border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit">
                     💬 Contactar por WhatsApp
                 </button>
+                @endif
+                @if(empty($contactoConsultor['email']) && empty($contactoConsultor['phone']))
+                <div style="font-size:13px; color:#92400e">
+                    Este consultor no tiene correo ni teléfono registrado.
+                </div>
+                @endif
             </div>
         @else
             <div style="font-size:14px; color:#92400e; background:#fffbeb; border:1px solid #fcd34d; padding:12px 14px; border-radius:8px">

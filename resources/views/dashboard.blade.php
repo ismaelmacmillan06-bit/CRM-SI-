@@ -203,18 +203,6 @@ function statRow(string $color, string $label, $value): string {
 </div>
 
 {{-- Visitas pendientes alert --}}
-@if($visitasPendientes > 0)
-<div style="background:#fef3c7; border:1px solid #f59e0b; border-radius:10px;
-            padding:14px 20px; margin-bottom:24px; display:flex; align-items:center; gap:10px">
-    <span style="font-size:18px">📅</span>
-    <span style="font-size:14px; color:#92400e">
-        Tienes <strong>{{ $visitasPendientes }} visita(s) pendiente(s)</strong> por realizar.
-    </span>
-    <a href="{{ route('schools.index') }}" style="margin-left:auto; font-size:13px; color:#92400e; font-weight:600">
-        Ver colegios →
-    </a>
-</div>
-@endif
 
 
 {{--Cards para alumnos SI --}}

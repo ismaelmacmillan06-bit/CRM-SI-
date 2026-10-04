@@ -51,9 +51,14 @@
     .modal-close:hover { background: var(--border); color: var(--text); }
     .field-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin: 14px 0 6px; }
     .field-label:first-child { margin-top: 0; }
-    .color-picker { display: flex; gap: 8px; margin-top: 4px; }
-    .color-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; display: inline-block; }
-    .color-dot.is-selected { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface); }
+    .color-picker { display: flex; gap: 10px; margin-top: 4px; }
+    .color-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; transition: transform .12s ease; }
+    .color-dot:hover { transform: scale(1.1); }
+    .color-dot svg { display: none; color: rgba(0,0,0,.55); filter: drop-shadow(0 1px 1px rgba(255,255,255,.6)); }
+    /* .is-selected usa outline (no border-color) para no chocar con el border-color inline de cada punto */
+    .color-dot.is-selected { outline: 2px solid var(--text); outline-offset: 2px; transform: scale(1.08); }
+    .color-dot.is-selected svg { display: block; }
 
     @media (max-width: 600px) { .modal { padding: 20px; } .notes-grid { grid-template-columns: 1fr; } }
 </style>
@@ -145,7 +150,9 @@
             <label class="field-label">Color</label>
             <div class="color-picker" id="colorPicker">
                 @foreach($colorMap as $key => $c)
-                    <span class="color-dot" data-color="{{ $key }}" style="background:{{ $c['bg'] }};border-color:{{ $c['border'] }}" onclick="seleccionarColor('{{ $key }}')"></span>
+                    <span class="color-dot" data-color="{{ $key }}" style="background:{{ $c['bg'] }};border-color:{{ $c['border'] }}" onclick="seleccionarColor('{{ $key }}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
                 @endforeach
             </div>
             <input type="hidden" name="color" id="notaColor" value="amber">

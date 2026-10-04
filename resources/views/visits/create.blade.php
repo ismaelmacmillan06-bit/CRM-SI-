@@ -65,20 +65,7 @@
                            value="{{ old('motivo') }}">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Acudieron</label>
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px; border:1px solid var(--border); border-radius:8px">
-                        @forelse($consultants as $consultant)
-                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:400; cursor:pointer">
-                                <input type="checkbox" name="attendees[]" value="{{ $consultant->id }}"
-                                       {{ in_array($consultant->id, old('attendees', [])) ? 'checked' : '' }}>
-                                {{ $consultant->user->name }}
-                            </label>
-                        @empty
-                            <span style="font-size:13px; color:var(--text-muted)">No hay personal de Equipo SI registrado.</span>
-                        @endforelse
-                    </div>
-                </div>
+                @include('visits.partials.acudieron-picker', ['selectedIds' => old('attendees', [])])
 
                 <div class="form-group">
                     <label class="form-label">Notas</label>

@@ -15,7 +15,14 @@ class SchoolFileController extends Controller
     public function index(School $school)
     {
         $files = $school->files()->with('uploader')->latest()->get();
-        return view('repositorio.index', compact('school', 'files'));
+        $consultor = $school->consultorDigital()->with('user')->first();
+        $contactoConsultor = $consultor?->user ? [
+            'nombre' => $consultor->user->name,
+            'email'  => $consultor->user->email,
+            'phone'  => $consultor->phone,
+        ] : null;
+
+        return view('repositorio.index', compact('school', 'files', 'consultor', 'contactoConsultor'));
     }
 
     public function store(Request $request, School $school)

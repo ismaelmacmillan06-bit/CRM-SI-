@@ -21,6 +21,46 @@
 
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalConsultar()">🔎 CONSULTAR</button>
+</div>
+
+<div id="modal-consultar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+     z-index:999; align-items:center; justify-content:center; padding:20px">
+    <div style="background:#fff; border-radius:12px; padding:28px; width:460px; max-width:100%; position:relative">
+        <button type="button" onclick="cerrarModalConsultar()" aria-label="Cerrar"
+                style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:#888">✕</button>
+
+        <h3 style="font-family:'Bricolage Grotesque',sans-serif; margin:0 0 6px">🔎 Consultar repositorio</h3>
+        <p style="margin:0 0 18px; font-size:14px; color:var(--text-muted)">
+            Contacta al consultor digital de este colegio para pedirle apoyo con los archivos.
+        </p>
+
+        @if($consultor && $consultor->user)
+            <div style="font-size:14px; margin-bottom:18px">
+                <strong>{{ $consultor->user->name }}</strong>
+                <div style="font-size:12.5px; color:var(--text-muted)">
+                    {{ $consultor->user->email ?: 'Sin correo registrado' }}
+                    · {{ $consultor->phone ?: 'Sin teléfono registrado' }}
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+                <button type="button" onclick="contactarConsultorPorCorreo()"
+                        style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#0078d4; color:#fff;
+                               border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit">
+                    ✉️ Contactar por Correo
+                </button>
+                <button type="button" onclick="contactarConsultorPorWhatsApp()"
+                        style="display:inline-flex; align-items:center; gap:6px; padding:9px 16px; background:#25d366; color:#fff;
+                               border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit">
+                    💬 Contactar por WhatsApp
+                </button>
+            </div>
+        @else
+            <div style="font-size:14px; color:#92400e; background:#fffbeb; border:1px solid #fcd34d; padding:12px 14px; border-radius:8px">
+                Este colegio no tiene consultor digital asignado.
+            </div>
+        @endif
+    </div>
 </div>
 
 @hasanyrole('admin|consultor_digital')
@@ -102,4 +142,48 @@
         </tbody>
     </table>
 </div>
+
+<script>
+    const CONSULTOR_REPO = @json($contactoConsultor);
+    const COLEGIO_REPO = @json($school->name);
+
+    function mensajeConsultar() {
+        return 'Que tal ' + CONSULTOR_REPO.nombre + ', espero que estés bien, voy a utilizar los datos de su ' +
+               'repositorio del ' + COLEGIO_REPO + ' para armar otra plataforma de ese colegio. ' +
+               '¿Me podrías apoyar a cargarlos? Quedo atento. Saludos.';
+    }
+
+    function abrirModalConsultar() {
+        document.getElementById('modal-consultar').style.display = 'flex';
+    }
+
+    function cerrarModalConsultar() {
+        document.getElementById('modal-consultar').style.display = 'none';
+    }
+
+    function contactarConsultorPorCorreo() {
+        if (!CONSULTOR_REPO.email) {
+            alert('El consultor digital no tiene correo registrado.');
+            return;
+        }
+        window.open('mailto:' + CONSULTOR_REPO.email +
+            '?subject=' + encodeURIComponent('Repositorio — ' + COLEGIO_REPO) +
+            '&body=' + encodeURIComponent(mensajeConsultar()));
+    }
+
+    function contactarConsultorPorWhatsApp() {
+        if (!CONSULTOR_REPO.phone) {
+            alert('El consultor digital no tiene teléfono registrado.');
+            return;
+        }
+        let phone = CONSULTOR_REPO.phone.replace(/\D/g, '');
+        if (phone.length === 10) phone = '52' + phone;
+        window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(mensajeConsultar()));
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarModalConsultar(); });
+    document.getElementById('modal-consultar').addEventListener('click', e => {
+        if (e.target.id === 'modal-consultar') cerrarModalConsultar();
+    });
+</script>
 @endsection

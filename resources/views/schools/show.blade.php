@@ -14,6 +14,7 @@
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Visitas</a>
     <a href="{{ route('schools.students.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🎓 Alumnos</a>
     <a href="{{ route('schools.bundles.index', $school) }}" class="btn btn-secondary btn-sm">📚 Bundles</a>
+    <a href="{{ route('schools.repositorio.index', $school) }}" class="btn btn-secondary btn-sm">📁 Repositorio</a>
     @hasanyrole('admin|consultor_digital|coordinador')
     <a href="{{ route('schools.reporte-master', $school) }}"
        class="btn btn-sm"

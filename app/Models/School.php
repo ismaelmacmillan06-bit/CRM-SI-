@@ -72,6 +72,11 @@ public function ssaCapacitaciones()
     return $this->hasMany(\App\Models\SsaCapacitacion::class);
 }
 
+public function files()
+{
+    return $this->hasMany(SchoolFile::class);
+}
+
 public function students()
 {
     return $this->hasMany(Student::class);

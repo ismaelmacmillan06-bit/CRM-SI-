@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\SchoolFileController;
 use App\Http\Controllers\ConsultantController;
 use App\Http\Controllers\SchoolLevelProcessController;
 use App\Http\Controllers\TeacherController;
@@ -54,6 +55,15 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::post('schools/importar',  [SchoolController::class, 'importarMasivo'])->name('schools.importar');
     Route::delete('schools-borrar-todo', [SchoolController::class, 'destroyAll'])->name('schools.destroy-all');
     Route::resource('schools', SchoolController::class);
+
+    Route::get('schools/{school}/repositorio', [SchoolFileController::class, 'index'])
+        ->name('schools.repositorio.index');
+    Route::post('schools/{school}/repositorio', [SchoolFileController::class, 'store'])
+        ->name('schools.repositorio.store');
+    Route::get('schools/{school}/repositorio/{file}/descargar', [SchoolFileController::class, 'download'])
+        ->name('schools.repositorio.download');
+    Route::delete('schools/{school}/repositorio/{file}', [SchoolFileController::class, 'destroy'])
+        ->name('schools.repositorio.destroy');
 
     // Alumnos Docentes — resumen de alumnos por nivel y buscador de usuarios
     Route::get('alumnos-docentes', [AlumnosDocentesController::class, 'index'])->name('alumnos-docentes.index');

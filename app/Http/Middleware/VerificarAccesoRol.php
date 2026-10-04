@@ -108,6 +108,7 @@ class VerificarAccesoRol
                 'schools.teachers.index', 'schools.tickets.index',
                 'schools.visits.index', 'schools.students.index',
                 'schools.bundles.index',
+                'schools.repositorio.index', 'schools.repositorio.download',
                 'consultants.index', 'consultants.show',
                 'bundles.index',
                 'produccion.index',

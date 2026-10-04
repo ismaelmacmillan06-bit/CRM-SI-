@@ -15,6 +15,35 @@
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
 </div>
 
+@hasanyrole('admin|consultor_digital')
+@if($school->status !== 'inactivo')
+<div class="card" style="margin-bottom:24px">
+    <div class="card-body" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:14px 20px">
+        <strong style="font-size:14px">⚡ Cambio masivo:</strong>
+        <span style="font-size:13px; color:var(--text-muted)">cambiar todas las acciones de este colegio a</span>
+        <form id="form-bulk-processes" method="POST" action="{{ route('schools.processes.bulk', $school) }}"
+              style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+            @csrf
+            <select name="status" id="bulk-status" class="form-control" style="max-width:200px; padding:6px 8px; font-size:13px">
+                <option value="pending">⏳ Pendiente</option>
+                <option value="in_progress">🔄 En proceso</option>
+                <option value="done">✅ Completado</option>
+                <option value="reopened">🔁 Reapertura</option>
+            </select>
+            <button type="button" id="btn-bulk-aplicar" class="btn btn-primary btn-sm">Aplicar a todas</button>
+            <span id="bulk-confirmar" style="display:none; gap:8px; align-items:center; flex-wrap:wrap">
+                <span style="font-size:13px; color:#b45309; font-weight:600">
+                    ¿Cambiar todas las acciones a <span id="bulk-label"></span>? Las notas y evidencias no se modifican.
+                </span>
+                <button type="submit" class="btn btn-danger btn-sm">Sí, aplicar</button>
+                <button type="button" id="btn-bulk-cancelar" class="btn btn-secondary btn-sm">Cancelar</button>
+            </span>
+        </form>
+    </div>
+</div>
+@endif
+@endhasanyrole
+
 @forelse($school->schoolLevels as $schoolLevel)
 <div class="card" style="margin-bottom:24px">
     <div class="card-header">
@@ -204,6 +233,27 @@
 @endforelse
 
 <script>
+(function () {
+    const select   = document.getElementById('bulk-status');
+    const aplicar  = document.getElementById('btn-bulk-aplicar');
+    const confirmar = document.getElementById('bulk-confirmar');
+    if (!select || !aplicar) return;
+
+    aplicar.addEventListener('click', function () {
+        document.getElementById('bulk-label').textContent = select.options[select.selectedIndex].text.replace(/^\S+\s/, '');
+        aplicar.style.display = 'none';
+        confirmar.style.display = 'inline-flex';
+    });
+    document.getElementById('btn-bulk-cancelar').addEventListener('click', function () {
+        confirmar.style.display = 'none';
+        aplicar.style.display = '';
+    });
+    select.addEventListener('change', function () {
+        confirmar.style.display = 'none';
+        aplicar.style.display = '';
+    });
+})();
+
 document.querySelectorAll('input[type="file"][data-slp]').forEach(function (fileInput) {
     const slpId    = fileInput.dataset.slp;
     const fileLabel = document.getElementById('file-label-' + slpId);

@@ -104,6 +104,61 @@ class SchoolLevelProcessController extends Controller
         return back()->with('success', 'Proceso actualizado correctamente.');
     }
 
+    public function bulkUpdate(Request $request, School $school)
+    {
+        if ($redirect = $this->bloqueadoPorInactivo($school)) {
+            return $redirect;
+        }
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+
+        $request->validate([
+            'status' => 'required|in:pending,in_progress,done,reopened',
+        ]);
+
+        $statusLabels = [
+            'pending'     => 'Pendiente',
+            'in_progress' => 'En proceso',
+            'done'        => 'Completado',
+            'reopened'    => 'Reabierto',
+        ];
+
+        $consultant = Consultant::where('user_id', auth()->id())->first();
+        $procesos = SchoolLevelProcess::whereHas('schoolLevel', fn($q) => $q->where('school_id', $school->id))
+            ->where('status', '!=', $request->status)
+            ->get();
+
+        foreach ($procesos as $slp) {
+            $data = ['status' => $request->status];
+            if ($request->status === 'done') {
+                $data['completed_at'] = now();
+                $data['completed_by'] = $consultant?->id;
+            } elseif ($request->status === 'reopened') {
+                $data['completed_at'] = null;
+                $data['completed_by'] = null;
+            }
+            $slp->update($data);
+        }
+
+        $cambiadas = $procesos->count();
+        if ($cambiadas > 0) {
+            ActivityLog::log('proceso', "Cambio masivo: {$cambiadas} acción(es) marcadas como " . $statusLabels[$request->status], $school->id, '📋');
+        }
+
+        $school->load('schoolLevels.processes');
+        $total = 0; $done = 0;
+        foreach ($school->schoolLevels as $sl) {
+            $total += $sl->processes->count();
+            $done  += $sl->processes->where('status', 'done')->count();
+        }
+        if ($cambiadas > 0 && $total > 0 && $done === $total) {
+            ActivityLog::log('arranque', '100% de acciones de arranque completadas', $school->id, '🎉');
+        }
+
+        return back()->with('success', $cambiadas > 0
+            ? "Se cambiaron {$cambiadas} acción(es) a \"{$statusLabels[$request->status]}\"."
+            : 'Todas las acciones ya estaban en ese estatus.');
+    }
+
     public function destroyEvidence(School $school, SchoolLevelProcess $schoolLevelProcess)
     {
         abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);

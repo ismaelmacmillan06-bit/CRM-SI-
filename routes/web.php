@@ -102,6 +102,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     // Procesos por nivel
     Route::get('schools/{school}/processes', [SchoolLevelProcessController::class, 'index'])
          ->name('schools.processes.index');
+    Route::post('schools/{school}/processes-masivo', [SchoolLevelProcessController::class, 'bulkUpdate'])
+         ->name('schools.processes.bulk');
     Route::post('schools/{school}/processes/{schoolLevelProcess}', [SchoolLevelProcessController::class, 'update'])
          ->name('schools.processes.update');
     Route::delete('schools/{school}/processes/{schoolLevelProcess}/evidence', [SchoolLevelProcessController::class, 'destroyEvidence'])

@@ -3,6 +3,28 @@
 @section('title', 'Equipo SI')
 
 @section('content')
+
+@php
+    $rolesResumen = [
+        ['key' => 'consultor_digital',    'label' => 'Consultor Digital',       'icon' => '💻', 'color' => '#2563eb'],
+        ['key' => 'consultor_eca',        'label' => 'Consultor Académico ECA', 'icon' => '📗', 'color' => '#16a34a'],
+        ['key' => 'consultor_elt',        'label' => 'Consultor Académico ELT', 'icon' => '📘', 'color' => '#0ea5e9'],
+        ['key' => 'representante_ventas', 'label' => 'Representante de Ventas', 'icon' => '🤝', 'color' => '#d97706'],
+        ['key' => 'coordinador',          'label' => 'Coordinador',             'icon' => '🧭', 'color' => '#7c3aed'],
+    ];
+@endphp
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:20px">
+    @foreach($rolesResumen as $r)
+    <div style="background:var(--surface); border-radius:12px; padding:16px 18px;
+                border-left:4px solid {{ $r['color'] }}; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
+        <div style="font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+                    color:var(--text-muted); margin-bottom:8px">{{ $r['icon'] }} {{ $r['label'] }}</div>
+        <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:30px; font-weight:800;
+                    color:var(--text); line-height:1">{{ $conteoPorRol[$r['key']] ?? 0 }}</div>
+    </div>
+    @endforeach
+</div>
+
 <div class="card">
     <div class="card-header">
         <span class="card-title">👥 Equipo SI</span>

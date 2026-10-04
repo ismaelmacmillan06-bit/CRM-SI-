@@ -15,7 +15,12 @@ class ConsultantController extends Controller
     public function index()
     {
         $consultants = Consultant::with('user', 'schoolConsultants')->get();
-        return view('consultants.index', compact('consultants'));
+
+        $conteoPorRol = $consultants
+            ->groupBy(fn($c) => $c->user->getRoleNames()->first() ?? 'sin_rol')
+            ->map->count();
+
+        return view('consultants.index', compact('consultants', 'conteoPorRol'));
     }
 
     public function create()

@@ -101,6 +101,14 @@
     input.addEventListener('focus', mostrarResultados);
     input.addEventListener('input', mostrarResultados);
 
+    // Expuesto para otros scripts de la página (ej. generador de PDF)
+    window.getAcudieronNombres = function() {
+        return seleccionados
+            .map(id => PERSONAS.find(p => p.id === id))
+            .filter(Boolean)
+            .map(p => p.nombre);
+    };
+
     document.addEventListener('click', function(e) {
         if (!document.getElementById('acudieron-picker').contains(e.target)) {
             resultados.style.display = 'none';

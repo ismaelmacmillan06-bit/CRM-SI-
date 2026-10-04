@@ -92,6 +92,7 @@
                 </div>
 
                 <div style="display:flex; gap:10px; justify-content:flex-end">
+                    <button type="button" id="btn-generar-pdf" class="btn btn-secondary">📄 Generar PDF</button>
                     <a href="{{ route('schools.visits.index', $visit->school) }}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary">Guardar cambios</button>
                 </div>
@@ -114,5 +115,216 @@
 
     statusSelectVisita.addEventListener('change', actualizarFechaRealizadaRequerida);
     actualizarFechaRealizadaRequerida();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js" integrity="sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function() {
+    const DATOS = {
+        colegio: @json($visit->school->name),
+        evidenceUrl: @json($visit->evidence ? asset('storage/' . $visit->evidence) : null),
+        logoUrl: @json(asset('images/logo-si-pdf.png')),
+        visitaId: @json($visit->id),
+    };
+
+    function cargarImagenComoDataURL(url) {
+        return fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            }))
+            .then(dataURL => new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload  = () => resolve({
+                    dataURL,
+                    format: dataURL.startsWith('data:image/png') ? 'PNG' : 'JPEG',
+                    w: img.naturalWidth,
+                    h: img.naturalHeight,
+                });
+                img.onerror = reject;
+                img.src = dataURL;
+            }));
+    }
+
+    function formatearFechaInput(value) {
+        if (!value) return '—';
+        const [y, m, d] = value.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    async function generarVisitaPDF() {
+        const btn = document.getElementById('btn-generar-pdf');
+        const textoOriginal = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Generando...';
+
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
+
+            const INK        = [43, 33, 27];
+            const MUTED       = [140, 124, 105];
+            const BRICK       = [178, 58, 44];
+            const BRICK_SOFT  = [246, 227, 220];
+            const LINE        = [218, 201, 177];
+
+            const pageW    = doc.internal.pageSize.getWidth();
+            const pageH    = doc.internal.pageSize.getHeight();
+            const margin   = 18;
+            const contentW = pageW - margin * 2;
+            let y = margin;
+
+            let logo = null;
+            try { logo = await cargarImagenComoDataURL(DATOS.logoUrl); } catch (e) { /* sin logo, se omite */ }
+
+            function ensureSpace(needed) {
+                if (y + needed > pageH - 18) {
+                    doc.addPage();
+                    y = margin;
+                }
+            }
+
+            function header() {
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+                doc.setTextColor(...INK);
+                doc.text('REPORTE DE VISITA', margin, y + 7);
+
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+                doc.setTextColor(...MUTED);
+                doc.text(DATOS.colegio, margin, y + 14);
+
+                if (logo) {
+                    const maxW = 34, maxH = 16;
+                    let w = maxW, h = w * (logo.h / logo.w);
+                    if (h > maxH) { h = maxH; w = h * (logo.w / logo.h); }
+                    doc.addImage(logo.dataURL, logo.format, pageW - margin - w, y, w, h);
+                }
+
+                y += 20;
+                doc.setFillColor(...BRICK);
+                doc.rect(margin, y, contentW, 2.2, 'F');
+                y += 9;
+            }
+
+            header();
+
+            const consultantSelect = document.querySelector('select[name="consultant_id"]');
+            const statusSelect     = document.querySelector('select[name="status"]');
+            const statusLabels     = { pendiente: 'Pendiente', en_curso: 'En curso', terminada: 'Terminada' };
+
+            const consultorNombre = (consultantSelect.options[consultantSelect.selectedIndex]?.text || '—').trim();
+            const estatusLabel    = statusLabels[statusSelect.value] || statusSelect.value;
+            const fechaGeneracion = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const fechaProxima    = formatearFechaInput(document.querySelector('input[name="next_visit_date"]').value);
+
+            const boxH = 20;
+            doc.setFillColor(...BRICK_SOFT);
+            doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
+            const colW = contentW / 2;
+            const metaRows = [
+                [['Consultor responsable', consultorNombre], ['Fecha de generación', fechaGeneracion]],
+                [['Estatus', estatusLabel], ['Próxima visita', fechaProxima]],
+            ];
+            metaRows.forEach((fila, ri) => {
+                fila.forEach((celda, ci) => {
+                    const cx = margin + 6 + ci * colW;
+                    const cy = y + 6 + ri * 9;
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5);
+                    doc.setTextColor(...MUTED);
+                    doc.text(celda[0].toUpperCase(), cx, cy);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+                    doc.setTextColor(...INK);
+                    doc.text(String(celda[1]), cx, cy + 4.6);
+                });
+            });
+            y += boxH + 10;
+
+            function seccion(titulo, contenido) {
+                ensureSpace(14);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5);
+                doc.setTextColor(...BRICK);
+                doc.text(titulo, margin, y);
+                y += 2;
+                doc.setDrawColor(...LINE); doc.setLineWidth(0.3);
+                doc.line(margin, y, margin + contentW, y);
+                y += 6;
+
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+                doc.setTextColor(...INK);
+                const texto  = (contenido && String(contenido).trim() !== '') ? String(contenido) : '—';
+                const lineas = doc.splitTextToSize(texto, contentW);
+                lineas.forEach(linea => {
+                    ensureSpace(6);
+                    doc.text(linea, margin, y);
+                    y += 5.6;
+                });
+                y += 6;
+            }
+
+            seccion('Motivo de la visita', document.querySelector('input[name="motivo"]').value);
+            seccion('Fecha de la visita (fecha realizada)', formatearFechaInput(document.querySelector('input[name="visit_date"]').value));
+
+            const nombresAcudieron = window.getAcudieronNombres ? window.getAcudieronNombres() : [];
+            seccion('Acudieron', nombresAcudieron.length ? nombresAcudieron.join(', ') : '—');
+
+            seccion('Notas', document.querySelector('textarea[name="notes"]').value);
+            seccion('Resumen de la visita', document.querySelector('textarea[name="summary"]').value);
+
+            // Evidencia en hoja(s) aparte, al ser imagen
+            if (DATOS.evidenceUrl) {
+                doc.addPage();
+                y = margin;
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+                doc.setTextColor(...INK);
+                doc.text('Evidencia', margin, y);
+                y += 3;
+                doc.setFillColor(...BRICK);
+                doc.rect(margin, y, contentW, 1.4, 'F');
+                y += 10;
+
+                try {
+                    const foto = await cargarImagenComoDataURL(DATOS.evidenceUrl);
+                    const maxW = contentW, maxH = pageH - y - 24;
+                    let w = maxW, h = w * (foto.h / foto.w);
+                    if (h > maxH) { h = maxH; w = h * (foto.w / foto.h); }
+                    const x = margin + (contentW - w) / 2;
+                    doc.addImage(foto.dataURL, foto.format, x, y, w, h);
+                } catch (e) {
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+                    doc.setTextColor(...MUTED);
+                    doc.text('No se pudo cargar la imagen de evidencia.', margin, y + 10);
+                }
+            }
+
+            // Pie de página en todas las hojas
+            const totalPaginas = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPaginas; i++) {
+                doc.setPage(i);
+                doc.setFillColor(...INK);
+                doc.rect(0, pageH - 12, pageW, 12, 'F');
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(8);
+                doc.setTextColor(255, 255, 255);
+                doc.text('REPORTE CONFIDENCIAL  |  MACMILLAN CASTILLO', pageW / 2, pageH - 6.5, { align: 'center' });
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+                doc.text(`Página ${i} de ${totalPaginas}`, pageW - margin, pageH - 6.5, { align: 'right' });
+            }
+
+            const slug = DATOS.colegio.normalize('NFD').replace(/[̀-ͯ]/g, '')
+                .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
+            doc.save(`reporte-visita-${slug}-${DATOS.visitaId}.pdf`);
+        } catch (e) {
+            console.error(e);
+            alert('No se pudo generar el PDF. Intenta de nuevo.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+        }
+    }
+
+    document.getElementById('btn-generar-pdf').addEventListener('click', generarVisitaPDF);
+})();
 </script>
 @endsection

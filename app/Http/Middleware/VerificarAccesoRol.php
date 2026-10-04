@@ -103,7 +103,7 @@ class VerificarAccesoRol
                 'avance-colegios.*',
                 'alumnos-docentes.*',
                 'reporte-semanal.index', 'reporte-semanal.exportar',
-                'schools.index', 'schools.show',
+                'schools.index', 'schools.show', 'schools.reporte-master',
                 'schools.processes.index',
                 'schools.teachers.index', 'schools.tickets.index',
                 'schools.visits.index', 'schools.students.index',

@@ -147,7 +147,9 @@
 @endif
 
 @if(session('excel_omitidos') && count(session('excel_omitidos')))
-    <div style="background:#fffbeb; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px">
+    <div id="aviso-omitidos" style="background:#fffbeb; border:1px solid #fcd34d; color:#92400e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; position:relative">
+        <button type="button" onclick="cerrarAvisoOmitidos()" aria-label="Cerrar"
+                style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:18px; line-height:1; cursor:pointer; color:#92400e">✕</button>
         <strong>Alumnos omitidos (usuario ya registrado):</strong>
         <ul style="margin:6px 0 0 16px">
             @foreach(session('excel_omitidos') as $msg)
@@ -155,6 +157,13 @@
             @endforeach
         </ul>
     </div>
+    <script>
+        function cerrarAvisoOmitidos() {
+            const aviso = document.getElementById('aviso-omitidos');
+            if (aviso) aviso.remove();
+        }
+        setTimeout(cerrarAvisoOmitidos, 6000);
+    </script>
 @endif
 {{-- Mini cards por nivel --}}
 @if($porNivel->isNotEmpty())

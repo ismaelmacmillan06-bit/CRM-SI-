@@ -73,6 +73,7 @@
             <option value="consultor_eca"        {{ $consultant->user->getRoleNames()->first() == 'consultor_eca'        ? 'selected' : '' }}>📗 Consultor Académico ECA</option>
             <option value="consultor_elt"        {{ $consultant->user->getRoleNames()->first() == 'consultor_elt'        ? 'selected' : '' }}>📘 Consultor Académico ELT</option>
             <option value="representante_ventas" {{ $consultant->user->getRoleNames()->first() == 'representante_ventas' ? 'selected' : '' }}>🤝 Representante de Ventas</option>
+            <option value="coordinador"          {{ $consultant->user->getRoleNames()->first() == 'coordinador'          ? 'selected' : '' }}>🧭 Coordinador</option>
         </select>
     @else
         <input type="text" class="form-control"

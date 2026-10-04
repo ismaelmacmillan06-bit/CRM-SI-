@@ -79,6 +79,7 @@
                             <option value="consultor_eca"        {{ old('role') == 'consultor_eca'        ? 'selected' : '' }}>📗 Consultor Académico ECA</option>
                             <option value="consultor_elt"        {{ old('role') == 'consultor_elt'        ? 'selected' : '' }}>📘 Consultor Académico ELT</option>
                             <option value="representante_ventas" {{ old('role') == 'representante_ventas' ? 'selected' : '' }}>🤝 Representante de Ventas</option>
+                            <option value="coordinador"          {{ old('role') == 'coordinador'          ? 'selected' : '' }}>🧭 Coordinador</option>
                         </select>
                         @error('role')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>

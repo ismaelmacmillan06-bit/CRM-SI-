@@ -220,14 +220,13 @@ function statRow(string $color, string $label, $value): string {
 {{--Cards para alumnos SI --}}
 @php
     // $conteoNiveles viene del controlador, ya filtrado por rol
-    $nivelesSI = [
-        ['nombre' => 'Maternal',     'icono' => '🍼', 'color' => '#f59e0b', 'alias' => ['maternal']],
-        ['nombre' => 'Preescolar',   'icono' => '🧸', 'color' => '#8b5cf6', 'alias' => ['preescolar','prescolar','kinder','kínder']],
-        ['nombre' => 'Primaria',     'icono' => '✏️', 'color' => '#3b82f6', 'alias' => ['primaria']],
-        ['nombre' => 'Secundaria',   'icono' => '📐', 'color' => '#10b981', 'alias' => ['secundaria','secu']],
-        ['nombre' => 'Preparatoria', 'icono' => '🎓', 'color' => '#E2231A', 'alias' => ['preparatoria','bachillerato','prepa','bach']],
-        ['nombre' => 'Licenciatura', 'icono' => '🏛️', 'color' => '#0ea5e9', 'alias' => ['licenciatura','universidad','lic']],
-    ];
+    // Catálogo centralizado en App\Helpers\Niveles (nombres + alias por nivel)
+    $nivelesSI = collect(\App\Helpers\Niveles::map())->map(fn($datos, $nombre) => [
+        'nombre' => $nombre,
+        'icono'  => $datos['icono'],
+        'color'  => $datos['color'],
+        'alias'  => $datos['alias'],
+    ])->values();
 
     $totalAlumnosSI = $conteoNiveles->sum();
 @endphp

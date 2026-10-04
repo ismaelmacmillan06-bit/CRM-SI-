@@ -164,7 +164,11 @@
             'Preescolar'    => ['icon' => '🎨', 'color' => '#8b5cf6', 'bg' => '#f5f3ff', 'border' => '#c4b5fd'],
             'Primaria'      => ['icon' => '📚', 'color' => '#2563eb', 'bg' => '#eff6ff', 'border' => '#93c5fd'],
             'Secundaria'    => ['icon' => '🔬', 'color' => '#059669', 'bg' => '#ecfdf5', 'border' => '#6ee7b7'],
+            // Bachillerato/Universidad son los nombres que usa la carga masiva;
+            // Preparatoria/Licenciatura se mantienen por datos antiguos ya guardados así.
+            'Bachillerato'  => ['icon' => '🎓', 'color' => '#dc2626', 'bg' => '#fef2f2', 'border' => '#fca5a5'],
             'Preparatoria'  => ['icon' => '🎓', 'color' => '#dc2626', 'bg' => '#fef2f2', 'border' => '#fca5a5'],
+            'Universidad'   => ['icon' => '🏛️', 'color' => '#0d1117', 'bg' => '#f8fafc', 'border' => '#cbd5e1'],
             'Licenciatura'  => ['icon' => '🏛️', 'color' => '#0d1117', 'bg' => '#f8fafc', 'border' => '#cbd5e1'],
         ];
     @endphp

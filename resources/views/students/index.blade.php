@@ -72,8 +72,8 @@
                             <option value="Preescolar">Preescolar</option>
                             <option value="Primaria">Primaria</option>
                             <option value="Secundaria">Secundaria</option>
-                            <option value="Preparatoria">Preparatoria</option>
-                            <option value="Licenciatura">Licenciatura</option>
+                            <option value="Bachillerato">Bachillerato</option>
+                            <option value="Universidad">Universidad</option>
                         @endforelse
                     </select>
                 </div>
@@ -122,8 +122,8 @@
                             <option value="Preescolar">Preescolar</option>
                             <option value="Primaria">Primaria</option>
                             <option value="Secundaria">Secundaria</option>
-                            <option value="Preparatoria">Preparatoria</option>
-                            <option value="Licenciatura">Licenciatura</option>
+                            <option value="Bachillerato">Bachillerato</option>
+                            <option value="Universidad">Universidad</option>
                         @endforelse
                     </select>
                 </div>

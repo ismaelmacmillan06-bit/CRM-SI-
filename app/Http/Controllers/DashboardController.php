@@ -36,17 +36,20 @@ class DashboardController extends Controller
     {
         $schoolIds = $this->resolveSchoolIds();
 
-        // Scope helper: filtra por schoolIds si aplica
-        $schoolScope   = fn($q) => $schoolIds ? $q->whereIn('school_id', $schoolIds) : $q;
+        // Scope helper: filtra por schoolIds si aplica (colegios asignados al consultor)
         $schoolScopeId = fn($q) => $schoolIds ? $q->whereIn('id', $schoolIds) : $q;
 
-        // IDs de colegios no inactivos (respetando el scoping por consultor), para los
-        // widgets agregados que no pueden usar el scope Eloquent directamente (queries
-        // crudas sobre school_level/school_service).
+        // IDs de colegios activos para este usuario (ya filtrados por consultor + sin
+        // inactivos) — fuente única para todo agregado cruzado del dashboard, así ningún
+        // alumno/docente/ticket/visita de un colegio inactivo se cuela en una tarjeta.
         $activeSchoolIds = $schoolScopeId(School::noInactivos())->pluck('id');
         $totalColegiosActivos = $activeSchoolIds->count();
 
-        // Cards principales (total de colegios excluye inactivos, igual que el resto del dashboard)
+        // Scope helper para modelos con school_id (Teacher/Student/Ticket/Visit):
+        // siempre filtra por colegios activos del usuario.
+        $schoolScope = fn($q) => $q->whereIn('school_id', $activeSchoolIds);
+
+        // Cards principales (excluyen colegios inactivos)
         $totalTeachers    = $schoolScope(Teacher::query())->count();
         $totalStudents    = $schoolScope(Student::query())->count();
         $totalConsultants = $schoolIds ? null : Consultant::count();
@@ -62,8 +65,10 @@ class DashboardController extends Controller
 
         // Detalle de visitas por colegio (pendientes / realizadas), para el ojito de la card
         $visitasDetalle = [
+            // Las que no tienen fecha programada van al final, no primero
             'pendientes' => $schoolScope(Visit::with(['school', 'consultant.user']))
                 ->where('status', 'pendiente')
+                ->orderByRaw('scheduled_date IS NULL')
                 ->orderBy('scheduled_date')
                 ->get(),
             'realizadas' => $schoolScope(Visit::with(['school', 'consultant.user']))
@@ -72,10 +77,8 @@ class DashboardController extends Controller
                 ->get(),
         ];
 
-        // Directores y Admins MEE (via teacher_roles)
-        $teacherScope = fn($q) => $schoolIds
-            ? $q->whereHas('teacher', fn($tq) => $tq->whereIn('school_id', $schoolIds))
-            : $q;
+        // Directores y Admins MEE (via teacher_roles) — excluye colegios inactivos
+        $teacherScope = fn($q) => $q->whereHas('teacher', fn($tq) => $tq->whereIn('school_id', $activeSchoolIds));
 
         $totalDirectores = $teacherScope(
             TeacherRole::whereIn('role', ['director_general', 'director_nivel'])
@@ -147,10 +150,8 @@ class DashboardController extends Controller
             Student::selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
         )->groupBy('lvl')->pluck('total', 'lvl');
 
-        // Total de resurtidos
-        $totalResurtidos = $schoolIds
-            ? BundleResurtido::whereIn('school_id', $schoolIds)->count()
-            : BundleResurtido::count();
+        // Total de resurtidos (excluye colegios inactivos)
+        $totalResurtidos = BundleResurtido::whereIn('school_id', $activeSchoolIds)->count();
 
         // Colegios por nivel educativo (no se cuentan colegios inactivos)
         $levels = Level::orderBy('id')->get();

@@ -92,7 +92,7 @@ class AlumnosDocentesController extends Controller
 
     private function construirFilas()
     {
-        $schools = School::withCount('students')->orderBy('name')->get();
+        $schools = School::noInactivos()->withCount('students')->orderBy('name')->get();
 
         $porColegio = Student::select('school_id', 'level')->get()->groupBy('school_id');
 

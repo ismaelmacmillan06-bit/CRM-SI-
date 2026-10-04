@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\Niveles;
 use App\Helpers\Zonas;
 use App\Models\BundleResurtido;
 use App\Models\SchoolServiceType;
@@ -226,27 +227,39 @@ class ReporteController extends Controller
         $this->setWidths($ws1, [38,22,12,26,26,26,26,30,12,12]);
 
         // ── HOJA 2: ALUMNOS SI ────────────────────────────────────────────
-        // Aggregate query: un solo SELECT COUNT GROUP BY — sin cargar modelos Eloquent
-        $conteoNiveles = \DB::table('students')
-            ->selectRaw('LOWER(TRIM(level)) as lvl, COUNT(*) as total')
-            ->groupBy('lvl')
-            ->pluck('total', 'lvl');
-        $totalStudentsGlobal = $conteoNiveles->sum();
+        // Aggregate query: un solo SELECT COUNT GROUP BY — sin cargar modelos Eloquent.
+        // Excluye alumnos de colegios inactivos, igual que el resto de reportes.
+        $conteoNivelesRaw = \DB::table('students')
+            ->join('schools', 'schools.id', '=', 'students.school_id')
+            ->where('schools.status', '!=', 'inactivo')
+            ->selectRaw('students.level as level_raw, COUNT(*) as total')
+            ->groupBy('students.level')
+            ->pluck('total', 'level_raw');
+
+        // Agrupa por nivel canónico (catálogo centralizado en App\Helpers\Niveles),
+        // para que "Preparatoria"/"Bachillerato" y "Licenciatura"/"Universidad" se
+        // sumen juntos en vez de aparecer como filas separadas o perderse en "Otros".
+        $conteoNiveles = collect(Niveles::nombres())->mapWithKeys(fn($n) => [$n => 0]);
+        $otrosNivelesTotal = 0;
+        foreach ($conteoNivelesRaw as $levelRaw => $total) {
+            $canon = Niveles::canonico($levelRaw);
+            if ($canon !== null) {
+                $conteoNiveles[$canon] += $total;
+            } else {
+                $otrosNivelesTotal += $total;
+            }
+        }
+        $totalStudentsGlobal = $conteoNiveles->sum() + $otrosNivelesTotal;
 
         $wsA = $spreadsheet->createSheet(1);
         $wsA->setTitle('Alumnos SI');
 
         $this->sheetTitle($wsA, "MacmillanSI — Alumnos SI ({$totalStudentsGlobal})", '059669', 8, $generado);
 
-        $nivelOrden  = ['maternal', 'preescolar', 'primaria', 'secundaria', 'preparatoria', 'licenciatura'];
-        $nivelColorsXls = [
-            'maternal'     => 'F59E0B',
-            'preescolar'   => '8B5CF6',
-            'primaria'     => '3B82F6',
-            'secundaria'   => '10B981',
-            'preparatoria' => 'E2231A',
-            'licenciatura' => '0EA5E9',
-        ];
+        $nivelOrden = Niveles::nombres();
+        $nivelColorsXls = collect(Niveles::map())->mapWithKeys(
+            fn($datos, $nombre) => [$nombre => ltrim($datos['color'], '#')]
+        )->all();
 
         $row = 4;
 
@@ -279,7 +292,7 @@ class ReporteController extends Controller
                 : '0%';
             $color = $nivelColorsXls[$nivel] ?? '94A3B8';
 
-            $wsA->setCellValue("A{$row}", ucfirst($nivel));
+            $wsA->setCellValue("A{$row}", $nivel);
             $wsA->setCellValue("B{$row}", $total);
             $wsA->setCellValue("C{$row}", $pct);
             $wsA->getStyle("A{$row}")->applyFromArray([
@@ -293,6 +306,27 @@ class ReporteController extends Controller
                 'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
             ]);
             $wsA->getStyle("B{$row}")->getFont()->setSize(13);
+            $wsA->getRowDimension($row)->setRowHeight(20);
+            $row++;
+        }
+
+        if ($otrosNivelesTotal > 0) {
+            $pct = $totalStudentsGlobal > 0
+                ? round($otrosNivelesTotal / $totalStudentsGlobal * 100, 1) . '%'
+                : '0%';
+            $wsA->setCellValue("A{$row}", 'Otros');
+            $wsA->setCellValue("B{$row}", $otrosNivelesTotal);
+            $wsA->setCellValue("C{$row}", $pct);
+            $wsA->getStyle("A{$row}")->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '94A3B8']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'indent' => 1],
+            ]);
+            $wsA->getStyle("B{$row}:C{$row}")->applyFromArray([
+                'font'      => ['bold' => true],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F9FAFB']],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+            ]);
             $wsA->getRowDimension($row)->setRowHeight(20);
             $row++;
         }
@@ -329,7 +363,11 @@ class ReporteController extends Controller
         $row++;
 
         // lazy(500): procesa 500 registros por query en lugar de cargar 50k de golpe
-        foreach (Student::with('school')->orderBy('level')->orderBy('name')->lazy(500) as $i => $s) {
+        foreach (
+            Student::with('school')
+                ->whereHas('school', fn($q) => $q->where('status', '!=', 'inactivo'))
+                ->orderBy('level')->orderBy('name')->lazy(500) as $i => $s
+        ) {
             $wsA->fromArray([
                 $s->name,
                 $s->last_name ?? '—',
@@ -347,8 +385,9 @@ class ReporteController extends Controller
 
         $this->setWidths($wsA, [22, 22, 16, 10, 34, 20, 22, 22]);
 
-        // ── HOJA 3: DIRECTORES ───────────────────────────────────────────
+        // ── HOJA 3: DIRECTORES (excluye colegios inactivos) ──────────────
         $directorRoles = TeacherRole::whereIn('role', ['director_general','director_nivel'])
+            ->whereHas('teacher.school', fn($q) => $q->where('status', '!=', 'inactivo'))
             ->with(['teacher.school.schoolConsultants.consultant.user'])
             ->get();
 
@@ -383,8 +422,12 @@ class ReporteController extends Controller
         $ws3 = $spreadsheet->createSheet(3);
         $ws3->setTitle('Admins MEE');
 
-        $meeAdmins    = MeeAdmin::with('school')->orderBy('school_id')->get();
+        // Excluye colegios inactivos
+        $meeAdmins    = MeeAdmin::with('school')
+            ->whereHas('school', fn($q) => $q->where('status', '!=', 'inactivo'))
+            ->orderBy('school_id')->get();
         $teacherAdmins = TeacherRole::where('role','admin_mee')
+            ->whereHas('teacher.school', fn($q) => $q->where('status', '!=', 'inactivo'))
             ->with('teacher.school')
             ->get();
 
@@ -444,8 +487,10 @@ class ReporteController extends Controller
 
         $this->setWidths($ws3, [34,20,28,28,24,20]);
 
-        // ── HOJA 4: DOCENTES ─────────────────────────────────────────────
-        $teachers = Teacher::with(['school','roles'])->orderBy('school_id')->orderBy('name')->get();
+        // ── HOJA 4: DOCENTES (excluye colegios inactivos) ────────────────
+        $teachers = Teacher::with(['school','roles'])
+            ->whereHas('school', fn($q) => $q->where('status', '!=', 'inactivo'))
+            ->orderBy('school_id')->orderBy('name')->get();
 
         $ws4 = $spreadsheet->createSheet(4);
         $ws4->setTitle('Docentes');
@@ -518,9 +563,10 @@ class ReporteController extends Controller
 
         $this->setWidths($ws5, [38,22,16,26,26,26,26,30,12,24]);
 
-        // ── HOJA 6: SERVICIOS ADICIONALES ────────────────────────────────
+        // ── HOJA 6: SERVICIOS ADICIONALES (excluye colegios inactivos) ───
         $serviceTypes = SchoolServiceType::active()->with(['schools' => function ($q) {
-            $q->with(['schoolConsultants.consultant.user', 'schoolLevels.level'])
+            $q->where('status', '!=', 'inactivo')
+              ->with(['schoolConsultants.consultant.user', 'schoolLevels.level'])
               ->withCount('students')
               ->orderBy('name');
         }])->get();

@@ -40,8 +40,8 @@
                                 <option value="Preescolar"   {{ old('level') == 'Preescolar'   ? 'selected' : '' }}>Preescolar</option>
                                 <option value="Primaria"     {{ old('level') == 'Primaria'     ? 'selected' : '' }}>Primaria</option>
                                 <option value="Secundaria"   {{ old('level') == 'Secundaria'   ? 'selected' : '' }}>Secundaria</option>
-                                <option value="Preparatoria" {{ old('level') == 'Preparatoria' ? 'selected' : '' }}>Preparatoria</option>
-                                <option value="Licenciatura" {{ old('level') == 'Licenciatura' ? 'selected' : '' }}>Licenciatura</option>
+                                <option value="Bachillerato" {{ old('level') == 'Bachillerato' ? 'selected' : '' }}>Bachillerato</option>
+                                <option value="Universidad" {{ old('level') == 'Universidad' ? 'selected' : '' }}>Universidad</option>
                             @endforelse
                         </select>
                     </div>

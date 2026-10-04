@@ -37,8 +37,12 @@
                             <option value="Preescolar"   {{ old('level', $student->level) == 'Preescolar'   ? 'selected' : '' }}>Preescolar</option>
                             <option value="Primaria"     {{ old('level', $student->level) == 'Primaria'     ? 'selected' : '' }}>Primaria</option>
                             <option value="Secundaria"   {{ old('level', $student->level) == 'Secundaria'   ? 'selected' : '' }}>Secundaria</option>
-                            <option value="Preparatoria" {{ old('level', $student->level) == 'Preparatoria' ? 'selected' : '' }}>Preparatoria</option>
-                            <option value="Licenciatura" {{ old('level', $student->level) == 'Licenciatura' ? 'selected' : '' }}>Licenciatura</option>
+                            <option value="Bachillerato" {{ old('level', $student->level) == 'Bachillerato' ? 'selected' : '' }}>Bachillerato</option>
+                            <option value="Universidad" {{ old('level', $student->level) == 'Universidad' ? 'selected' : '' }}>Universidad</option>
+                            @if(in_array($student->level, ['Preparatoria', 'Licenciatura'], true))
+                                {{-- Dato antiguo: se conserva la opción para no perder la selección al editar --}}
+                                <option value="{{ $student->level }}" selected>{{ $student->level }} (nivel antiguo)</option>
+                            @endif
                         </select>
                     </div>
                     <div class="form-group">

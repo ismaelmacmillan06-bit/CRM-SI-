@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\Niveles;
 use App\Models\ActivityLog;
 use App\Models\Student;
 use App\Models\School;
@@ -30,13 +31,21 @@ class StudentController extends Controller
         $nivelesDelColegio = $school->schoolLevels()->with('level')->get()
             ->pluck('level.name')->filter()->sort()->values();
 
-        // Conteo de alumnos por nivel (sobre el total del colegio, no solo la página actual)
-        $porNivel = $school->students()
+        // Conteo de alumnos por nivel (sobre el total del colegio, no solo la página actual).
+        // Se agrupa por nivel canónico (App\Helpers\Niveles) para que "Preparatoria"/
+        // "Bachillerato" (o "Licenciatura"/"Universidad") sumen en una sola card.
+        $porNivelRaw = $school->students()
             ->whereNotNull('level')->where('level', '!=', '')
             ->selectRaw('level, count(*) as total')
             ->groupBy('level')
-            ->pluck('total', 'level')
-            ->sortKeys();
+            ->pluck('total', 'level');
+
+        $porNivel = collect();
+        foreach ($porNivelRaw as $levelRaw => $total) {
+            $canon = Niveles::canonico($levelRaw) ?? $levelRaw;
+            $porNivel[$canon] = ($porNivel[$canon] ?? 0) + $total;
+        }
+        $porNivel = $porNivel->sortKeys();
 
         return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage'));
     }

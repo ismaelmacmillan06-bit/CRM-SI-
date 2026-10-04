@@ -18,7 +18,8 @@ class SeguimientoSicController extends Controller
         $consultorId      = $request->query('consultor');
         $soloIncompletos  = $request->boolean('incompletos');
 
-        $query = School::with(['consultorDigital.user'])
+        $query = School::noInactivos()
+            ->with(['consultorDigital.user'])
             ->withCount(['teachers', 'students', 'bundles'])
             ->orderBy('name');
 

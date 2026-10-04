@@ -39,21 +39,27 @@ class VisitController extends Controller
         $request->validate([
             'consultant_id'  => 'required|exists:consultants,id',
             'scheduled_date' => 'required|date',
-            'visit_date'     => 'nullable|date',
+            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada'],
             'status'         => 'required|in:pendiente,en_curso,terminada',
             'notes'          => 'nullable|string',
             'summary'        => 'nullable|string',
+            'motivo'         => 'nullable|string|max:255',
             'next_visit_date'=> 'nullable|date',
             'evidence'       => 'nullable|image|max:2048',
+            'attendees'      => 'nullable|array',
+            'attendees.*'    => 'exists:consultants,id',
+        ], [
+            'visit_date.required_if' => 'La fecha realizada es obligatoria cuando la visita ya está en curso o terminada.',
         ]);
 
-        $data = $request->except('evidence');
+        $data = $request->except(['evidence', 'attendees']);
 
         if ($request->hasFile('evidence')) {
             $data['evidence'] = $request->file('evidence')->store('evidences', 'public');
         }
 
         $visit = $school->visits()->create($data);
+        $visit->attendees()->sync($request->input('attendees', []));
 
         $fecha = \Carbon\Carbon::parse($request->scheduled_date)->format('d/m/Y');
         ActivityLog::log('visita', "Visita agendada para el $fecha (estado: {$request->status})", $school->id, '📅');
@@ -65,6 +71,7 @@ class VisitController extends Controller
     public function edit(Visit $visit)
     {
         $consultants = Consultant::with('user')->get();
+        $visit->load('attendees');
         return view('visits.edit', compact('visit', 'consultants'));
     }
 
@@ -73,15 +80,20 @@ class VisitController extends Controller
         $request->validate([
             'consultant_id'  => 'required|exists:consultants,id',
             'scheduled_date' => 'required|date',
-            'visit_date'     => 'nullable|date',
+            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada'],
             'status'         => 'required|in:pendiente,en_curso,terminada',
             'notes'          => 'nullable|string',
             'summary'        => 'nullable|string',
+            'motivo'         => 'nullable|string|max:255',
             'next_visit_date'=> 'nullable|date',
             'evidence'       => 'nullable|image|max:2048',
+            'attendees'      => 'nullable|array',
+            'attendees.*'    => 'exists:consultants,id',
+        ], [
+            'visit_date.required_if' => 'La fecha realizada es obligatoria cuando la visita ya está en curso o terminada.',
         ]);
 
-        $data = $request->except('evidence');
+        $data = $request->except(['evidence', 'attendees']);
 
         if ($request->hasFile('evidence')) {
             if ($visit->evidence) {
@@ -92,6 +104,7 @@ class VisitController extends Controller
 
         $oldStatus = $visit->status;
         $visit->update($data);
+        $visit->attendees()->sync($request->input('attendees', []));
 
         if ($oldStatus !== $request->status) {
             $statusLabel = ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'terminada' => 'Terminada'];

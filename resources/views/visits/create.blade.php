@@ -45,9 +45,10 @@
                         @error('scheduled_date')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha realizada</label>
-                        <input type="date" name="visit_date" class="form-control"
+                        <label class="form-label" id="label-visit-date">Fecha realizada</label>
+                        <input type="date" name="visit_date" id="input-visit-date" class="form-control"
                                value="{{ old('visit_date') }}">
+                        @error('visit_date')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>
                 </div>
 
@@ -55,6 +56,28 @@
                     <label class="form-label">Próxima visita</label>
                     <input type="date" name="next_visit_date" class="form-control"
                            value="{{ old('next_visit_date') }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Motivo de visita</label>
+                    <input type="text" name="motivo" class="form-control"
+                           placeholder="Ej: Seguimiento de arranque, capacitación, entrega de bundles..."
+                           value="{{ old('motivo') }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Acudieron</label>
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; padding:10px; border:1px solid var(--border); border-radius:8px">
+                        @forelse($consultants as $consultant)
+                            <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:400; cursor:pointer">
+                                <input type="checkbox" name="attendees[]" value="{{ $consultant->id }}"
+                                       {{ in_array($consultant->id, old('attendees', [])) ? 'checked' : '' }}>
+                                {{ $consultant->user->name }}
+                            </label>
+                        @empty
+                            <span style="font-size:13px; color:var(--text-muted)">No hay personal de Equipo SI registrado.</span>
+                        @endforelse
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -84,4 +107,20 @@
         </div>
     </div>
 </div>
+
+<script>
+    // La "Fecha realizada" solo es obligatoria si la visita ya está en curso o terminada
+    const statusSelectVisita = document.querySelector('select[name="status"]');
+    const inputVisitDate     = document.getElementById('input-visit-date');
+    const labelVisitDate     = document.getElementById('label-visit-date');
+
+    function actualizarFechaRealizadaRequerida() {
+        const requerida = ['en_curso', 'terminada'].includes(statusSelectVisita.value);
+        inputVisitDate.required = requerida;
+        labelVisitDate.textContent = requerida ? 'Fecha realizada *' : 'Fecha realizada';
+    }
+
+    statusSelectVisita.addEventListener('change', actualizarFechaRealizadaRequerida);
+    actualizarFechaRealizadaRequerida();
+</script>
 @endsection

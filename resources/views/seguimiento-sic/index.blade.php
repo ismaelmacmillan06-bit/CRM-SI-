@@ -132,9 +132,8 @@
 <div class="xl-note" style="font-size:12.5px; color:var(--text-muted); margin-top:14px; display:flex; gap:8px; align-items:flex-start">
     <span>💡</span>
     <span>
-        Un colegio se marca <strong>Completo</strong> cuando tiene más de {{ \App\Http\Controllers\SeguimientoSicController::MIN_DOCENTES }} docentes,
-        más de {{ \App\Http\Controllers\SeguimientoSicController::MIN_ALUMNOS }} alumnos
-        y más de {{ \App\Http\Controllers\SeguimientoSicController::MIN_BUNDLES }} bundles cargados en el SIC.
+        Un colegio se marca <strong>Completo</strong> cuando tiene al menos 1 docente, 1 alumno
+        y 1 bundle cargados en el SIC.
     </span>
 </div>
 

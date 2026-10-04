@@ -8,11 +8,6 @@ use Illuminate\Http\Request;
 
 class SeguimientoSicController extends Controller
 {
-    // Umbrales mínimos para considerar un rubro "cargado" en el SIC
-    const MIN_DOCENTES = 5;
-    const MIN_ALUMNOS  = 40;
-    const MIN_BUNDLES  = 40;
-
     public function index(Request $request)
     {
         $consultorId      = $request->query('consultor');
@@ -30,9 +25,9 @@ class SeguimientoSicController extends Controller
         }
 
         $schools = $query->get()->map(function ($school) {
-            $school->docentes_ok = $school->teachers_count > self::MIN_DOCENTES;
-            $school->alumnos_ok  = $school->students_count > self::MIN_ALUMNOS;
-            $school->bundles_ok  = $school->bundles_count > self::MIN_BUNDLES;
+            $school->docentes_ok = $school->teachers_count > 0;
+            $school->alumnos_ok  = $school->students_count > 0;
+            $school->bundles_ok  = $school->bundles_count > 0;
             $school->completo    = $school->docentes_ok && $school->alumnos_ok && $school->bundles_ok;
             return $school;
         });

@@ -104,7 +104,9 @@ class SsaController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) {
+        // Coordinador tiene acceso total a SSA, igual que admin — no existe un
+        // rol 'coordinador' en school_consultants.role para poder scopearlo.
+        if ($user->hasAnyRole(['admin', 'coordinador'])) {
             return School::orderBy('name')->get();
         }
 
@@ -138,7 +140,7 @@ class SsaController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) {
+        if ($user->hasAnyRole(['admin', 'coordinador'])) {
             return;
         }
 

@@ -85,11 +85,12 @@ class VerificarAccesoRol
 
         // Coordinador: lectura amplia (Dashboard incl. Excel de arranque, Avance
         // Colegios, Colegios y todo dentro de un colegio, Alumnos Docentes, Equipo
-        // SI, Bundles SI, Producción, Reporte Semanal incl. exportar, Tareas/
-        // Tablero/Bitácora) + escritura solo en SSA y Mis Notas SI (ya permitido
-        // arriba). Sin acceso a Seguimiento SIC/Externo, Herramientas SI ni
-        // Configuración (quedan bloqueados por los checks de arriba, que exigen
-        // consultor_digital/admin y no incluyen a coordinador).
+        // SI, Bundles SI, Producción, Reporte Semanal incl. exportar, Tablero SI)
+        // + escritura solo en SSA y Mis Notas SI (ya permitido arriba). Sin acceso
+        // a Seguimiento SIC/Externo, Herramientas SI, Configuración, Tareas SI ni
+        // Bitácora (quedan bloqueados: las dos primeras y Herramientas exigen
+        // consultor_digital/admin más arriba; Tareas SI y Bitácora simplemente no
+        // están en la lista blanca de abajo).
         if ($user->hasRole('coordinador')) {
             if ($request->routeIs('ssa.*')) {
                 return $next($request);
@@ -110,7 +111,7 @@ class VerificarAccesoRol
                 'consultants.index', 'consultants.show',
                 'bundles.index',
                 'produccion.index',
-                'tareas.index', 'tablero.index', 'bitacora.index',
+                'tablero.index',
             ];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('dashboard')

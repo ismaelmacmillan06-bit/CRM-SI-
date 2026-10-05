@@ -10,6 +10,17 @@
             <a href="{{ route('schools.index') }}" class="btn btn-secondary btn-sm">← Regresar</a>
         </div>
         <div class="card-body">
+            @if($errors->any())
+                <div style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px 16px;
+                            border-radius:8px; margin-bottom:18px; font-size:13.5px">
+                    <strong>No se pudo guardar. Revisa:</strong>
+                    <ul style="margin:6px 0 0 18px">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <form method="POST" action="{{ route('schools.update', $school) }}">
                 @csrf @method('PUT')
 
@@ -23,7 +34,8 @@
                     <div class="form-group">
                         <label class="form-label">Nexus ID</label>
                         <input type="text" name="nexus_id" class="form-control"
-                               value="{{ old('nexus_id', $school->nexus_id) }}">
+                               value="{{ old('nexus_id', $school->nexus_id) }}" placeholder="MEXMP######">
+                        @error('nexus_id')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>
                 </div>
 

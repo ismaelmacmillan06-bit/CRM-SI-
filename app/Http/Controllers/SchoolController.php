@@ -63,6 +63,10 @@ class SchoolController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->filled('nexus_id')) {
+            $request->merge(['nexus_id' => strtoupper(trim($request->nexus_id))]);
+        }
+
         $request->validate([
             'name'         => 'required|string|max:255',
             'consultant_id'=> 'nullable|exists:consultants,id',
@@ -162,6 +166,10 @@ foreach ($roles as $role => $consultantId) {
 
     public function update(Request $request, School $school)
     {
+        if ($request->filled('nexus_id')) {
+            $request->merge(['nexus_id' => strtoupper(trim($request->nexus_id))]);
+        }
+
         $request->validate([
             'name'    => 'required|string|max:255',
             'status'  => 'required|in:prospecto,activo,inactivo',

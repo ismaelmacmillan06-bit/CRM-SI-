@@ -68,15 +68,15 @@
                 @include('visits.partials.acudieron-picker', ['selectedIds' => old('attendees', [])])
 
                 <div class="form-group">
-                    <label class="form-label">Notas</label>
+                    <label class="form-label">Descripción del problema</label>
                     <textarea name="notes" class="form-control" rows="3"
-                              placeholder="Notas previas a la visita...">{{ old('notes') }}</textarea>
+                              placeholder="Describe el problema que se atiende en la visita...">{{ old('notes') }}</textarea>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Resumen de visita</label>
+                    <label class="form-label">Solución proporcionada</label>
                     <textarea name="summary" class="form-control" rows="4"
-                              placeholder="Resumen de lo que se realizó en la visita...">{{ old('summary') }}</textarea>
+                              placeholder="Describe la solución que se dio al problema...">{{ old('summary') }}</textarea>
                 </div>
 
                 <div class="form-group">

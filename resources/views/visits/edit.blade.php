@@ -68,12 +68,12 @@
                 ])
 
                 <div class="form-group">
-                    <label class="form-label">Notas</label>
+                    <label class="form-label">Descripción del problema</label>
                     <textarea name="notes" class="form-control" rows="3">{{ old('notes', $visit->notes) }}</textarea>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Resumen de visita</label>
+                    <label class="form-label">Solución proporcionada</label>
                     <textarea name="summary" class="form-control" rows="4">{{ old('summary', $visit->summary) }}</textarea>
                 </div>
 
@@ -270,8 +270,8 @@
             const nombresAcudieron = window.getAcudieronNombres ? window.getAcudieronNombres() : [];
             seccion('Acudieron', nombresAcudieron.length ? nombresAcudieron.join(', ') : '—');
 
-            seccion('Notas', document.querySelector('textarea[name="notes"]').value);
-            seccion('Resumen de la visita', document.querySelector('textarea[name="summary"]').value);
+            seccion('Descripción del problema', document.querySelector('textarea[name="notes"]').value);
+            seccion('Solución proporcionada', document.querySelector('textarea[name="summary"]').value);
 
             // Evidencia en hoja(s) aparte, al ser imagen
             if (DATOS.evidenceUrl) {

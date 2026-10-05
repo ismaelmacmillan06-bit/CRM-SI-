@@ -21,15 +21,15 @@
     <div class="card-body" style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:14px 20px">
         <strong style="font-size:14px">⚡ Cambio masivo:</strong>
         <span style="font-size:13px; color:var(--text-muted)">cambiar todas las acciones de este colegio a</span>
+        <select name="status" id="bulk-status" form="form-bulk-processes" class="form-control" style="max-width:200px; padding:6px 8px; font-size:13px">
+            <option value="pending">⏳ Pendiente</option>
+            <option value="in_progress">🔄 En proceso</option>
+            <option value="done">✅ Completado</option>
+            <option value="reopened">🔁 Reapertura</option>
+        </select>
         <form id="form-bulk-processes" method="POST" action="{{ route('schools.processes.bulk', $school) }}"
               style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-left:auto">
             @csrf
-            <select name="status" id="bulk-status" class="form-control" style="max-width:200px; padding:6px 8px; font-size:13px">
-                <option value="pending">⏳ Pendiente</option>
-                <option value="in_progress">🔄 En proceso</option>
-                <option value="done">✅ Completado</option>
-                <option value="reopened">🔁 Reapertura</option>
-            </select>
             <button type="button" id="btn-bulk-aplicar" class="btn btn-sm" style="background:#059669; border-color:#059669; color:#fff; font-weight:600">Aplicar a todas</button>
             <span id="bulk-confirmar" style="display:none; gap:8px; align-items:center; flex-wrap:wrap">
                 <span style="font-size:13px; color:#b45309; font-weight:600">

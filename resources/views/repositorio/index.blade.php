@@ -19,7 +19,7 @@
     <div class="alert alert-danger" style="margin-bottom:16px">❌ {{ $errors->first() }}</div>
 @endif
 
-<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
+<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     <button type="button" class="btn btn-primary btn-sm" onclick="abrirModalConsultar()">🔎 CONSULTAR</button>
 </div>
@@ -97,6 +97,7 @@
         <span class="card-title">📁 Repositorio — {{ $school->name }}</span>
         <span style="font-size:13px; color:var(--text-muted)">{{ $files->count() }} archivo(s)</span>
     </div>
+    <div style="overflow-x:auto">
     <table class="table">
         <thead>
             <tr>
@@ -150,6 +151,7 @@
             @endforelse
         </tbody>
     </table>
+    </div>
 </div>
 
 <script>

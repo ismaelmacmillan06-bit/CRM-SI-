@@ -43,6 +43,25 @@
   /* PANELS */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px;}
   @media(max-width:760px){.grid{grid-template-columns:1fr;}}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px;align-items:start;}
+  .split .col{display:flex;flex-direction:column;gap:18px;min-width:0;}
+  @media(max-width:760px){.split{grid-template-columns:1fr;}}
+  .panel.p3::before{background:linear-gradient(90deg,var(--olive),var(--amber));}
+  .hint2{font-size:13px;color:var(--muted);margin:-4px 0 4px;}
+  .mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:480px){.mrow{grid-template-columns:1fr;}}
+  .mliga-row{display:flex;gap:8px;align-items:center;margin-top:8px;}
+  .mliga-row input{flex:1;min-width:0;}
+  .mliga-row .x{border:none;background:none;color:var(--brick);font-weight:700;font-size:16px;cursor:pointer;padding:0 6px;}
+  .mactions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px;}
+  .mhead{display:flex;align-items:center;gap:10px;margin-top:20px;font-size:14px;font-weight:600;}
+  .mhead .btn-sm{margin-left:auto;}
+  .mlista{margin-top:10px;max-height:240px;overflow:auto;border:1px solid var(--line-2);border-radius:10px;background:#fffefb;}
+  .mitem{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:14px;}
+  .mitem:last-child{border-bottom:none;}
+  .mitem small{display:block;color:var(--muted);font-size:12px;}
+  .mitem .x{border:none;background:none;color:var(--brick);font-weight:700;cursor:pointer;font-size:15px;flex:none;}
+  .mempty{padding:16px;text-align:center;color:var(--muted);font-size:13px;}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;
     position:relative;box-shadow:0 1px 2px rgba(43,33,27,.05),0 10px 26px rgba(43,33,27,.05);overflow:hidden;}
   .panel::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;}
@@ -199,7 +218,8 @@
       <p class="sub">Carga directamente el mismo CSV que se usa para dar de alta alumnos en Macmillan (columnas <b>Nombre (s)</b>, <b>Apellidos</b>, <b>Usuario</b>, <b>Password</b>, <b>Nivel</b>, <b>Grado</b> y <b>Grupo</b>) — también acepta el formato clásico de <b>Nombre Completo</b>, <b>Usuario</b>, <b>Contraseña</b> y <b>Clase</b>. La herramienta agrupa automáticamente por clase y genera tarjetas recortables — una sección (archivo) por grupo.</p>
     </header>
 
-    <div class="grid">
+    <div class="split">
+      <div class="col">
       <!-- PANEL 1 -->
       <div class="panel p1">
         <h2><span class="step">1</span> Carga tu archivo Excel</h2>
@@ -238,6 +258,65 @@
             <small>Más seguro (no quedan juntos), pero usa más hojas. Desactivado: una sola tarjeta por alumno.</small></span>
         </label>
       </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="genBtn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Generar tarjetas
+        </button>
+        <span class="status" id="status"></span>
+        <span class="count-pill" id="countPill" style="display:none;"></span>
+      </div>
+      </div>
+
+      <div class="col">
+        <!-- PANEL 3: generador individual -->
+        <div class="panel p3">
+          <h2><span class="step">✍</span> Generador individual</h2>
+          <p class="hint2">Captura un alumno y dale <b>Guardar</b>; el formulario queda listo para el siguiente. Los alumnos se acumulan en la lista para generar sus tarjetas.</p>
+
+          <label class="field">Colegio</label>
+          <input type="text" id="mColegio" placeholder="Ej. Colegio Anne Sullivan">
+
+          <label class="field">Nombre completo</label>
+          <input type="text" id="mNombre" placeholder="Ej. Jose Ismael Flores Avila">
+
+          <div class="mrow">
+            <div>
+              <label class="field">Usuario</label>
+              <input type="text" id="mUsuario" placeholder="Ej. ismaelavila2026">
+            </div>
+            <div>
+              <label class="field">Contraseña</label>
+              <input type="text" id="mPass" placeholder="Ej. Everest.2026">
+            </div>
+          </div>
+
+          <label class="field">Liga de acceso <span style="font-weight:400">(opcional, puedes agregar varias)</span></label>
+          <div id="mLigas"></div>
+          <div class="mactions" style="margin-top:8px">
+            <button class="btn-sm" id="mAddLiga" type="button">+ Agregar otra liga</button>
+          </div>
+
+          <div class="mactions">
+            <button class="btn btn-primary" id="mGuardar" type="button">Guardar</button>
+            <span class="status" id="statusManual"></span>
+          </div>
+
+          <div class="mhead">
+            <span>Alumnos agregados</span>
+            <span class="count-pill" id="mCount" style="margin-left:0;display:inline-block">0</span>
+            <button class="btn-sm" id="mClear" type="button">Limpiar lista</button>
+          </div>
+          <div class="mlista" id="mLista"></div>
+
+          <div class="mactions">
+            <button class="btn btn-primary" id="mGenerar" type="button" disabled>
+              Generar tarjetas (individual)
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- EXAMPLE -->
@@ -274,14 +353,6 @@
       </div>
     </div>
 
-    <div class="actions">
-      <button class="btn btn-primary" id="genBtn" disabled>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        Generar tarjetas
-      </button>
-      <span class="status" id="status"></span>
-      <span class="count-pill" id="countPill" style="display:none;"></span>
-    </div>
   </div>
 
   <!-- PREVIEW / PRINTABLE -->
@@ -308,6 +379,7 @@
   "use strict";
 
   let rows = [];
+  let manualRows = []; // alumnos capturados a mano: {colegio,name,username,password,ligas}
   let logoDataURL = null;
   let logoImgInfo = null; // {w,h} en px naturales, para dibujar el logo con su proporción real en el PDF
 
@@ -321,6 +393,10 @@
         logoInput = $("logoInput"), logoBtn = $("logoBtn"),
         logoClear = $("logoClear"), logoPrev = $("logoPrev"),
         clasesSummary = $("clasesSummary"), clasePrintBtns = $("clasePrintBtns");
+  const statusManual = $("statusManual"), mLigas = $("mLigas"), mLista = $("mLista"),
+        mCount = $("mCount"), mColegio = $("mColegio"), mNombre = $("mNombre"),
+        mUsuario = $("mUsuario"), mPass = $("mPass"), mAddLiga = $("mAddLiga"),
+        mGuardar = $("mGuardar"), mClear = $("mClear"), genManualBtn = $("mGenerar");
 
   function norm(s){
     return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]/g,"").trim();
@@ -436,7 +512,10 @@
   function fieldCell(label,val){
     return `<div class="cfield"><span class="crow">${label}</span><span class="cval">${esc(val||"—")}</span></div>`;
   }
-  function brandBand(){
+  function brandBand(ligas){
+    if(ligas && ligas.length){
+      return `<div class="cbrand"><span class="l">Liga de acceso:</span>${ligas.map(l=>`<span class="u">${esc(l)}</span>`).join("")}</div>`;
+    }
     return `<div class="cbrand"><span class="l">Plataforma:</span><span class="u">https://si.macmillaneducacion.com/</span></div>`;
   }
   function claseTag(p){
@@ -450,7 +529,7 @@
       <div class="cname">${esc(p.name||"—")}</div>
       ${claseTag(p)}
       <div class="ccreds">${fieldCell("Usuario",p.username)}</div>
-      ${brandBand()}
+      ${brandBand(p.ligas)}
     </div>`;
   }
   function passCard(p){
@@ -460,7 +539,7 @@
       <div class="cname">${esc(p.name||"—")}</div>
       ${claseTag(p)}
       <div class="ccreds">${fieldCell("Contraseña",p.password)}</div>
-      ${brandBand()}
+      ${brandBand(p.ligas)}
     </div>`;
   }
   function combinedCard(p){
@@ -470,7 +549,7 @@
       <div class="cname">${esc(p.name||"—")}</div>
       ${claseTag(p)}
       <div class="ccreds">${fieldCell("Usuario",p.username)}${fieldCell("Contraseña",p.password)}</div>
-      ${brandBand()}
+      ${brandBand(p.ligas)}
     </div>`;
   }
 
@@ -505,10 +584,7 @@
     return html;
   }
 
-  function build(){
-    const school = groupName.value.trim();
-    const split  = splitPages.checked;
-    const groups = groupByClase(rows);
+  function renderPreview(groups, school, split){
     lastBuild = {school, split, groups};
     let html = "";
 
@@ -530,8 +606,28 @@
         </button>`
       ).join("");
 
-    setStatus("Tarjetas generadas. Usa los botones de clase para imprimir cada grupo.","ok");
     previewWrap.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function build(){
+    renderPreview(groupByClase(rows), groupName.value.trim(), splitPages.checked);
+    setStatus("Tarjetas generadas. Usa los botones de clase para imprimir cada grupo.","ok");
+  }
+
+  // Alumnos capturados a mano: se agrupan por colegio (cada colegio es una sección)
+  function groupByColegio(list){
+    const order=[], map={};
+    list.forEach(p=>{
+      if(!map[p.colegio]){ map[p.colegio]=[]; order.push(p.colegio); }
+      map[p.colegio].push({name:p.name, username:p.username, password:p.password, clase:"", ligas:p.ligas});
+    });
+    return order.map(k=>({clase:k, alumnos:map[k]}));
+  }
+
+  function buildManual(){
+    if(!manualRows.length){ setStatusM("Agrega al menos un alumno.","err"); return; }
+    renderPreview(groupByColegio(manualRows), null, splitPages.checked);
+    setStatusM(`Tarjetas generadas para ${manualRows.length} alumno(s).`,"ok");
   }
 
   function printAll(){
@@ -569,10 +665,14 @@
   const PDF_LAYOUT = { pageW:215.9, pageH:279.4, margin:14, colGap:6, rowGap:6, pad:4,
     hHeader:7, hName:6, hClase:4.5, hField:11, hBrand:9, gapSmall:1.5 };
   PDF_LAYOUT.cardW = (PDF_LAYOUT.pageW - PDF_LAYOUT.margin*2 - PDF_LAYOUT.colGap) / 2;
-  function pdfCardHeight(fieldRows){
+  const PDF_LIGA_STEP = 3.6;
+  function pdfBrandExtra(ligas){
+    return (ligas && ligas.length > 1) ? (ligas.length-1)*PDF_LIGA_STEP : 0;
+  }
+  function pdfCardHeight(fieldRows, ligas){
     const L = PDF_LAYOUT;
     return L.pad + L.hHeader + L.gapSmall + L.hName + L.gapSmall + L.hClase + L.gapSmall
-         + L.hField*fieldRows + L.gapSmall + L.hBrand + L.pad;
+         + L.hField*fieldRows + L.gapSmall + L.hBrand + pdfBrandExtra(ligas) + L.pad;
   }
   function fitPdfText(doc, text, maxWidth){
     let t = String(text||"—");
@@ -658,15 +758,19 @@
     });
     cy += credsH + L.gapSmall;
 
-    // Banda de marca
+    // Banda de marca (muestra cada liga de acceso, o la plataforma por defecto)
+    const ligas = (opts.ligas && opts.ligas.length) ? opts.ligas : null;
+    const bandH = L.hBrand + pdfBrandExtra(ligas);
     doc.setFillColor(...PDF_BRICK_SOFT);
-    doc.roundedRect(innerX, cy, innerW, L.hBrand, 1.5, 1.5, "F");
+    doc.roundedRect(innerX, cy, innerW, bandH, 1.5, 1.5, "F");
     doc.setFont("helvetica","bold"); doc.setFontSize(7);
     doc.setTextColor(...PDF_MUTED);
-    doc.text("Plataforma:", innerX+2.5, cy+3.6);
+    doc.text(ligas ? "Liga de acceso:" : "Plataforma:", innerX+2.5, cy+3.6);
     doc.setFontSize(8);
     doc.setTextColor(...PDF_BRICK);
-    doc.text(fitPdfText(doc, "https://si.macmillaneducacion.com/", innerW-5), innerX+2.5, cy+7.2);
+    (ligas || ["https://si.macmillaneducacion.com/"]).forEach((url, i)=>{
+      doc.text(fitPdfText(doc, url, innerW-5), innerX+2.5, cy+7.2 + i*PDF_LIGA_STEP);
+    });
   }
 
   // Arma el PDF completo (todas las páginas necesarias) de UNA clase.
@@ -674,12 +778,12 @@
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit:"mm", format:"letter", orientation:"portrait" });
     const L = PDF_LAYOUT;
-    const state = { col:0, row:0, top:0, started:false };
+    const state = { col:0, colY:[0,0], top:0, started:false };
 
     function newPage(title, isFirstOfDoc, sectionLabel){
       if(state.started) doc.addPage();
       state.started = true;
-      state.col = 0; state.row = 0;
+      state.col = 0;
       let y = L.margin;
       if(isFirstOfDoc){
         doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(...PDF_INK);
@@ -699,32 +803,34 @@
         y += 6;
       }
       state.top = y;
+      state.colY = [y, y];
     }
 
-    function place(cardOpts, cardH){
-      const rowStep = cardH + L.rowGap;
-      if(state.col === 2){ state.col = 0; state.row++; }
+    // Cada tarjeta mide según sus campos y sus ligas; cada columna avanza por su lado
+    function place(cardOpts){
+      const cardH = pdfCardHeight(cardOpts.fields.length, cardOpts.ligas);
+      if(state.col === 2) state.col = 0;
       let x = L.margin + state.col*(L.cardW+L.colGap);
-      let y = state.top + state.row*rowStep;
-      if(y + cardH > L.pageH - L.margin){
+      if(state.colY[state.col] + cardH > L.pageH - L.margin){
         newPage(g.clase, false, null);
-        x = L.margin; y = state.top;
+        state.col = 0;
+        x = L.margin;
       }
+      const y = state.colY[state.col];
       drawPdfCard(doc, x, y, L.cardW, cardH, cardOpts);
+      state.colY[state.col] = y + cardH + L.rowGap;
       state.col++;
     }
 
     if(split){
-      const h1 = pdfCardHeight(1);
       newPage(g.clase, true, "USUARIOS");
-      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"USUARIO", logoInfo, fields:[{label:"Usuario",value:p.username}] }, h1));
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"USUARIO", logoInfo, ligas:p.ligas, fields:[{label:"Usuario",value:p.username}] }));
 
       newPage(g.clase, false, "CONTRASEÑAS");
-      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"CONTRASEÑA", logoInfo, fields:[{label:"Contraseña",value:p.password}] }, h1));
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"CONTRASEÑA", logoInfo, ligas:p.ligas, fields:[{label:"Contraseña",value:p.password}] }));
     } else {
-      const h2 = pdfCardHeight(2);
       newPage(g.clase, true, null);
-      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"ACCESO", logoInfo, fields:[{label:"Usuario",value:p.username},{label:"Contraseña",value:p.password}] }, h2));
+      g.alumnos.forEach(p => place({ name:p.name, clase:p.clase, tag:"ACCESO", logoInfo, ligas:p.ligas, fields:[{label:"Usuario",value:p.username},{label:"Contraseña",value:p.password}] }));
     }
 
     return doc.output("blob");
@@ -789,6 +895,76 @@
   }
 
   function setStatus(msg,kind){ status.textContent=msg; status.className="status"+(kind?" "+kind:""); }
+  function setStatusM(msg,kind){ statusManual.textContent=msg; statusManual.className="status"+(kind?" "+kind:""); }
+
+  // ── Generador individual ──────────────────────────────────────────────
+  function addLigaField(valor){
+    const row = document.createElement("div");
+    row.className = "mliga-row";
+    row.innerHTML = `<input type="text" class="mliga" placeholder="https://..." value="${esc(valor||"")}">` +
+                    `<button type="button" class="x" title="Quitar liga">✕</button>`;
+    row.querySelector(".x").addEventListener("click", ()=>{
+      row.remove();
+      if(!mLigas.querySelector(".mliga-row")) addLigaField();
+    });
+    mLigas.appendChild(row);
+  }
+  function resetLigaFields(){
+    mLigas.innerHTML = "";
+    addLigaField();
+  }
+  function ligasCapturadas(){
+    return Array.from(document.querySelectorAll(".mliga")).map(i=>i.value.trim()).filter(Boolean);
+  }
+  function renderManualLista(){
+    mCount.textContent = manualRows.length;
+    genManualBtn.disabled = manualRows.length === 0;
+    if(!manualRows.length){
+      mLista.innerHTML = `<div class="mempty">Todavía no hay alumnos agregados.</div>`;
+      return;
+    }
+    mLista.innerHTML = manualRows.map((p,i)=>
+      `<div class="mitem">
+         <span>${esc(p.name)}<small>${esc(p.colegio)} · ${esc(p.username)}${p.ligas.length ? " · "+p.ligas.length+" liga(s)" : ""}</small></span>
+         <button type="button" class="x" data-i="${i}" title="Quitar">✕</button>
+       </div>`
+    ).join("");
+  }
+  function guardarAlumnoManual(){
+    const colegio  = mColegio.value.trim();
+    const name     = mNombre.value.trim();
+    const username = mUsuario.value.trim();
+    const password = mPass.value.trim();
+    if(!colegio || !name || !username || !password){
+      setStatusM("Falta llenar: colegio, nombre, usuario o contraseña.","err");
+      return;
+    }
+    manualRows.push({colegio, name, username, password, ligas: ligasCapturadas()});
+    renderManualLista();
+    // El colegio se conserva para el siguiente alumno; el resto se limpia
+    mNombre.value = ""; mUsuario.value = ""; mPass.value = "";
+    resetLigaFields();
+    mNombre.focus();
+    setStatusM(`Alumno guardado. Llevas ${manualRows.length} en la lista.`,"ok");
+  }
+
+  resetLigaFields();
+  renderManualLista();
+  mAddLiga.addEventListener("click", ()=>addLigaField());
+  mGuardar.addEventListener("click", guardarAlumnoManual);
+  genManualBtn.addEventListener("click", buildManual);
+  mLista.addEventListener("click", e=>{
+    const btn = e.target.closest("button[data-i]");
+    if(!btn) return;
+    manualRows.splice(Number(btn.dataset.i), 1);
+    renderManualLista();
+    setStatusM("Alumno quitado de la lista.","");
+  });
+  mClear.addEventListener("click", ()=>{
+    manualRows = [];
+    renderManualLista();
+    setStatusM("Lista limpiada.","");
+  });
 
   drop.addEventListener("click",()=>fileInput.click());
   ["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));

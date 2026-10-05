@@ -521,7 +521,7 @@
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
         @endhasanyrole
-        @hasanyrole('admin|consultor_digital|coordinador')
+        @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt')
         <a href="{{ route('produccion.index') }}" class="nav-item {{ request()->routeIs('produccion.*') ? 'active' : '' }}">
             <span class="nav-icon">📦</span> Producción
         </a>

@@ -44,7 +44,7 @@ class VerificarAccesoRol
 
         // Producción: admin, consultor_digital y coordinador (este último solo lectura,
         // ver más abajo la rama de coordinador que bloquea los métodos de escritura)
-        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador'])) {
+        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consultor_eca', 'consultor_elt'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
@@ -71,7 +71,7 @@ class VerificarAccesoRol
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*'];
+            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
                     ->with('error_acceso', 'No tienes acceso a esta sección.');

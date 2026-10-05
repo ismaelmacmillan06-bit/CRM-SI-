@@ -34,7 +34,7 @@
                     <div class="form-group">
                         <label class="form-label">Nexus ID</label>
                         <input type="text" name="nexus_id" class="form-control"
-                               value="{{ old('nexus_id', $school->nexus_id) }}" placeholder="MEXMP######">
+                               value="{{ old('nexus_id', $school->nexus_id) }}">
                         @error('nexus_id')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>
                 </div>

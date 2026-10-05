@@ -72,10 +72,8 @@ class SchoolController extends Controller
             'consultant_id'=> 'nullable|exists:consultants,id',
             'levels'       => 'required|array',
             'status'       => 'required|in:prospecto,activo,inactivo',
-            // Nexus ID: MEXMP seguido de exactamente 6 dígitos, único en la tabla
-            'nexus_id'     => ['nullable', 'regex:/^MEXMP\d{6}$/i', 'unique:schools,nexus_id'],
+            'nexus_id'     => ['nullable', 'unique:schools,nexus_id'],
         ], [
-            'nexus_id.regex'  => 'El Nexus ID debe tener el formato MEXMP######  (ej. MEXMP123456).',
             'nexus_id.unique' => 'Este Nexus ID ya está registrado en otro colegio.',
         ]);
 
@@ -174,9 +172,8 @@ foreach ($roles as $role => $consultantId) {
             'name'    => 'required|string|max:255',
             'status'  => 'required|in:prospecto,activo,inactivo',
             // Excluir el propio colegio del chequeo de unicidad
-            'nexus_id'=> ['nullable', 'regex:/^MEXMP\d{6}$/i', "unique:schools,nexus_id,{$school->id}"],
+            'nexus_id'=> ['nullable', "unique:schools,nexus_id,{$school->id}"],
         ], [
-            'nexus_id.regex'  => 'El Nexus ID debe tener el formato MEXMP######  (ej. MEXMP123456).',
             'nexus_id.unique' => 'Este Nexus ID ya está registrado en otro colegio.',
         ]);
 
@@ -315,7 +312,7 @@ foreach ($roles as $role => $consultantId) {
         foreach ($sheet->getRowIterator(2) as $row) {
             $ri             = $row->getRowIndex();
             $nombre         = trim((string) $sheet->getCell("A{$ri}")->getValue());
-            $nexusId        = trim((string) $sheet->getCell("B{$ri}")->getValue());
+            $nexusId        = strtoupper(trim((string) $sheet->getCell("B{$ri}")->getValue()));
             $statusRaw      = trim((string) $sheet->getCell("C{$ri}")->getValue());
             $estadoRaw      = trim((string) $sheet->getCell("D{$ri}")->getValue());
             $consultorNombre= trim((string) $sheet->getCell("E{$ri}")->getValue());
@@ -329,11 +326,6 @@ foreach ($roles as $role => $consultantId) {
                 continue;
             }
 
-            // Nexus ID: formato MEXMP + exactamente 6 dígitos
-            if ($nexusId !== '' && !preg_match('/^MEXMP\d{6}$/i', $nexusId)) {
-                $omitidos[] = "Fila {$ri}: Nexus ID '{$nexusId}' inválido (formato: MEXMP######).";
-                continue;
-            }
 
             // Status: normalizar acentos antes de comparar
             $statusNorm = str_replace(['á','é','í','ó','ú'], ['a','e','i','o','u'], mb_strtolower($statusRaw));

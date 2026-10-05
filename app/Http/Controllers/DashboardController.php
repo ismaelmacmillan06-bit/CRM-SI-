@@ -121,13 +121,14 @@ class DashboardController extends Controller
 
         // Colegios entregados: tienen al menos un proceso y todos están en 'done'
         // (no se cuentan colegios inactivos)
-        $colegiosEntregados = $schoolScopeId(
+        $colegiosEntregadosLista = $schoolScopeId(
             School::noInactivos()
                   ->whereHas('schoolLevels.processes')
                   ->whereDoesntHave('schoolLevels', fn($q) =>
                       $q->whereHas('processes', fn($q2) => $q2->where('status', '!=', 'done'))
                   )
-        )->count();
+        )->orderBy('name')->get(['id', 'name']);
+        $colegiosEntregados = $colegiosEntregadosLista->count();
 
         // Colegios por estado para el mapa (state tiene prioridad sobre city)
         // (no se cuentan colegios inactivos)
@@ -197,7 +198,7 @@ class DashboardController extends Controller
             'colegiosActivos', 'colegiosProspecto', 'colegiosInactivos',
             'colegiosPorEstado', 'colegiosPorZona', 'conteoNiveles',
             'totalResurtidos',
-            'colegiosEntregados',
+            'colegiosEntregados', 'colegiosEntregadosLista',
             'colegiosPorNivel', 'colegiosPorServicio',
             'colegiosDocentesRegistrados', 'libroProfesorDetalle',
             'accionesArranque', 'formatosCapacitaciones', 'accionesDetalle',

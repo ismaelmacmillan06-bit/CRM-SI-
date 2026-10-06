@@ -77,14 +77,14 @@
 <div class="card" style="margin-bottom:20px">
     <div class="card-header">
         <span class="card-title">⬆️ Subir archivos</span>
-        <span style="font-size:13px; color:var(--text-muted)">PDF, Word o Excel · máx. 10 MB c/u · hasta 10 a la vez</span>
+        <span style="font-size:13px; color:var(--text-muted)">PDF, Word o Excel · máx. 10 MB</span>
     </div>
     <div class="card-body">
         <form method="POST" action="{{ route('schools.repositorio.store', $school) }}" enctype="multipart/form-data"
-              onsubmit="if (!this.querySelector('input[type=file]').files.length) { alert('Selecciona al menos un archivo.'); return false; }"
+              onsubmit="if (!this.querySelector('input[type=file]').files.length) { alert('Selecciona un archivo.'); return false; }"
               style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
             @csrf
-            <input type="file" name="archivos[]" multiple required
+            <input type="file" name="archivo" required
                    accept=".pdf,.doc,.docx,.xls,.xlsx" class="form-control" style="max-width:420px">
             <button type="submit" class="btn btn-primary">📤 Subir</button>
         </form>

@@ -33,27 +33,25 @@ class SchoolFileController extends Controller
         abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
 
         $request->validate([
-            'archivos'   => 'required|array|max:10',
-            'archivos.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx',
+            'archivo' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx',
         ], [
-            'archivos.required'  => 'Selecciona al menos un archivo.',
-            'archivos.*.max'     => 'Cada archivo no puede superar 10 MB.',
-            'archivos.*.mimes'   => 'Solo se permiten PDF, Word o Excel.',
+            'archivo.required' => 'Selecciona un archivo.',
+            'archivo.max'      => 'El archivo no puede superar 10 MB.',
+            'archivo.mimes'    => 'Solo se permiten PDF, Word o Excel.',
         ]);
 
-        foreach ($request->file('archivos') as $archivo) {
-            $ruta = $archivo->store("repositorio/{$school->id}", 'local');
+        $archivo = $request->file('archivo');
+        $ruta = $archivo->store("repositorio/{$school->id}", 'local');
 
-            $school->files()->create([
-                'uploaded_by' => auth()->id(),
-                'nombre'      => basename($archivo->getClientOriginalName()),
-                'ruta'        => $ruta,
-                'mime'        => $archivo->getClientMimeType(),
-                'tamano'      => $archivo->getSize(),
-            ]);
-        }
+        $school->files()->create([
+            'uploaded_by' => auth()->id(),
+            'nombre'      => basename($archivo->getClientOriginalName()),
+            'ruta'        => $ruta,
+            'mime'        => $archivo->getClientMimeType(),
+            'tamano'      => $archivo->getSize(),
+        ]);
 
-        return back()->with('success', 'Archivo(s) subido(s) correctamente.');
+        return back()->with('success', 'Archivo subido correctamente.');
     }
 
     public function download(School $school, SchoolFile $file)

@@ -81,6 +81,7 @@
     </div>
     <div class="card-body">
         <form method="POST" action="{{ route('schools.repositorio.store', $school) }}" enctype="multipart/form-data"
+              onsubmit="if (!this.querySelector('input[type=file]').files.length) { alert('Selecciona al menos un archivo.'); return false; }"
               style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
             @csrf
             <input type="file" name="archivos[]" multiple required

@@ -17,8 +17,6 @@ class Comunicado extends Model
         'todos'               => 'Todos (general)',
     ];
 
-    public const PUBLICADORES = ['admin', 'coordinador', 'consultor_eca', 'consultor_elt'];
-
     protected $fillable = [
         'titulo', 'descripcion', 'archivo', 'archivo_nombre',
         'archivo_tipo', 'enlace', 'enlace_texto', 'fecha_termino', 'user_id',
@@ -53,7 +51,7 @@ class Comunicado extends Model
         return $q->whereNotNull('fecha_termino')->where('fecha_termino', '<', today());
     }
 
-    // Admin ve todo; los demás ven lo dirigido a su rol o a todos, y lo que ellos publicaron
+    // Admin ve todo; los demás ven lo dirigido a su rol o a todos
     public function scopeVisiblePara(Builder $q, User $usuario): Builder
     {
         if ($usuario->hasRole('admin')) {
@@ -62,14 +60,11 @@ class Comunicado extends Model
 
         $roles = array_merge($usuario->getRoleNames()->all(), ['todos']);
 
-        return $q->where(fn($q) =>
-            $q->where('user_id', $usuario->id)
-              ->orWhereHas('audiencias', fn($a) => $a->whereIn('rol', $roles))
-        );
+        return $q->whereHas('audiencias', fn($a) => $a->whereIn('rol', $roles));
     }
 
     public static function puedePublicar(User $usuario): bool
     {
-        return $usuario->hasAnyRole(self::PUBLICADORES);
+        return $usuario->hasRole('admin');
     }
 }

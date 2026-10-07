@@ -30,6 +30,12 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Tablero SI: todos ven lo que va dirigido a su rol; quién publica o edita
+        // se decide en ComunicadoController (Comunicado::puedePublicar)
+        if ($request->routeIs('tablero.*')) {
+            return $next($request);
+        }
+
         // Herramientas SI: solo admin y consultor_digital
         if ($request->routeIs('herramientas.*') && !$user->hasRole('consultor_digital')) {
             return redirect()->route('dashboard')

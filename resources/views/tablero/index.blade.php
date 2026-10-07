@@ -3,6 +3,7 @@
 @section('title', 'Tablero SI')
 
 @section('content')
+@php $puedePublicar = \App\Models\Comunicado::puedePublicar(auth()->user()); @endphp
 <style>
     /* ── Tabs ── */
     .tabs { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:28px; }
@@ -217,7 +218,7 @@
             Comunicados y avisos para el equipo
         </p>
     </div>
-    @if(auth()->user()->hasRole('admin'))
+    @if($puedePublicar)
         <button onclick="abrirModal()" class="btn btn-primary" style="gap:8px">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Nuevo Comunicado
@@ -243,7 +244,7 @@
         <div class="empty-state">
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
             <p>No hay comunicados activos.</p>
-            @if(auth()->user()->hasRole('admin'))
+            @if($puedePublicar)
                 <button onclick="abrirModal()" style="margin-top:14px; background:var(--accent); color:#fff; border:none; border-radius:9px; padding:10px 22px; font-size:14px; font-weight:600; cursor:pointer">
                     Publicar el primero
                 </button>
@@ -289,7 +290,7 @@
 </div>
 
 {{-- ══════════════ MODAL NUEVO COMUNICADO ══════════════ --}}
-@if(auth()->user()->hasRole('admin'))
+@if($puedePublicar)
 <div class="modal-backdrop" id="modalBackdrop" onclick="cerrarModalFuera(event)">
     <div class="modal" id="modalBox">
         <button class="modal-close" onclick="cerrarModal()" aria-label="Cerrar">
@@ -350,6 +351,12 @@
                 @error('fecha_termino')<small style="color:var(--danger)">{{ $message }}</small>@enderror
             </div>
 
+            <div class="form-group">
+                <label class="form-label">Publicar para: *</label>
+                @include('tablero._audiencia_checks', ['seleccion' => old('audiencia', [])])
+                @error('audiencia')<small style="color:var(--danger)">{{ $message }}</small>@enderror
+            </div>
+
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px">
                 <button type="button" onclick="cerrarModal()" class="btn btn-secondary">Cancelar</button>
                 <button type="submit" class="btn btn-primary">Publicar</button>
@@ -359,7 +366,56 @@
 </div>
 @endif
 
+{{-- ══════════════ MODAL EDITAR AUDIENCIA ══════════════ --}}
+@if($puedePublicar)
+<div class="modal-backdrop" id="modalAudiencia" onclick="if (event.target === this) cerrarEditarAudiencia()">
+    <div class="modal">
+        <button class="modal-close" onclick="cerrarEditarAudiencia()" aria-label="Cerrar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="modal-title">Editar a quién va dirigido</div>
+        <p id="audiencia-titulo" style="font-size:13px; color:var(--text-muted); margin:-6px 0 16px"></p>
+
+        <form id="form-audiencia" method="POST">
+            @csrf @method('PUT')
+            @include('tablero._audiencia_checks', ['seleccion' => []])
+            @error('audiencia')<small style="color:var(--danger)">{{ $message }}</small>@enderror
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px">
+                <button type="button" onclick="cerrarEditarAudiencia()" class="btn btn-secondary">Cancelar</button>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 <script>
+    // ── Audiencia: "Todos" excluye a los demás ──
+    function sincronizarTodos(contenedor) {
+        const todos = contenedor.querySelector('input[value="todos"]');
+        const otros = contenedor.querySelectorAll('input.aud-check:not([value="todos"])');
+        otros.forEach(o => { o.disabled = todos.checked; if (todos.checked) o.checked = false; });
+    }
+    document.querySelectorAll('.audiencia-checks').forEach(c => {
+        c.addEventListener('change', () => sincronizarTodos(c));
+        sincronizarTodos(c);
+    });
+
+    function abrirEditarAudiencia(btn) {
+        const form = document.getElementById('form-audiencia');
+        form.action = btn.dataset.url;
+        document.getElementById('audiencia-titulo').textContent = btn.dataset.titulo;
+        const roles = (btn.dataset.audiencias || '').split(',');
+        const contenedor = document.querySelector('#modalAudiencia .audiencia-checks');
+        contenedor.querySelectorAll('input.aud-check').forEach(i => { i.checked = roles.includes(i.value); });
+        sincronizarTodos(contenedor);
+        document.getElementById('modalAudiencia').classList.add('open');
+    }
+    function cerrarEditarAudiencia() {
+        document.getElementById('modalAudiencia').classList.remove('open');
+    }
+
     // ── Tabs ──
     function switchTab(id, btn) {
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -451,6 +507,7 @@
         if (e.key === 'Escape') {
             const mb = document.getElementById('modalBackdrop');
             if (mb) { mb.classList.remove('open'); document.body.style.overflow = ''; }
+            cerrarEditarAudiencia();
             cerrarViewer();
         }
     });

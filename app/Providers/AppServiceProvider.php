@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
             $desde = now()->subDays(5);
 
             $view->with([
-                'hayComunicadoNuevo' => Comunicado::activos()->where('created_at', '>=', $desde)->exists(),
+                'hayComunicadoNuevo' => Comunicado::visiblePara(auth()->user())->activos()->where('created_at', '>=', $desde)->exists(),
                 'hayTareaNueva'      => TareaSI::where('created_at', '>=', $desde)->exists(),
             ]);
         });

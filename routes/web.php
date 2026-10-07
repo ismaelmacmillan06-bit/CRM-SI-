@@ -162,7 +162,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      // Tablero SI
      Route::get('tablero',                    [ComunicadoController::class, 'index'])  ->name('tablero.index');
      Route::post('tablero',                   [ComunicadoController::class, 'store'])  ->name('tablero.store');
-     Route::delete('tablero/{comunicado}',    [ComunicadoController::class, 'destroy'])->name('tablero.destroy');
+     Route::put('tablero/{comunicado}/audiencia', [ComunicadoController::class, 'updateAudiencia'])->name('tablero.audiencia.update');
+    Route::delete('tablero/{comunicado}',    [ComunicadoController::class, 'destroy'])->name('tablero.destroy');
 
      // Herramientas SI
      Route::get('herramientas-si',                        [HerramientasController::class, 'index'])          ->name('herramientas.index');

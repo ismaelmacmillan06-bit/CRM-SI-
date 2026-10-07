@@ -20,6 +20,13 @@
     {{-- Título --}}
     <div class="comunicado-titulo" style="padding-right:36px">{{ $comunicado->titulo }}</div>
 
+    {{-- Audiencia --}}
+    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px">
+        @foreach($comunicado->audiencias as $aud)
+            <span style="font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--surface2); border:1px solid var(--border); color:var(--text-muted)">{{ \App\Models\Comunicado::AUDIENCIAS[$aud->rol] ?? $aud->rol }}</span>
+        @endforeach
+    </div>
+
     {{-- Descripción (truncada en card) --}}
     <div class="comunicado-desc" style="display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden">{{ $comunicado->descripcion }}</div>
 
@@ -81,6 +88,18 @@
                 </span>
             @endif
         </div>
+
+        {{-- Editar audiencia (quien puede publicar) --}}
+        @if(\App\Models\Comunicado::puedePublicar(auth()->user()))
+            <button type="button"
+                    data-url="{{ route('tablero.audiencia.update', $comunicado) }}"
+                    data-titulo="{{ $comunicado->titulo }}"
+                    data-audiencias="{{ implode(',', $comunicado->audienciaRoles()) }}"
+                    onclick="abrirEditarAudiencia(this)"
+                    style="background:var(--surface2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:flex-start">
+                ✏️ Editar audiencia
+            </button>
+        @endif
 
         {{-- Eliminar (solo admin) --}}
         @if(auth()->user()->hasRole('admin'))

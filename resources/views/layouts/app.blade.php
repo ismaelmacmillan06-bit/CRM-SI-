@@ -478,12 +478,10 @@
             @if($hayTareaNueva ?? false)<span class="nav-dot" title="Hay una tarea nueva"></span>@endif
         </a>
         @endunlessrole
-        @unlessrole('consultor_eca|consultor_elt|representante_ventas')
         <a href="{{ route('tablero.index') }}" class="nav-item {{ request()->routeIs('tablero.*') ? 'active' : '' }}">
             <span class="nav-icon">📌</span> Tablero SI
             @if($hayComunicadoNuevo ?? false)<span class="nav-dot" title="Hay un comunicado nuevo"></span>@endif
         </a>
-        @endunlessrole
         @unlessrole('consultor_eca|consultor_elt|representante_ventas|coordinador')
         <a href="{{ route('bitacora.index') }}" class="nav-item {{ request()->routeIs('bitacora.*') ? 'active' : '' }}">
             <span class="nav-icon">📋</span> Bitácora

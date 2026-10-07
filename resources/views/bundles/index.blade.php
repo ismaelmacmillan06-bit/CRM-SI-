@@ -34,37 +34,46 @@
 {{-- Filtros --}}
 <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:16px 24px">
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
-            <input type="text" id="buscador" class="form-control"
+        <form method="GET" action="{{ route('bundles.index') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <input type="text" name="q" class="form-control"
                    placeholder="🔍 Buscar por nombre o serie..."
-                   style="max-width:300px">
-            <select id="filtro-tipo" class="form-control" style="max-width:180px">
+                   value="{{ request('q') }}" style="max-width:300px">
+            <select name="tipo" class="form-control" style="max-width:180px" onchange="this.form.submit()">
                 <option value="">Todos los tipos</option>
                 @foreach($tipos as $tipo)
-                    <option value="{{ $tipo }}">{{ $tipo }}</option>
+                    <option value="{{ $tipo }}" @selected(request('tipo') === $tipo)>{{ $tipo }}</option>
                 @endforeach
             </select>
-            <select id="filtro-nivel" class="form-control" style="max-width:160px">
+            <select name="nivel" class="form-control" style="max-width:160px" onchange="this.form.submit()">
                 <option value="">Todos los niveles</option>
-                <option value="Preescolar">Preescolar</option>
-                <option value="Primaria">Primaria</option>
-                <option value="Secundaria">Secundaria</option>
-                <option value="Preparatoria">Preparatoria</option>
+                @foreach(['Preescolar', 'Primaria', 'Secundaria', 'Preparatoria'] as $nivel)
+                    <option value="{{ $nivel }}" @selected(request('nivel') === $nivel)>{{ $nivel }}</option>
+                @endforeach
             </select>
-            <select id="filtro-rol" class="form-control" style="max-width:150px">
+            <select name="rol" class="form-control" style="max-width:150px" onchange="this.form.submit()">
                 <option value="">Alumno y Docente</option>
-                <option value="student">Solo Alumno</option>
-                <option value="teacher">Solo Docente</option>
+                <option value="student" @selected(request('rol') === 'student')>Solo Alumno</option>
+                <option value="teacher" @selected(request('rol') === 'teacher')>Solo Docente</option>
             </select>
-            <span id="contador" style="font-size:13px; color:var(--text-muted)"></span>
-        </div>
+            <button type="submit" class="btn btn-secondary btn-sm">Buscar</button>
+            <div style="margin-left:auto; display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted)">
+                <label for="per_page" style="white-space:nowrap">Mostrar</label>
+                <select name="per_page" id="per_page" class="form-control" style="width:auto; padding:6px 10px"
+                        onchange="this.form.submit()">
+                    @foreach([20, 50, 100, 200, 500] as $opcion)
+                        <option value="{{ $opcion }}" @selected($perPage == $opcion)>{{ $opcion }}</option>
+                    @endforeach
+                </select>
+                <span style="white-space:nowrap">por página</span>
+            </div>
+        </form>
     </div>
 </div>
 
 <div class="card">
     <div class="card-header">
         <span class="card-title">📚 Catálogo de Bundles SI</span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $bundles->count() }} registrados</span>
+        <span style="font-size:13px; color:var(--text-muted)">{{ $bundles->total() }} registrados</span>
     </div>
     <table class="table" id="tabla-bundles">
         <thead>
@@ -135,6 +144,7 @@
             @endforelse
         </tbody>
     </table>
+    <div style="padding:14px 20px">{{ $bundles->links() }}</div>
 </div>
 
 @role('admin')
@@ -279,46 +289,4 @@ function cerrarEditar() {
 }
 </script>
 
-<script>
-const buscador    = document.getElementById('buscador');
-const filtroTipo  = document.getElementById('filtro-tipo');
-const filtroNivel = document.getElementById('filtro-nivel');
-const filtroRol   = document.getElementById('filtro-rol');
-const contador    = document.getElementById('contador');
-const filas       = document.querySelectorAll('#tabla-bundles tbody tr');
-
-function filtrar() {
-    const query = buscador.value.toLowerCase().trim();
-    const tipo  = filtroTipo.value;
-    const nivel = filtroNivel.value;
-    const rol   = filtroRol.value;
-    let visibles = 0;
-
-    filas.forEach(fila => {
-        const texto     = fila.innerText.toLowerCase();
-        const filaTipo  = fila.dataset.tipo;
-        const filaNivel = fila.dataset.nivel;
-        const filaRol   = fila.dataset.rol;
-
-        const matchTexto  = !query || texto.includes(query);
-        const matchTipo   = !tipo  || filaTipo === tipo;
-        const matchNivel  = !nivel || filaNivel?.includes(nivel);
-        const matchRol    = !rol   || filaRol === rol;
-
-        if (matchTexto && matchTipo && matchNivel && matchRol) {
-            fila.style.display = '';
-            visibles++;
-        } else {
-            fila.style.display = 'none';
-        }
-    });
-
-    contador.textContent = `${visibles} resultado(s)`;
-}
-
-buscador.addEventListener('input', filtrar);
-filtroTipo.addEventListener('change', filtrar);
-filtroNivel.addEventListener('change', filtrar);
-filtroRol.addEventListener('change', filtrar);
-</script>
 @endsection

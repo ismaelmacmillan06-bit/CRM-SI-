@@ -13,12 +13,36 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class BundleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bundles = Bundle::orderBy('type')->orderBy('serie')->orderBy('level')->orderBy('grade')->get();
-        $series  = Bundle::select('serie', 'type')->distinct()->orderBy('type')->orderBy('serie')->get();
-        $tipos   = Bundle::select('type')->distinct()->pluck('type');
-        return view('bundles.index', compact('bundles', 'series', 'tipos'));
+        $perPage = (int) $request->query('per_page', 50);
+        if (!in_array($perPage, [20, 50, 100, 200, 500], true)) {
+            $perPage = 50;
+        }
+
+        $query = Bundle::query();
+
+        if ($buscar = trim((string) $request->query('q'))) {
+            $query->where(fn($q) => $q->where('name', 'like', "%{$buscar}%")
+                                      ->orWhere('serie', 'like', "%{$buscar}%"));
+        }
+        if ($tipo = $request->query('tipo')) {
+            $query->where('type', $tipo);
+        }
+        if ($nivel = $request->query('nivel')) {
+            $query->where('level', 'like', "%{$nivel}%");
+        }
+        if (in_array($rol = $request->query('rol'), ['student', 'teacher'], true)) {
+            $query->where('role', $rol);
+        }
+
+        $bundles = $query->orderBy('type')->orderBy('serie')->orderBy('level')->orderBy('grade')
+                         ->paginate($perPage)->withQueryString();
+
+        $series = Bundle::select('serie', 'type')->distinct()->orderBy('type')->orderBy('serie')->get();
+        $tipos  = Bundle::select('type')->distinct()->pluck('type');
+
+        return view('bundles.index', compact('bundles', 'series', 'tipos', 'perPage'));
     }
 
     public function create()

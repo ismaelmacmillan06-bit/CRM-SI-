@@ -1,16 +1,63 @@
 document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     const dialog = document.getElementById('formato-entrega-dialog');
     const status = document.getElementById('formato-entrega-resultado');
+    const loadingOverlay = document.getElementById('formato-entrega-overlay');
+    const dots = loadingOverlay?.querySelector('[data-formato-dots]');
+    const options = dialog?.querySelector('[data-formato-opciones]');
+    const notice = dialog?.querySelector('[data-formato-aviso]');
+    const noticeTitle = dialog?.querySelector('[data-formato-aviso-titulo]');
+    const noticeMessage = dialog?.querySelector('[data-formato-aviso-mensaje]');
     const generateButton = dialog?.querySelector('[data-formato-generar]');
+    const confirmButton = dialog?.querySelector('[data-formato-confirm]');
+    const cancelButton = dialog?.querySelector('footer [data-formato-cancel]');
+    let dotsInterval;
+    let pendingAvailableType = null;
+    const resetNotice = () => {
+        if (notice) notice.hidden = true;
+        if (options) options.hidden = false;
+        if (generateButton) generateButton.hidden = false;
+        if (confirmButton) confirmButton.hidden = true;
+        if (cancelButton) cancelButton.textContent = 'Cancelar';
+        pendingAvailableType = null;
+    };
+    const showNotice = (title, message, availableType = null) => {
+        if (options) options.hidden = true;
+        if (notice) notice.hidden = false;
+        if (noticeTitle) noticeTitle.textContent = title;
+        if (noticeMessage) noticeMessage.textContent = message;
+        if (generateButton) generateButton.hidden = true;
+        if (cancelButton) cancelButton.textContent = 'Volver a opciones';
+        pendingAvailableType = availableType;
+        if (confirmButton) {
+            confirmButton.hidden = !availableType;
+            confirmButton.textContent = availableType ? `Descargar solo ${availableType}` : '';
+        }
+    };
     const closeDialog = () => {
+        resetNotice();
         dialog?.classList.remove('is-open');
         dialog?.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
         button.focus();
     };
+    const showLoading = () => {
+        loadingOverlay?.classList.add('is-open');
+        loadingOverlay?.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        dotsInterval = setInterval(() => {
+            if (dots) dots.textContent = '.'.repeat((dots.textContent.length + 1) % 4);
+        }, 500);
+    };
+    const hideLoading = () => {
+        loadingOverlay?.classList.remove('is-open');
+        loadingOverlay?.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        clearInterval(dotsInterval);
+    };
 
     button.addEventListener('click', (event) => {
         event.preventDefault();
+        resetNotice();
         dialog?.classList.add('is-open');
         dialog?.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
@@ -18,7 +65,13 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     });
 
     dialog?.querySelectorAll('[data-formato-cancel]').forEach((cancelButton) => {
-        cancelButton.addEventListener('click', closeDialog);
+        cancelButton.addEventListener('click', () => {
+            if (cancelButton === dialog.querySelector('footer [data-formato-cancel]') && notice && !notice.hidden) {
+                resetNotice();
+                return;
+            }
+            closeDialog();
+        });
     });
     dialog?.addEventListener('click', (event) => {
         if (event.target === dialog) closeDialog();
@@ -32,13 +85,50 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
             radio.closest('.formato-opcion')?.classList.add('is-selected');
         });
     });
+    confirmButton?.addEventListener('click', () => {
+        if (!pendingAvailableType) return;
+        const availableType = pendingAvailableType;
+        const availableOption = dialog.querySelector(`input[name="formato-tipo"][value="${availableType}"]`);
+        if (!availableOption) return;
+        availableOption.checked = true;
+        availableOption.dispatchEvent(new Event('change', { bubbles: true }));
+        generateButton?.click();
+    });
 
     generateButton?.addEventListener('click', async () => {
         if (!status || button.dataset.loading) return;
 
         const tipo = dialog.querySelector('input[name="formato-tipo"]:checked')?.value || 'alumnos';
+        const studentCount = Number(status.dataset.studentCount || 0);
+        const teacherCount = Number(status.dataset.teacherCount || 0);
+        let fileTypes = tipo === 'ambos' ? ['alumnos', 'docentes'] : [tipo];
+
+        if (tipo === 'alumnos' && studentCount === 0) {
+            showNotice('No hay alumnos cargados', 'No hay alumnos registrados en este colegio. Puedes volver y elegir otra opción.');
+            return;
+        }
+        if (tipo === 'docentes' && teacherCount === 0) {
+            showNotice('No hay docentes cargados', 'No hay docentes registrados en este colegio. Puedes volver y elegir otra opción.');
+            return;
+        }
+        if (tipo === 'ambos' && studentCount === 0 && teacherCount === 0) {
+            showNotice('No es posible generar el formato', 'Este colegio no tiene alumnos ni docentes cargados.');
+            return;
+        }
+        if (tipo === 'ambos' && (studentCount === 0 || teacherCount === 0)) {
+            const missingType = studentCount === 0 ? 'alumnos' : 'docentes';
+            const availableType = studentCount === 0 ? 'docentes' : 'alumnos';
+            showNotice(
+                `No hay ${missingType} cargados`,
+                `¿Deseas descargar únicamente el archivo de ${availableType}?`,
+                availableType,
+            );
+            return;
+        }
+
         closeDialog();
         button.dataset.loading = 'true';
+        showLoading();
         status.className = 'alert alert-success';
         status.style.display = 'block';
 
@@ -101,7 +191,6 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
         };
 
         try {
-            const fileTypes = tipo === 'ambos' ? ['alumnos', 'docentes'] : [tipo];
             for (const [index, fileType] of fileTypes.entries()) {
                 await downloadFile(fileType, index, fileTypes.length);
                 if (index < fileTypes.length - 1) {
@@ -113,6 +202,7 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
             status.textContent = error.message || 'No se pudo descargar el formato.';
         } finally {
             delete button.dataset.loading;
+            hideLoading();
         }
     });
 });

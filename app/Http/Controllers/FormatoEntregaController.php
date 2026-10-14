@@ -36,6 +36,14 @@ class FormatoEntregaController extends Controller
         $alumnos = $tipo === 'alumnos' ? $this->studentData($school) : null;
         $docentes = $tipo === 'docentes' ? $this->teacherData($school) : null;
 
+        if (($alumnos !== null && $alumnos['rows'] === []) || ($docentes !== null && $docentes['rows'] === [])) {
+            return response()->json([
+                'message' => $tipo === 'alumnos'
+                    ? 'No hay alumnos cargados para generar el formato.'
+                    : 'No hay docentes cargados para generar el formato.',
+            ], 422);
+        }
+
         $spreadsheet = new Spreadsheet();
         $usedTitles = [];
         if ($alumnos !== null) {
@@ -111,6 +119,8 @@ class FormatoEntregaController extends Controller
             'studentClassCount' => $alumnos['classCount'],
             'teacherReviewCount' => $docentes['reviewCount'],
             'teacherClassCount' => $docentes['classCount'],
+            'studentCount' => $alumnos['recordCount'],
+            'teacherCount' => $docentes['recordCount'],
         ];
     }
 
@@ -166,6 +176,7 @@ class FormatoEntregaController extends Controller
             'rows' => $rows,
             'reviewCount' => $reviewCount,
             'classCount' => count($classes),
+            'recordCount' => $students->count(),
         ];
     }
 
@@ -207,6 +218,7 @@ class FormatoEntregaController extends Controller
             'rows' => $rows,
             'reviewCount' => $reviewCount,
             'classCount' => count($classes),
+            'recordCount' => $teachers->count(),
         ];
     }
 

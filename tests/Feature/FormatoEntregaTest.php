@@ -79,6 +79,8 @@ class FormatoEntregaTest extends TestCase
         $summary = $formatController->summaryForSchool($school);
         $this->assertSame(1, $summary['reviewCount']);
         $this->assertSame(1, $summary['classCount']);
+        $this->assertSame(17, $summary['studentCount']);
+        $this->assertSame(0, $summary['teacherCount']);
 
         $this->actingAs($user);
         $schoolPage = app(SchoolController::class)->show($school, $formatController)->render();
@@ -89,6 +91,11 @@ class FormatoEntregaTest extends TestCase
         $this->assertStringContainsString('data-student-class-count="1"', $normalizedSchoolPage);
         $this->assertStringContainsString('data-teacher-review-count="0"', $normalizedSchoolPage);
         $this->assertStringContainsString('data-teacher-class-count="0"', $normalizedSchoolPage);
+        $this->assertStringContainsString('data-student-count="17"', $normalizedSchoolPage);
+        $this->assertStringContainsString('data-teacher-count="0"', $normalizedSchoolPage);
+        $this->assertStringContainsString('id="formato-entrega-overlay"', $schoolPage);
+        $this->assertStringContainsString('formato-loading-spinner', $schoolPage);
+        $this->assertStringContainsString('.formato-modal-panel [hidden] { display:none !important; }', $schoolPage);
         $this->assertStringContainsString('value="alumnos"', $normalizedSchoolPage);
         $this->assertStringContainsString('value="docentes"', $normalizedSchoolPage);
         $this->assertStringContainsString('value="ambos"', $normalizedSchoolPage);
@@ -99,6 +106,10 @@ class FormatoEntregaTest extends TestCase
         $this->assertSame('application/javascript; charset=UTF-8', $scriptResponse->headers->get('Content-Type'));
         $this->assertStringContainsString('button.addEventListener', $scriptResponse->getContent());
         $this->assertStringContainsString("['alumnos', 'docentes']", $scriptResponse->getContent());
+        $this->assertStringContainsString('showNotice(', $scriptResponse->getContent());
+        $this->assertStringNotContainsString('window.confirm', $scriptResponse->getContent());
+        $this->assertStringNotContainsString('window.alert', $scriptResponse->getContent());
+        $this->assertStringContainsString('showLoading()', $scriptResponse->getContent());
 
         $response = $formatController->download($school, Request::create('/', 'GET'));
         $filePath = $response->getFile()->getPathname();
@@ -156,6 +167,29 @@ class FormatoEntregaTest extends TestCase
             }
         } finally {
             @unlink($filePath);
+        }
+    }
+
+    public function test_it_rejects_exports_when_the_selected_account_type_has_no_records(): void
+    {
+        $user = User::factory()->create();
+        $consultant = Consultant::create(['user_id' => $user->id]);
+        $school = School::create([
+            'name' => 'Colegio vacío',
+            'status' => 'activo',
+            'consultant_id' => $consultant->id,
+        ]);
+        $formatController = app(FormatoEntregaController::class);
+
+        $summary = $formatController->summaryForSchool($school);
+        $this->assertSame(0, $summary['studentCount']);
+        $this->assertSame(0, $summary['teacherCount']);
+
+        foreach (['alumnos' => 'No hay alumnos', 'docentes' => 'No hay docentes'] as $tipo => $message) {
+            $response = $formatController->download($school, Request::create('/?tipo=' . $tipo, 'GET'));
+
+            $this->assertSame(422, $response->getStatusCode());
+            $this->assertStringContainsString($message, $response->getContent());
         }
     }
 

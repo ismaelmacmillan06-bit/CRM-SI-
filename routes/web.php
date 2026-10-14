@@ -173,6 +173,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      // Herramientas SI
      Route::get('herramientas-si',                        [HerramientasController::class, 'index'])          ->name('herramientas.index');
      Route::get('herramientas-si/altas-bundles',          [HerramientasController::class, 'altasBundles'])   ->name('herramientas.altas-bundles');
+     Route::get('herramientas-si/formato-entrega',        [HerramientasController::class, 'formatoEntrega'])->name('herramientas.formato-entrega');
      Route::get('herramientas-si/accesos',                [HerramientasController::class, 'accesos'])        ->name('herramientas.accesos');
      Route::get('herramientas-si/consulta-accesos',       [HerramientasController::class, 'consultaAccesos'])->name('herramientas.consulta-accesos');
      Route::get('herramientas-si/borrar-usuarios',        [HerramientasController::class, 'borrarUsuarios'])  ->name('herramientas.borrar-usuarios');

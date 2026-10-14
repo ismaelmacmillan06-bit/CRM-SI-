@@ -21,6 +21,11 @@ class HerramientasController extends Controller
         return $this->servirHerramienta('altas-bundles.html');
     }
 
+    public function formatoEntrega()
+    {
+        return view('herramientas.formato-entrega');
+    }
+
     public function accesos()
     {
         return $this->servirHerramienta('accesos.html');

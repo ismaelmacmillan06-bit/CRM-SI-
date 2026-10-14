@@ -49,11 +49,11 @@ class FormatoEntregaController extends Controller
         if ($alumnos !== null) {
             $summary = $spreadsheet->getActiveSheet();
             $summary->setTitle($this->uniqueSheetTitle('Todos los alumnos', $usedTitles));
-            $this->drawSheet($summary, $school, 'Concentrado general', $this->studentCountLabel(count($alumnos['rows'])), $alumnos['rows']);
+            $this->drawSheet($summary, $school, 'Concentrado general', $this->countLabel(count($alumnos['rows']), 'alumno', 'alumnos'), $alumnos['rows']);
             foreach ($alumnos['classes'] as $class => $rows) {
                 $sheet = $spreadsheet->createSheet();
                 $sheet->setTitle($this->uniqueSheetTitle($class, $usedTitles));
-                $this->drawSheet($sheet, $school, 'Listado de alumnos', $class . '   |   ' . $this->studentCountLabel(count($rows)), $rows);
+                $this->drawSheet($sheet, $school, 'Listado de alumnos', $class . '   |   ' . $this->countLabel(count($rows), 'alumno', 'alumnos'), $rows);
             }
         }
 
@@ -64,7 +64,7 @@ class FormatoEntregaController extends Controller
                 $summary,
                 $school,
                 'Concentrado de docentes',
-                $this->studentCountLabel(count($docentes['rows'])),
+                $this->countLabel(count($docentes['rows']), 'docente', 'docentes'),
                 $docentes['rows'],
                 self::TEACHER_HEADERS,
                 8,
@@ -78,7 +78,7 @@ class FormatoEntregaController extends Controller
                     $sheet,
                     $school,
                     'Listado de docentes',
-                    'Grado ' . $grade . '   |   ' . $this->studentCountLabel(count($rows)),
+                    'Grado ' . $grade . '   |   ' . $this->countLabel(count($rows), 'docente', 'docentes'),
                     $rows,
                     self::TEACHER_HEADERS,
                     8,
@@ -95,8 +95,11 @@ class FormatoEntregaController extends Controller
 
         $safeSchoolName = str_replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], '-', $school->name);
         $safeSchoolName = trim($safeSchoolName, " .");
+        $schoolIdentifier = $school->nexus_id ?: $school->id;
+        $safeSchoolIdentifier = str_replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], '-', (string) $schoolIdentifier);
+        $safeSchoolIdentifier = trim($safeSchoolIdentifier, " .");
         $filenamePrefix = $tipo === 'docentes' ? 'Cuentas de Docentes' : 'Cuentas de Alumno';
-        $filename = $filenamePrefix . '_' . $safeSchoolName . '_' . $school->id . '.xlsx';
+        $filename = $filenamePrefix . '_' . $safeSchoolName . '_' . $safeSchoolIdentifier . '.xlsx';
 
         return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -564,9 +567,9 @@ class FormatoEntregaController extends Controller
         return max(12, min(22, (int) floor(22 - max(0, mb_strlen($schoolName) - 24) / 5)));
     }
 
-    private function studentCountLabel(int $count): string
+    private function countLabel(int $count, string $singular, string $plural): string
     {
-        return $count . ($count === 1 ? ' alumno' : ' alumnos');
+        return $count . ' ' . ($count === 1 ? $singular : $plural);
     }
 
     private function uniqueSheetTitle(string $title, array &$usedTitles): string

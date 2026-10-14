@@ -26,6 +26,7 @@ class FormatoEntregaTest extends TestCase
             'name' => 'Colegio de prueba',
             'status' => 'activo',
             'consultant_id' => $consultant->id,
+            'nexus_id' => 'MEXMP0908389',
         ]);
         $formatController = app(FormatoEntregaController::class);
 
@@ -118,13 +119,15 @@ class FormatoEntregaTest extends TestCase
             $this->assertSame('1', $response->headers->get('X-Alumnos-Por-Revisar'));
             $this->assertSame('1', $response->headers->get('X-Clases-Alumnos'));
             $this->assertStringContainsString(
-                'Cuentas de Alumno_Colegio de prueba_1.xlsx',
+                'Cuentas de Alumno_Colegio de prueba_MEXMP0908389.xlsx',
                 urldecode($response->headers->get('Content-Disposition')),
             );
             $spreadsheet = IOFactory::load($filePath);
             $this->assertSame(['Todos los alumnos', 'Primaria 1°A'], $spreadsheet->getSheetNames());
 
             $summary = $spreadsheet->getSheet(0);
+            $this->assertSame('Concentrado general   |   17 alumnos', $summary->getCell('C3')->getValue());
+            $this->assertSame('Listado de alumnos   |   Primaria 1°A   |   17 alumnos', $spreadsheet->getSheet(1)->getCell('C3')->getValue());
             $this->assertSame('Colegio de prueba', $summary->getCell('C2')->getValue());
             $this->assertCount(1, $summary->getDrawingCollection());
             $this->assertFileExists(public_path('images/logo-formato-entrega.png'));
@@ -201,6 +204,7 @@ class FormatoEntregaTest extends TestCase
             'name' => 'Colegio de prueba',
             'status' => 'activo',
             'consultant_id' => $consultant->id,
+            'nexus_id' => 'MEXMP0908389',
         ]);
 
         Student::create([
@@ -247,11 +251,14 @@ class FormatoEntregaTest extends TestCase
             $this->assertSame('0', $teacherResponse->headers->get('X-Alumnos-Por-Revisar'));
             $this->assertSame('1', $teacherResponse->headers->get('X-Docentes-Por-Revisar'));
             $this->assertSame('2', $teacherResponse->headers->get('X-Grados-Docentes'));
-            $this->assertStringContainsString('Cuentas de Docentes_Colegio de prueba_1.xlsx', urldecode($teacherResponse->headers->get('Content-Disposition')));
+            $this->assertStringContainsString('Cuentas de Docentes_Colegio de prueba_MEXMP0908389.xlsx', urldecode($teacherResponse->headers->get('Content-Disposition')));
 
             $teacherWorkbook = IOFactory::load($teacherPath);
             $this->assertSame(['Todos los docentes', 'Docentes - 1°A', 'Docentes - 2'], $teacherWorkbook->getSheetNames());
             $teacherSummary = $teacherWorkbook->getSheet(0);
+            $this->assertSame('Concentrado de docentes   |   2 docentes', $teacherSummary->getCell('C3')->getValue());
+            $this->assertSame('Listado de docentes   |   Grado 1°A   |   1 docente', $teacherWorkbook->getSheet(1)->getCell('C3')->getValue());
+            $this->assertSame('Listado de docentes   |   Grado 2   |   1 docente', $teacherWorkbook->getSheet(2)->getCell('C3')->getValue());
             $this->assertSame(['Nombre', 'Apellido paterno', 'Apellido materno', 'Usuario', 'Contraseña', 'Grado', 'Grupo', 'Género'], array_map(
                 fn (string $column) => $teacherSummary->getCell($column . '6')->getValue(),
                 range('A', 'H'),

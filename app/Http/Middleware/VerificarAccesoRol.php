@@ -113,6 +113,7 @@ class VerificarAccesoRol
                 'schools.processes.index',
                 'schools.teachers.index', 'schools.tickets.index',
                 'schools.visits.index', 'schools.students.index',
+                'schools.formato-entrega', 'schools.formato-entrega.script',
                 'schools.bundles.index',
                 'schools.repositorio.index', 'schools.repositorio.download',
                 'consultants.index', 'consultants.show',

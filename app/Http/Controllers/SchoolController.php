@@ -133,10 +133,11 @@ foreach ($roles as $role => $consultantId) {
             ->with('success', 'Colegio registrado correctamente.');
     }
 
-    public function show(School $school)
+    public function show(School $school, FormatoEntregaController $formatoEntrega)
     {
         $school->load('consultant', 'levels', 'schoolLevels.level', 'schoolLevels.processes.process', 'meeAdmins');
-        return view('schools.show', compact('school'));
+        $formatoResumen = $formatoEntrega->summaryForSchool($school);
+        return view('schools.show', compact('school', 'formatoResumen'));
     }
 
     public function edit(School $school)

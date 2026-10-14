@@ -652,7 +652,7 @@
     }
 
     // ── Auto-dismiss flash messages ──
-    document.querySelectorAll('.alert').forEach(function(el) {
+    document.querySelectorAll('.alert:not([data-persistent])').forEach(function(el) {
         setTimeout(function() {
             el.style.opacity = '0';
             el.style.maxHeight = '0';

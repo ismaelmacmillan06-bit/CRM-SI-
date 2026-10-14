@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SchoolController;
+use App\Http\Controllers\FormatoEntregaController;
 use App\Http\Controllers\SchoolFileController;
 use App\Http\Controllers\ConsultantController;
 use App\Http\Controllers\SchoolLevelProcessController;
@@ -54,6 +55,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::get('schools/plantilla',  [SchoolController::class, 'descargarPlantilla'])->name('schools.plantilla');
     Route::post('schools/importar',  [SchoolController::class, 'importarMasivo'])->name('schools.importar');
     Route::delete('schools-borrar-todo', [SchoolController::class, 'destroyAll'])->name('schools.destroy-all');
+     Route::get('schools/{school}/formato-entrega/script.js', [FormatoEntregaController::class, 'script'])
+          ->name('schools.formato-entrega.script');
+     Route::get('schools/{school}/formato-entrega', [FormatoEntregaController::class, 'download'])
+          ->name('schools.formato-entrega');
     Route::resource('schools', SchoolController::class);
 
     Route::get('schools/{school}/repositorio', [SchoolFileController::class, 'index'])

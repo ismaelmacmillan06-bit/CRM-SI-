@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Comunicado;
 use App\Models\TareaSI;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // En producción el SSL se atiende antes de Laravel: la petición llega como http
+        // y los formularios salían con action="http://..." (Chrome: "información no segura").
+        if ($this->app->environment('production') || str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         View::composer('layouts.app', function ($view) {
             if (!auth()->check()) {
                 return;

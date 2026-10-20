@@ -57,6 +57,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
     Route::delete('schools-borrar-todo', [SchoolController::class, 'destroyAll'])->name('schools.destroy-all');
      Route::get('schools/{school}/formato-entrega/script.js', [FormatoEntregaController::class, 'script'])
           ->name('schools.formato-entrega.script');
+     Route::get('schools/{school}/formato-entrega/accesos', [FormatoEntregaController::class, 'accesos'])
+          ->name('schools.formato-entrega.accesos');
      Route::get('schools/{school}/formato-entrega', [FormatoEntregaController::class, 'download'])
           ->name('schools.formato-entrega');
     Route::resource('schools', SchoolController::class);

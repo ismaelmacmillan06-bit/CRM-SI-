@@ -43,19 +43,27 @@
             </div>
             <button type="button" class="btn btn-secondary btn-sm" data-formato-cancel aria-label="Cerrar">✕</button>
         </header>
+        <div class="formato-tabs" data-formato-tabs role="tablist">
+            <button type="button" class="formato-tab is-active" role="tab" aria-selected="true" data-formato-tab="excel">
+                <span aria-hidden="true">📊</span> Excel
+            </button>
+            <button type="button" class="formato-tab" role="tab" aria-selected="false" data-formato-tab="pdf">
+                <span aria-hidden="true">🖨️</span> Tarjetas PDF
+            </button>
+        </div>
         <fieldset class="formato-opciones" data-formato-opciones>
             <legend>¿Qué cuentas necesitas?</legend>
             <label class="formato-opcion is-selected">
                 <input type="radio" name="formato-tipo" value="alumnos" checked>
-                <span><strong>Alumnos</strong><small>Un Excel con las hojas por clase.</small></span>
+                <span><strong>Alumnos</strong><small data-excel="Un Excel con las hojas por clase." data-pdf="Un PDF con tarjetas recortables por clase.">Un Excel con las hojas por clase.</small></span>
             </label>
             <label class="formato-opcion">
                 <input type="radio" name="formato-tipo" value="docentes">
-                <span><strong>Docentes</strong><small>Un Excel con las hojas por grado.</small></span>
+                <span><strong>Docentes</strong><small data-excel="Un Excel con las hojas por grado." data-pdf="Un PDF con tarjetas recortables por grado.">Un Excel con las hojas por grado.</small></span>
             </label>
             <label class="formato-opcion">
                 <input type="radio" name="formato-tipo" value="ambos">
-                <span><strong>Ambos</strong><small>Descarga dos archivos independientes.</small></span>
+                <span><strong>Ambos</strong><small data-excel="Descarga dos archivos independientes." data-pdf="Descarga dos PDF independientes.">Descarga dos archivos independientes.</small></span>
             </label>
         </fieldset>
         <div class="formato-aviso" data-formato-aviso role="alert" aria-live="assertive" hidden>
@@ -93,6 +101,18 @@
     .formato-modal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; }
     .formato-modal-kicker { display:block; margin-bottom:5px; color:var(--text-muted); font-size:12px; }
     .formato-modal-header h2 { margin:0; font-family:'Bricolage Grotesque',sans-serif; font-size:21px; }
+    .formato-tabs {
+        display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:22px;
+        border:1px solid var(--border); border-radius:10px; background:var(--surface2);
+    }
+    .formato-tabs[hidden] { display:none; }
+    .formato-tab {
+        display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 12px;
+        border:0; border-radius:7px; background:transparent; color:var(--text-muted);
+        font:600 13px 'Spline Sans',sans-serif; cursor:pointer; transition:background .15s, color .15s, box-shadow .15s;
+    }
+    .formato-tab:hover { color:var(--text); }
+    .formato-tab.is-active { background:var(--surface); color:var(--accent); box-shadow:0 1px 4px rgba(24,19,17,.14); }
     .formato-opciones { display:grid; grid-template-columns:1fr; gap:9px; border:0; padding:0; margin:0; }
     .formato-opciones legend { margin-bottom:10px; font-size:13px; font-weight:600; }
     .formato-opcion {
@@ -139,7 +159,10 @@
     @media (max-width:480px) { .formato-modal-panel { padding:24px 18px; } }
     @media (max-width:480px) { .formato-loading-panel { padding:40px 24px; } }
 </style>
-<script src="{{ route('schools.formato-entrega.script', $school) }}" defer></script>
+<script src="{{ asset('js/accesos-pdf.js') }}" defer></script>
+<script src="{{ route('schools.formato-entrega.script', $school) }}" defer
+    data-accesos-url="{{ route('schools.formato-entrega.accesos', $school) }}"
+    data-logo-url="{{ asset('images/logo-global-educa.png') }}"></script>
 
 <div class="grid-2" style="margin-bottom:24px">
     {{-- Info general --}}

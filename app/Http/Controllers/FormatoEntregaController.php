@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\School;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -88,6 +89,7 @@ class FormatoEntregaController extends Controller
         }
 
         $spreadsheet->setActiveSheetIndex(0);
+        ActivityLog::log('formato_entrega', "Formato de entrega (Excel) de {$tipo} descargado para \"{$school->name}\"", $school->id, '📥');
         $tempFile = tempnam(sys_get_temp_dir(), 'formato_entrega_');
         (new Xlsx($spreadsheet))->save($tempFile);
         $spreadsheet->disconnectWorksheets();
@@ -108,6 +110,53 @@ class FormatoEntregaController extends Controller
             'X-Docentes-Por-Revisar' => $docentes['reviewCount'] ?? 0,
             'X-Grados-Docentes' => $docentes['classCount'] ?? 0,
         ])->deleteFileAfterSend(true);
+    }
+
+    public function accesos(School $school, Request $request)
+    {
+        $tipo = $request->query('tipo', 'alumnos');
+        abort_unless(in_array($tipo, ['alumnos', 'docentes'], true), 422);
+        $data = $tipo === 'alumnos' ? $this->studentData($school) : $this->teacherData($school);
+
+        if ($data['rows'] === []) {
+            return response()->json(['message' => 'No hay registros para generar las tarjetas.'], 422);
+        }
+
+        $groups = [];
+        $omitidos = 0;
+        foreach ($data['classes'] as $class => $rows) {
+            $cards = [];
+            foreach ($rows as $r) {
+                if (trim((string) $r[3]) === '' || trim((string) $r[4]) === '') {
+                    $omitidos++;
+                    continue;
+                }
+                $cards[] = [
+                    'name' => trim(implode(' ', array_filter([$r[0], $r[1], $r[2]]))),
+                    'username' => $r[3],
+                    'password' => $r[4],
+                ];
+            }
+            if ($cards !== []) {
+                $groups[] = [
+                    'clase' => $tipo === 'docentes' ? 'Docentes - ' . $class : $class,
+                    'alumnos' => $cards,
+                ];
+            }
+        }
+
+        if ($groups === []) {
+            return response()->json(['message' => 'Ningún registro tiene usuario y contraseña para generar tarjetas.'], 422);
+        }
+
+        ActivityLog::log('formato_entrega', "Tarjetas de acceso de {$tipo} generadas para \"{$school->name}\"", $school->id, '🪪');
+
+        return response()->json([
+            'school' => $school->name,
+            'link' => config('services.global_educa.access_url') ?: null,
+            'omitidos' => $omitidos,
+            'groups' => $groups,
+        ]);
     }
 
     public function summaryForSchool(School $school): array
@@ -174,6 +223,8 @@ class FormatoEntregaController extends Controller
             $rows[] = $row;
         }
 
+        uksort($classes, fn ($a, $b) => strnatcasecmp($a, $b));
+
         return [
             'classes' => $classes,
             'rows' => $rows,
@@ -215,6 +266,8 @@ class FormatoEntregaController extends Controller
             $classes[$class][] = $row;
             $rows[] = $row;
         }
+
+        uksort($classes, fn ($a, $b) => strnatcasecmp($a, $b));
 
         return [
             'classes' => $classes,

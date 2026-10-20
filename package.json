@@ -18,6 +18,8 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
-        "bootstrap": "^5.3.8"
+        "bootstrap": "^5.3.8",
+        "jspdf": "^4.2.1",
+        "qrcode-generator": "^2.0.4"
     }
 }

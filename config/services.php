@@ -28,6 +28,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Liga de acceso impresa en las tarjetas; vacía = no se muestra.
+    'global_educa' => [
+        'access_url' => env('GLOBAL_EDUCA_ACCESS_URL'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

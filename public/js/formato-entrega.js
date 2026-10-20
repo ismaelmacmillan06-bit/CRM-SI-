@@ -1,4 +1,10 @@
+const formatoScript = document.currentScript;
 document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
+    const accesosUrl = formatoScript?.dataset.accesosUrl;
+    const logoUrl = formatoScript?.dataset.logoUrl;
+    const tabs = document.querySelector('[data-formato-tabs]');
+    const loadingTitle = document.querySelector('#formato-entrega-overlay .formato-loading-title');
+    let mode = 'excel';
     const dialog = document.getElementById('formato-entrega-dialog');
     const status = document.getElementById('formato-entrega-resultado');
     const loadingOverlay = document.getElementById('formato-entrega-overlay');
@@ -15,6 +21,7 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     const resetNotice = () => {
         if (notice) notice.hidden = true;
         if (options) options.hidden = false;
+        if (tabs) tabs.hidden = false;
         if (generateButton) generateButton.hidden = false;
         if (confirmButton) confirmButton.hidden = true;
         if (cancelButton) cancelButton.textContent = 'Cancelar';
@@ -22,6 +29,7 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     };
     const showNotice = (title, message, availableType = null) => {
         if (options) options.hidden = true;
+        if (tabs) tabs.hidden = true;
         if (notice) notice.hidden = false;
         if (noticeTitle) noticeTitle.textContent = title;
         if (noticeMessage) noticeMessage.textContent = message;
@@ -54,6 +62,23 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
         document.body.style.overflow = '';
         clearInterval(dotsInterval);
     };
+
+    const setMode = (next) => {
+        mode = next;
+        tabs?.querySelectorAll('[data-formato-tab]').forEach((tab) => {
+            const active = tab.dataset.formatoTab === mode;
+            tab.classList.toggle('is-active', active);
+            tab.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        dialog?.querySelectorAll('[data-excel][data-pdf]').forEach((el) => {
+            el.textContent = el.dataset[mode];
+        });
+        if (generateButton) generateButton.textContent = mode === 'pdf' ? 'Generar tarjetas' : 'Generar formato';
+    };
+    tabs?.querySelectorAll('[data-formato-tab]').forEach((tab) => {
+        tab.addEventListener('click', () => setMode(tab.dataset.formatoTab));
+    });
+    setMode('excel');
 
     button.addEventListener('click', (event) => {
         event.preventDefault();
@@ -126,8 +151,10 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
             return;
         }
 
+        const includePdf = mode === 'pdf';
         closeDialog();
         button.dataset.loading = 'true';
+        if (loadingTitle) loadingTitle.textContent = includePdf ? 'Generando Tarjetas de Acceso' : 'Generando Reporte Completo';
         showLoading();
         status.className = 'alert alert-success';
         status.style.display = 'block';
@@ -147,12 +174,37 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
             status.textContent = `${prefix}\n${lines.join('\n')}`;
         };
 
-        showSummary({
+        if (!includePdf) showSummary({
             studentReviewCount: Number(status.dataset.studentReviewCount || 0),
             studentClassCount: Number(status.dataset.studentClassCount || 0),
             teacherReviewCount: Number(status.dataset.teacherReviewCount || 0),
             teacherClassCount: Number(status.dataset.teacherClassCount || 0),
         }, 'Generando el formato:');
+
+        let omitidos = 0;
+        const downloadAccessCards = async (fileType) => {
+            if (!accesosUrl || !window.generarAccesosPdf) throw new Error('No se pudo cargar el generador de tarjetas.');
+            const url = new URL(accesosUrl, window.location.href);
+            url.searchParams.set('tipo', fileType);
+            const response = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+            if (!response.ok) {
+                const err = await response.json().catch(() => null);
+                throw new Error(err?.message || 'No se pudieron obtener los datos de las tarjetas.');
+            }
+            const data = await response.json();
+            omitidos += data.omitidos || 0;
+            const blob = await window.generarAccesosPdf(data, logoUrl);
+            const safeName = data.school.replace(/[<>:"/\\|?*]/g, '-').trim();
+            const label = fileType === 'docentes' ? 'Docentes' : 'Alumnos';
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `Tarjetas de acceso ${label}_${safeName}.pdf`;
+            document.body.append(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        };
 
         const downloadFile = async (fileType, index, total) => {
             const url = new URL(button.href, window.location.href);
@@ -191,10 +243,23 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
         };
 
         try {
-            for (const [index, fileType] of fileTypes.entries()) {
-                await downloadFile(fileType, index, fileTypes.length);
-                if (index < fileTypes.length - 1) {
-                    await new Promise((resolve) => setTimeout(resolve, 500));
+            if (!includePdf) {
+                for (const [index, fileType] of fileTypes.entries()) {
+                    await downloadFile(fileType, index, fileTypes.length);
+                    if (index < fileTypes.length - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, 500));
+                    }
+                }
+            } else {
+                status.textContent = 'Generando tarjetas de acceso...';
+                for (const [index, fileType] of fileTypes.entries()) {
+                    if (index > 0) await new Promise((resolve) => setTimeout(resolve, 500));
+                    await downloadAccessCards(fileType);
+                }
+                status.textContent = fileTypes.length > 1 ? 'Tarjetas de acceso generadas (alumnos y docentes).' : 'Tarjetas de acceso generadas.';
+                if (omitidos > 0) {
+                    status.className = 'alert alert-warning';
+                    status.textContent += `\n${omitidos} registro(s) sin usuario o contraseña no tienen tarjeta; revisa sus datos.`;
                 }
             }
         } catch (error) {

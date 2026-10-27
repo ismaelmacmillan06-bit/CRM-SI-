@@ -262,4 +262,42 @@
         </div>
     </div>
 </div>
+
+<div class="grid-2" style="margin-bottom:24px">
+    {{-- Servicios adicionales --}}
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📦 Servicios adicionales</span>
+            <span style="font-size:12px; color:var(--text-muted)">
+                {{ $school->services->count() }} de {{ $serviceTypes->count() }} contratados
+            </span>
+        </div>
+        <div class="card-body">
+            @php $contratados = $school->services->pluck('id')->all(); @endphp
+            @if($serviceTypes->isEmpty())
+                <div style="font-size:13px; color:var(--text-muted)">No hay servicios configurados.</div>
+            @else
+            <div class="servicios-grid">
+                @foreach($serviceTypes as $stype)
+                    @php $tiene = in_array($stype->id, $contratados); @endphp
+                    <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px;
+                                border:1px solid {{ $tiene ? $stype->color : 'var(--border)' }};
+                                background:{{ $tiene ? $stype->color.'18' : 'transparent' }};
+                                {{ $tiene ? '' : 'opacity:.45' }}">
+                        <span style="font-size:16px">{{ $stype->icon }}</span>
+                        <span style="font-weight:600; font-size:13.5px; flex:1">{{ $stype->name }}</span>
+                        <span style="font-size:12px; font-weight:600; color:{{ $tiene ? $stype->color : 'var(--text-muted)' }}">
+                            {{ $tiene ? '✓' : '—' }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+<style>
+    .servicios-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    @media (max-width:600px) { .servicios-grid { grid-template-columns:1fr; } }
+</style>
 @endsection

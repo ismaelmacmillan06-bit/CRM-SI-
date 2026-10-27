@@ -139,7 +139,8 @@ foreach ($roles as $role => $consultantId) {
         $formatoResumen = $school->tieneGlobalEduca()
             ? $formatoEntrega->summaryForSchool($school)
             : [];
-        return view('schools.show', compact('school', 'formatoResumen'));
+        $serviceTypes = SchoolServiceType::active()->get();
+        return view('schools.show', compact('school', 'formatoResumen', 'serviceTypes'));
     }
 
     public function edit(School $school)

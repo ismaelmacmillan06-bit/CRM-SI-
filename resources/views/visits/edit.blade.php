@@ -1,17 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Visita')
+@section('title', 'Editar Sesión')
 
 @section('content')
 <div style="max-width: 700px;">
     <div class="card">
         <div class="card-header">
-            <span class="card-title">✏️ Editar visita</span>
+            <span class="card-title">✏️ Editar sesión</span>
             <a href="{{ route('schools.visits.index', $visit->school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ route('visits.update', $visit) }}" enctype="multipart/form-data">
                 @csrf @method('PUT')
+
+                @include('visits.partials.sesion-clasificacion')
 
                 <div class="grid-2">
                     <div class="form-group">
@@ -36,10 +38,10 @@
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="form-group">
+                <div class="grid-2" id="grid-fechas">
+                    <div class="form-group" id="grupo-fecha-programada">
                         <label class="form-label">Fecha programada *</label>
-                        <input type="date" name="scheduled_date" class="form-control"
+                        <input type="date" name="scheduled_date" id="input-scheduled-date" class="form-control"
                                value="{{ old('scheduled_date', $visit->scheduled_date) }}" required>
                     </div>
                     <div class="form-group">
@@ -51,17 +53,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Próxima visita</label>
+                    <label class="form-label">Próxima sesión</label>
                     <input type="date" name="next_visit_date" class="form-control"
                            value="{{ old('next_visit_date', $visit->next_visit_date) }}">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Motivo de visita</label>
+                    <label class="form-label">Motivo de sesión</label>
                     <input type="text" name="motivo" class="form-control"
                            placeholder="Ej: Seguimiento de arranque, capacitación, entrega de bundles..."
                            value="{{ old('motivo', $visit->motivo) }}">
                 </div>
+
+                @include('visits.partials.sesion-productos')
 
                 @include('visits.partials.acudieron-picker', [
                     'selectedIds' => old('attendees', $visit->attendees->pluck('id')->all()),
@@ -102,19 +106,43 @@
 </div>
 
 <script>
-    // La "Fecha realizada" solo es obligatoria si la visita ya está en curso o terminada
+    // Emergencia: sin fecha programada; la fecha realizada pasa a ser obligatoria y ocupa todo el ancho
     const statusSelectVisita = document.querySelector('select[name="status"]');
     const inputVisitDate     = document.getElementById('input-visit-date');
     const labelVisitDate     = document.getElementById('label-visit-date');
+    const gridFechas         = document.getElementById('grid-fechas');
+    const grupoProgramada    = document.getElementById('grupo-fecha-programada');
+    const inputProgramada    = document.getElementById('input-scheduled-date');
+    const radiosTipo         = document.querySelectorAll('input[name="tipo"]');
+    const radiosPrioridad    = document.querySelectorAll('input[name="prioridad"]');
+    const wrapPrioridades    = document.getElementById('ses-prioridades');
+    const hintPrioridad      = document.getElementById('ses-prioridad-hint');
 
-    function actualizarFechaRealizadaRequerida() {
-        const requerida = ['en_curso', 'terminada'].includes(statusSelectVisita.value);
+    function esEmergencia() {
+        return document.querySelector('input[name="tipo"]:checked')?.value === 'emergencia';
+    }
+
+    function actualizarFormularioSesion() {
+        const emergencia = esEmergencia();
+
+        grupoProgramada.style.display = emergencia ? 'none' : '';
+        gridFechas.style.gridTemplateColumns = emergencia ? '1fr' : '';
+        inputProgramada.required = !emergencia;
+
+        if (emergencia) {
+            radiosPrioridad.forEach(r => { r.checked = r.value === 'muy_urgente'; });
+        }
+        wrapPrioridades.classList.toggle('locked', emergencia);
+        hintPrioridad.style.display = emergencia ? 'block' : 'none';
+
+        const requerida = emergencia || ['en_curso', 'terminada'].includes(statusSelectVisita.value);
         inputVisitDate.required = requerida;
         labelVisitDate.textContent = requerida ? 'Fecha realizada *' : 'Fecha realizada';
     }
 
-    statusSelectVisita.addEventListener('change', actualizarFechaRealizadaRequerida);
-    actualizarFechaRealizadaRequerida();
+    statusSelectVisita.addEventListener('change', actualizarFormularioSesion);
+    radiosTipo.forEach(r => r.addEventListener('change', actualizarFormularioSesion));
+    actualizarFormularioSesion();
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js" integrity="sha512-plOdviVmws4Y3JAvbnpfKb2hVxKM1lCwsi3vmElYRj+tiDLffZ4FVUj5a8vyKJ9pIgl8JCAHEJ4D1iUKBecswg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -190,7 +218,7 @@
             function header() {
                 doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
                 doc.setTextColor(...INK);
-                doc.text('REPORTE DE VISITA', margin, y + 7);
+                doc.text('REPORTE DE SESIÓN', margin, y + 7);
 
                 doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
                 doc.setTextColor(...MUTED);
@@ -226,7 +254,7 @@
             const colW = contentW / 2;
             const metaRows = [
                 [['Consultor responsable', consultorNombre], ['Fecha de generación', fechaGeneracion]],
-                [['Estatus', estatusLabel], ['Próxima visita', fechaProxima]],
+                [['Estatus', estatusLabel], ['Próxima sesión', fechaProxima]],
             ];
             metaRows.forEach((fila, ri) => {
                 fila.forEach((celda, ci) => {
@@ -264,8 +292,12 @@
                 y += 6;
             }
 
-            seccion('Motivo de la visita', document.querySelector('input[name="motivo"]').value);
-            seccion('Fecha de la visita (fecha realizada)', formatearFechaInput(document.querySelector('input[name="visit_date"]').value));
+            seccion('Motivo de la sesión', document.querySelector('input[name="motivo"]').value);
+            const selTxt = n => document.querySelector(`input[name="${n}"]:checked`)?.dataset.label || '—';
+            const productosSel = Array.from(document.querySelectorAll('.sesion-producto:checked')).map(c => c.value);
+            seccion('Detalles de la sesión',
+                `Modalidad: ${selTxt('modalidad')}\nTipo: ${selTxt('tipo')}\nPrioridad: ${selTxt('prioridad')}\nProducto(s): ${productosSel.join(', ') || '—'}`);
+            seccion('Fecha de la sesión (fecha realizada)', formatearFechaInput(document.querySelector('input[name="visit_date"]').value));
 
             const nombresAcudieron = window.getAcudieronNombres ? window.getAcudieronNombres() : [];
             seccion('Acudieron', nombresAcudieron.length ? nombresAcudieron.join(', ') : '—');
@@ -314,7 +346,7 @@
 
             const slug = DATOS.colegio.normalize('NFD').replace(/[̀-ͯ]/g, '')
                 .replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
-            doc.save(`reporte-visita-${slug}-${DATOS.visitaId}.pdf`);
+            doc.save(`reporte-sesion-${slug}-${DATOS.visitaId}.pdf`);
         } catch (e) {
             console.error(e);
             alert('No se pudo generar el PDF. Intenta de nuevo.');

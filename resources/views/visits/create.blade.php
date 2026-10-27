@@ -1,17 +1,19 @@
 @extends('layouts.app')
 
-@section('title', 'Nueva Visita')
+@section('title', 'Nueva Sesión')
 
 @section('content')
 <div style="max-width: 700px;">
     <div class="card">
         <div class="card-header">
-            <span class="card-title">📅 Registrar nueva visita</span>
+            <span class="card-title">📅 Registrar nueva sesión</span>
             <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ route('schools.visits.store', $school) }}" enctype="multipart/form-data">
                 @csrf
+
+                @include('visits.partials.sesion-clasificacion')
 
                 <div class="grid-2">
                     <div class="form-group">
@@ -37,10 +39,10 @@
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="form-group">
+                <div class="grid-2" id="grid-fechas">
+                    <div class="form-group" id="grupo-fecha-programada">
                         <label class="form-label">Fecha programada *</label>
-                        <input type="date" name="scheduled_date" class="form-control"
+                        <input type="date" name="scheduled_date" id="input-scheduled-date" class="form-control"
                                value="{{ old('scheduled_date') }}" required>
                         @error('scheduled_date')<small style="color:var(--danger)">{{ $message }}</small>@enderror
                     </div>
@@ -53,24 +55,26 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Próxima visita</label>
+                    <label class="form-label">Próxima sesión</label>
                     <input type="date" name="next_visit_date" class="form-control"
                            value="{{ old('next_visit_date') }}">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Motivo de visita</label>
+                    <label class="form-label">Motivo de sesión</label>
                     <input type="text" name="motivo" class="form-control"
                            placeholder="Ej: Seguimiento de arranque, capacitación, entrega de bundles..."
                            value="{{ old('motivo') }}">
                 </div>
+
+                @include('visits.partials.sesion-productos')
 
                 @include('visits.partials.acudieron-picker', ['selectedIds' => old('attendees', [])])
 
                 <div class="form-group">
                     <label class="form-label">Descripción del problema</label>
                     <textarea name="notes" class="form-control" rows="3"
-                              placeholder="Describe el problema que se atiende en la visita...">{{ old('notes') }}</textarea>
+                              placeholder="Describe el problema que se atiende en la sesión...">{{ old('notes') }}</textarea>
                 </div>
 
                 <div class="form-group">
@@ -88,7 +92,7 @@
 
                 <div style="display:flex; gap:10px; justify-content:flex-end">
                     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Registrar Visita</button>
+                    <button type="submit" class="btn btn-primary">Registrar Sesión</button>
                 </div>
             </form>
         </div>
@@ -96,18 +100,42 @@
 </div>
 
 <script>
-    // La "Fecha realizada" solo es obligatoria si la visita ya está en curso o terminada
+    // Emergencia: sin fecha programada; la fecha realizada pasa a ser obligatoria y ocupa todo el ancho
     const statusSelectVisita = document.querySelector('select[name="status"]');
     const inputVisitDate     = document.getElementById('input-visit-date');
     const labelVisitDate     = document.getElementById('label-visit-date');
+    const gridFechas         = document.getElementById('grid-fechas');
+    const grupoProgramada    = document.getElementById('grupo-fecha-programada');
+    const inputProgramada    = document.getElementById('input-scheduled-date');
+    const radiosTipo         = document.querySelectorAll('input[name="tipo"]');
+    const radiosPrioridad    = document.querySelectorAll('input[name="prioridad"]');
+    const wrapPrioridades    = document.getElementById('ses-prioridades');
+    const hintPrioridad      = document.getElementById('ses-prioridad-hint');
 
-    function actualizarFechaRealizadaRequerida() {
-        const requerida = ['en_curso', 'terminada'].includes(statusSelectVisita.value);
+    function esEmergencia() {
+        return document.querySelector('input[name="tipo"]:checked')?.value === 'emergencia';
+    }
+
+    function actualizarFormularioSesion() {
+        const emergencia = esEmergencia();
+
+        grupoProgramada.style.display = emergencia ? 'none' : '';
+        gridFechas.style.gridTemplateColumns = emergencia ? '1fr' : '';
+        inputProgramada.required = !emergencia;
+
+        if (emergencia) {
+            radiosPrioridad.forEach(r => { r.checked = r.value === 'muy_urgente'; });
+        }
+        wrapPrioridades.classList.toggle('locked', emergencia);
+        hintPrioridad.style.display = emergencia ? 'block' : 'none';
+
+        const requerida = emergencia || ['en_curso', 'terminada'].includes(statusSelectVisita.value);
         inputVisitDate.required = requerida;
         labelVisitDate.textContent = requerida ? 'Fecha realizada *' : 'Fecha realizada';
     }
 
-    statusSelectVisita.addEventListener('change', actualizarFechaRealizadaRequerida);
-    actualizarFechaRealizadaRequerida();
+    statusSelectVisita.addEventListener('change', actualizarFormularioSesion);
+    radiosTipo.forEach(r => r.addEventListener('change', actualizarFormularioSesion));
+    actualizarFormularioSesion();
 </script>
 @endsection

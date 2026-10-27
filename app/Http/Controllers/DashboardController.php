@@ -59,11 +59,11 @@ class DashboardController extends Controller
         $ticketsEnProceso = $schoolScope(Ticket::where('status', 'in_progress'))->count();
         $ticketsResueltos = $schoolScope(Ticket::where('status', 'closed'))->count();
 
-        // Visitas
+        // Sesiones
         $visitasPendientes = $schoolScope(Visit::where('status', 'pendiente'))->count();
         $totalVisitas      = $schoolScope(Visit::query())->count();
 
-        // Detalle de visitas por colegio (pendientes / realizadas), para el ojito de la card
+        // Detalle de sesiones por colegio (pendientes / realizadas), para el ojito de la card
         $visitasDetalle = [
             // Las que no tienen fecha programada van al final, no primero
             'pendientes' => $schoolScope(Visit::with(['school', 'consultant.user']))

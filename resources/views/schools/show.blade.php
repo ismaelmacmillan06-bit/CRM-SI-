@@ -11,9 +11,11 @@
     <a href="{{ route('schools.processes.index', $school) }}" class="btn btn-secondary btn-sm">⚙️ Acciones de Arranque</a>
     <a href="{{ route('schools.teachers.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🏫 Docentes</a>
     <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm">🎫 Tickets</a>
-    <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Visitas</a>
+    <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
     <a href="{{ route('schools.students.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🎓 Alumnos</a>
-    <a href="{{ route('schools.formato-entrega', $school) }}" class="btn btn-secondary btn-sm" data-formato-entrega>📥 Formato de entrega</a>
+    @if($school->tieneGlobalEduca())
+    <a href="{{ route('schools.formato-entrega', $school) }}" class="btn btn-secondary btn-sm" data-formato-entrega>🌐 Formato Global Educa</a>
+    @endif
     <a href="{{ route('schools.bundles.index', $school) }}" class="btn btn-secondary btn-sm">📚 Bundles</a>
     <a href="{{ route('schools.repositorio.index', $school) }}" class="btn btn-secondary btn-sm">📁 Repositorio</a>
     @hasanyrole('admin|consultor_digital|coordinador')
@@ -24,6 +26,7 @@
     </a>
     @endhasanyrole
 </div>
+@if($school->tieneGlobalEduca())
 <div id="formato-entrega-resultado" class="alert alert-success" role="status" aria-live="polite"
     data-student-review-count="{{ $formatoResumen['studentReviewCount'] }}"
     data-student-class-count="{{ $formatoResumen['studentClassCount'] }}"
@@ -39,7 +42,8 @@
         <header class="formato-modal-header">
             <div>
                 <span class="formato-modal-kicker">{{ $school->name }}</span>
-                <h2 id="formato-entrega-titulo">Formato de entrega</h2>
+                <h2 id="formato-entrega-titulo">Formato de entrega Global Educa</h2>
+                <span class="formato-modal-badge">🌐 Exclusivo para colegios Global Educa</span>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" data-formato-cancel aria-label="Cerrar">✕</button>
         </header>
@@ -100,6 +104,10 @@
     .formato-modal-panel::before { content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--accent); }
     .formato-modal-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; }
     .formato-modal-kicker { display:block; margin-bottom:5px; color:var(--text-muted); font-size:12px; }
+    .formato-modal-badge {
+        display:inline-block; margin-top:8px; padding:3px 10px; border-radius:999px; font-size:11.5px;
+        font-weight:600; background:#dcfce7; color:#16a34a;
+    }
     .formato-modal-header h2 { margin:0; font-family:'Bricolage Grotesque',sans-serif; font-size:21px; }
     .formato-tabs {
         display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:22px;
@@ -163,6 +171,7 @@
 <script src="{{ route('schools.formato-entrega.script', $school) }}" defer
     data-accesos-url="{{ route('schools.formato-entrega.accesos', $school) }}"
     data-logo-url="{{ asset('images/logo-global-educa.png') }}"></script>
+@endif
 
 <div class="grid-2" style="margin-bottom:24px">
     {{-- Info general --}}

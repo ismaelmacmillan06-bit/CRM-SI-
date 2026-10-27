@@ -859,7 +859,7 @@ class ReporteController extends Controller
             ['👨‍🏫 Docentes',            $totalDocentes,   'Docentes registrados en el sistema'],
             ['👨‍🎓 Alumnos SI',           $totalAlumnos,    'Alumnos registrados en MEE'],
             ['🎫 Tickets',               $totalTickets,    "Abiertos: {$abiertos}  |  En proceso: {$enProceso}  |  Resueltos: {$resueltos}"],
-            ['📅 Visitas',               $totalVisitas,    "Realizadas: {$visitasTerminadas}  |  Pendientes: " . ($totalVisitas - $visitasTerminadas)],
+            ['📅 Sesiones',               $totalVisitas,    "Realizadas: {$visitasTerminadas}  |  Pendientes: " . ($totalVisitas - $visitasTerminadas)],
             ['📚 Bundles',               $totalBundles,    'Bundles asignados al colegio'],
         ];
 
@@ -1020,9 +1020,9 @@ class ReporteController extends Controller
         // HOJA 6: VISITAS
         // ══════════════════════════════════════════════════════════════════
         $ws6 = $spreadsheet->createSheet(5);
-        $ws6->setTitle('Visitas');
-        $this->sheetTitle($ws6, "Visitas — {$school->name} ({$totalVisitas})", '7C3AED', 8, $generado);
-        $this->writeHeaders($ws6, 4, ['Fecha Programada', 'Fecha Real', 'Status', 'Consultor', 'Notas', 'Resumen', 'Próxima Visita', 'Evidencia'], '7C3AED');
+        $ws6->setTitle('Sesiones');
+        $this->sheetTitle($ws6, "Sesiones — {$school->name} ({$totalVisitas})", '7C3AED', 12, $generado);
+        $this->writeHeaders($ws6, 4, ['Fecha Programada', 'Fecha Real', 'Status', 'Consultor', 'Modalidad', 'Tipo', 'Prioridad', 'Producto(s)', 'Notas', 'Resumen', 'Próxima Sesión', 'Evidencia'], '7C3AED');
 
         $row = 5;
         foreach ($school->visits->sortByDesc('scheduled_date') as $i => $v) {
@@ -1036,6 +1036,10 @@ class ReporteController extends Controller
                 $v->visit_date     ? \Carbon\Carbon::parse($v->visit_date)->format('d/m/Y') : '—',
                 $statusV,
                 $v->consultant?->user->name ?? '—',
+                \App\Models\Visit::MODALIDADES[$v->modalidad] ?? '—',
+                \App\Models\Visit::TIPOS[$v->tipo] ?? '—',
+                \App\Models\Visit::PRIORIDADES[$v->prioridad] ?? '—',
+                implode(', ', $v->productos ?? []) ?: '—',
                 $v->notes ?? '—',
                 $v->summary ?? '—',
                 $v->next_visit_date ? \Carbon\Carbon::parse($v->next_visit_date)->format('d/m/Y') : '—',
@@ -1043,16 +1047,16 @@ class ReporteController extends Controller
 
             $hasImg = false;
             if ($v->evidence) {
-                $hasImg = $this->embedOrLink($ws6, "H{$row}", $v->evidence);
+                $hasImg = $this->embedOrLink($ws6, "L{$row}", $v->evidence);
             } else {
-                $ws6->setCellValue("H{$row}", '—');
+                $ws6->setCellValue("L{$row}", '—');
             }
 
-            if ($i % 2) $this->stripeRow($ws6, $row, 8);
+            if ($i % 2) $this->stripeRow($ws6, $row, 12);
             if ($hasImg) $ws6->getRowDimension($row)->setRowHeight(55);
             $row++;
         }
-        $this->setWidths($ws6, [18, 14, 16, 26, 40, 40, 18, 40]);
+        $this->setWidths($ws6, [18, 14, 16, 26, 14, 16, 14, 28, 40, 40, 18, 40]);
 
         // ══════════════════════════════════════════════════════════════════
         // HOJA 7: BUNDLES

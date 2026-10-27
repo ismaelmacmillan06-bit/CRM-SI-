@@ -89,6 +89,11 @@ public function bundles()
                 ->withTimestamps();
 }
 
+public function tieneGlobalEduca(): bool
+{
+    return $this->services->contains(fn ($s) => mb_strtolower(trim($s->name)) === 'global educa');
+}
+
 public function services()
 {
     return $this->belongsToMany(SchoolServiceType::class, 'school_service', 'school_id', 'school_service_type_id')

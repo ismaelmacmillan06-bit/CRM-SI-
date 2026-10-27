@@ -38,8 +38,8 @@ class VisitController extends Controller
 
         $request->validate([
             'consultant_id'  => 'required|exists:consultants,id',
-            'scheduled_date' => 'required|date',
-            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada'],
+            'scheduled_date' => 'required_unless:tipo,emergencia|nullable|date',
+            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada', 'required_if:tipo,emergencia'],
             'status'         => 'required|in:pendiente,en_curso,terminada',
             'notes'          => 'nullable|string',
             'summary'        => 'nullable|string',
@@ -48,11 +48,23 @@ class VisitController extends Controller
             'evidence'       => 'nullable|image|max:2048',
             'attendees'      => 'nullable|array',
             'attendees.*'    => 'exists:consultants,id',
+            'modalidad'      => 'required|in:presencial,virtual',
+            'tipo'           => 'required|in:programada,emergencia',
+            'prioridad'      => 'required|in:baja,media,alta,muy_urgente',
+            'productos'      => 'required|array|min:1',
+            'productos.*'    => 'in:' . implode(',', Visit::PRODUCTOS),
         ], [
-            'visit_date.required_if' => 'La fecha realizada es obligatoria cuando la visita ya está en curso o terminada.',
+            'scheduled_date.required_unless' => 'La fecha programada es obligatoria para sesiones programadas.',
+            'visit_date.required_if' => 'La fecha realizada es obligatoria en sesiones de emergencia o cuando la sesión ya está en curso o terminada.',
+            'productos.required'     => 'Selecciona al menos un producto.',
+            'productos.min'          => 'Selecciona al menos un producto.',
         ]);
 
         $data = $request->except(['evidence', 'attendees']);
+        if ($data['tipo'] === 'emergencia') {
+            $data['prioridad'] = 'muy_urgente';
+            $data['scheduled_date'] = null;
+        }
 
         if ($request->hasFile('evidence')) {
             $data['evidence'] = $request->file('evidence')->store('evidences', 'public');
@@ -61,11 +73,11 @@ class VisitController extends Controller
         $visit = $school->visits()->create($data);
         $visit->attendees()->sync($request->input('attendees', []));
 
-        $fecha = \Carbon\Carbon::parse($request->scheduled_date)->format('d/m/Y');
-        ActivityLog::log('visita', "Visita agendada para el $fecha (estado: {$request->status})", $school->id, '📅');
+        $fecha = \Carbon\Carbon::parse($request->scheduled_date ?: $request->visit_date)->format('d/m/Y');
+        ActivityLog::log('visita', "Sesión {$request->tipo} registrada para el $fecha (estado: {$request->status})", $school->id, '📅');
 
         return redirect()->route('schools.visits.index', $school)
-                         ->with('success', 'Visita registrada correctamente.');
+                         ->with('success', 'Sesión registrada correctamente.');
     }
 
     public function edit(Visit $visit)
@@ -79,8 +91,8 @@ class VisitController extends Controller
     {
         $request->validate([
             'consultant_id'  => 'required|exists:consultants,id',
-            'scheduled_date' => 'required|date',
-            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada'],
+            'scheduled_date' => 'required_unless:tipo,emergencia|nullable|date',
+            'visit_date'     => ['nullable', 'date', 'required_if:status,en_curso,terminada', 'required_if:tipo,emergencia'],
             'status'         => 'required|in:pendiente,en_curso,terminada',
             'notes'          => 'nullable|string',
             'summary'        => 'nullable|string',
@@ -89,11 +101,23 @@ class VisitController extends Controller
             'evidence'       => 'nullable|image|max:2048',
             'attendees'      => 'nullable|array',
             'attendees.*'    => 'exists:consultants,id',
+            'modalidad'      => 'required|in:presencial,virtual',
+            'tipo'           => 'required|in:programada,emergencia',
+            'prioridad'      => 'required|in:baja,media,alta,muy_urgente',
+            'productos'      => 'required|array|min:1',
+            'productos.*'    => 'in:' . implode(',', Visit::PRODUCTOS),
         ], [
-            'visit_date.required_if' => 'La fecha realizada es obligatoria cuando la visita ya está en curso o terminada.',
+            'scheduled_date.required_unless' => 'La fecha programada es obligatoria para sesiones programadas.',
+            'visit_date.required_if' => 'La fecha realizada es obligatoria en sesiones de emergencia o cuando la sesión ya está en curso o terminada.',
+            'productos.required'     => 'Selecciona al menos un producto.',
+            'productos.min'          => 'Selecciona al menos un producto.',
         ]);
 
         $data = $request->except(['evidence', 'attendees']);
+        if ($data['tipo'] === 'emergencia') {
+            $data['prioridad'] = 'muy_urgente';
+            $data['scheduled_date'] = null;
+        }
 
         if ($request->hasFile('evidence')) {
             if ($visit->evidence) {
@@ -111,11 +135,11 @@ class VisitController extends Controller
             $de = $statusLabel[$oldStatus]        ?? $oldStatus;
             $a  = $statusLabel[$request->status]  ?? $request->status;
             $ico = $request->status === 'terminada' ? '✅' : '🔄';
-            ActivityLog::log('visita', "Visita cambió de $de → $a", $visit->school_id, $ico);
+            ActivityLog::log('visita', "Sesión cambió de $de → $a", $visit->school_id, $ico);
         }
 
         return redirect()->route('schools.visits.index', $visit->school)
-                         ->with('success', 'Visita actualizada correctamente.');
+                         ->with('success', 'Sesión actualizada correctamente.');
     }
 
     public function destroy(Visit $visit)
@@ -126,6 +150,6 @@ class VisitController extends Controller
         }
         $visit->delete();
         return redirect()->route('schools.visits.index', $school)
-                         ->with('success', 'Visita eliminada correctamente.');
+                         ->with('success', 'Sesión eliminada correctamente.');
     }
 }

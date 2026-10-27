@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Dashboard')
 
@@ -87,11 +87,11 @@ function statRow(string $color, string $label, $value): string {
         </div>
     </div>
 
-    {{-- Visitas --}}
+    {{-- Sesiones --}}
     <div style="background:var(--surface); border-radius:12px; padding:18px 20px;
                 border-left:4px solid #0ea5e9; box-shadow:0 1px 4px rgba(0,0,0,0.06)">
         <div style="font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
-                    color:var(--text-muted); margin-bottom:8px">Visitas</div>
+                    color:var(--text-muted); margin-bottom:8px">Sesiones</div>
         <div style="display:flex; align-items:center; gap:10px">
             <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:34px; font-weight:800;
                         color:var(--text); line-height:1">{{ number_format($totalVisitas) }}</div>
@@ -538,22 +538,30 @@ function statRow(string $color, string $label, $value): string {
     </div>
 </div>
 
-{{-- Modal Visitas --}}
+{{-- Modal Sesiones --}}
 <div id="modal-visitas"
      style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
             background:rgba(0,0,0,0.45); padding:20px">
-    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:560px;
+    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:680px;
                 max-height:82vh; display:flex; flex-direction:column;
                 box-shadow:0 20px 60px rgba(0,0,0,0.25)">
         <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);
                     display:flex; align-items:center; gap:10px; flex-shrink:0">
             <div style="flex:1">
                 <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:16px;
-                            font-weight:700; color:var(--text)">Visitas</div>
+                            font-weight:700; color:var(--text)">Sesiones</div>
                 <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
-                    {{ $totalVisitas }} visita(s) en total
+                    {{ $totalVisitas }} sesión(es) en total
                 </div>
             </div>
+            <select id="filtro-producto-dash" onchange="filtrarSesionesDash(this.value)"
+                    style="font-size:12px; padding:5px 8px; border:1px solid var(--border); border-radius:8px;
+                           background:var(--surface); color:var(--text)">
+                <option value="">Todos los productos</option>
+                @foreach(\App\Models\Visit::PRODUCTOS as $producto)
+                    <option value="{{ $producto }}">{{ $producto }}</option>
+                @endforeach
+            </select>
             <button onclick="document.getElementById('modal-visitas').style.display='none';document.body.style.overflow=''"
                     style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--text-muted); line-height:1; padding:4px 8px">✕</button>
         </div>
@@ -561,7 +569,7 @@ function statRow(string $color, string $label, $value): string {
             <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
                         color:#b45309; margin:0 0 8px">⏳ Pendientes ({{ $visitasDetalle['pendientes']->count() }})</div>
             @forelse($visitasDetalle['pendientes'] as $visita)
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;
+            <div class="fila-sesion-dash" data-productos="{{ json_encode($visita->productos ?? []) }}" style="display:flex; align-items:center; justify-content:space-between; gap:10px;
                         padding:9px 0; border-bottom:1px solid var(--border)">
                 <div style="min-width:0">
                     <div style="font-size:13px; font-weight:600; color:var(--text); white-space:nowrap;
@@ -574,6 +582,7 @@ function statRow(string $color, string $label, $value): string {
                             · 📅 {{ \Carbon\Carbon::parse($visita->scheduled_date)->format('d/m/Y') }}
                         @endif
                     </div>
+                    @include('partials.sesion-chips', ['sesion' => $visita])
                 </div>
                 <a href="{{ route('visits.edit', $visita->id) }}"
                    style="flex-shrink:0; padding:6px 14px; background:#fef3c7; color:#b45309;
@@ -585,13 +594,13 @@ function statRow(string $color, string $label, $value): string {
                 </a>
             </div>
             @empty
-            <div style="font-size:12.5px; color:var(--text-muted); padding:6px 0 14px">Ninguna pendiente. 🎉</div>
+            <div class="sin-sesiones-dash" style="font-size:12.5px; color:var(--text-muted); padding:6px 0 14px">Ninguna pendiente. 🎉</div>
             @endforelse
 
             <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
                         color:#16a34a; margin:18px 0 8px">✅ Realizadas ({{ $visitasDetalle['realizadas']->count() }})</div>
             @forelse($visitasDetalle['realizadas'] as $visita)
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;
+            <div class="fila-sesion-dash" data-productos="{{ json_encode($visita->productos ?? []) }}" style="display:flex; align-items:center; justify-content:space-between; gap:10px;
                         padding:9px 0; border-bottom:1px solid var(--border)">
                 <div style="min-width:0">
                     <div style="font-size:13px; font-weight:600; color:var(--text); white-space:nowrap;
@@ -604,6 +613,7 @@ function statRow(string $color, string $label, $value): string {
                             · 📅 {{ \Carbon\Carbon::parse($visita->visit_date)->format('d/m/Y') }}
                         @endif
                     </div>
+                    @include('partials.sesion-chips', ['sesion' => $visita])
                 </div>
                 <a href="{{ route('visits.edit', $visita->id) }}"
                    style="flex-shrink:0; padding:6px 14px; background:#dcfce7; color:#16a34a;
@@ -620,6 +630,15 @@ function statRow(string $color, string $label, $value): string {
         </div>
     </div>
 </div>
+
+<script>
+    function filtrarSesionesDash(producto) {
+        document.querySelectorAll('.fila-sesion-dash').forEach(function (fila) {
+            var productos = JSON.parse(fila.dataset.productos || '[]');
+            fila.style.display = (!producto || productos.indexOf(producto) !== -1) ? 'flex' : 'none';
+        });
+    }
+</script>
 
 {{-- Modales por servicio --}}
 @foreach($colegiosPorServicio as $srvIdx => $srv)
@@ -674,7 +693,7 @@ function statRow(string $color, string $label, $value): string {
 <div id="modal-accion-{{ $accion['id'] }}"
      style="display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center;
             background:rgba(0,0,0,0.45); padding:20px">
-    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:560px;
+    <div style="background:var(--surface); border-radius:14px; width:100%; max-width:680px;
                 max-height:82vh; display:flex; flex-direction:column;
                 box-shadow:0 20px 60px rgba(0,0,0,0.25)">
         <div style="padding:20px 24px 16px; border-bottom:1px solid var(--border);

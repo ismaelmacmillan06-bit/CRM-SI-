@@ -30,6 +30,7 @@ class FormatoEntregaController extends Controller
 
     public function download(School $school, Request $request)
     {
+        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
         set_time_limit(120);
 
         $tipo = $request->query('tipo', 'alumnos');
@@ -114,6 +115,7 @@ class FormatoEntregaController extends Controller
 
     public function accesos(School $school, Request $request)
     {
+        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
         $tipo = $request->query('tipo', 'alumnos');
         abort_unless(in_array($tipo, ['alumnos', 'docentes'], true), 422);
         $data = $tipo === 'alumnos' ? $this->studentData($school) : $this->teacherData($school);
@@ -280,6 +282,7 @@ class FormatoEntregaController extends Controller
 
     public function script(School $school)
     {
+        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
         return response(file_get_contents(public_path('js/formato-entrega.js')), 200, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
             'Cache-Control' => 'no-store',

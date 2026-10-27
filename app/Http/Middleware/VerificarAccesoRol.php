@@ -23,6 +23,11 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Perfil de usuario: cualquier usuario autenticado puede gestionar su propio perfil
+        if ($request->routeIs('profile.*')) {
+            return $next($request);
+        }
+
         // Mis Notas SI: bloc de notas personal — acceso completo (lectura y
         // escritura) para todos los roles por igual; el propio controlador
         // ya limita a cada quien a ver/editar solo sus notas.

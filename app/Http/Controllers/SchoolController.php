@@ -135,8 +135,10 @@ foreach ($roles as $role => $consultantId) {
 
     public function show(School $school, FormatoEntregaController $formatoEntrega)
     {
-        $school->load('consultant', 'levels', 'schoolLevels.level', 'schoolLevels.processes.process', 'meeAdmins');
-        $formatoResumen = $formatoEntrega->summaryForSchool($school);
+        $school->load('consultant', 'levels', 'schoolLevels.level', 'schoolLevels.processes.process', 'meeAdmins', 'services');
+        $formatoResumen = $school->tieneGlobalEduca()
+            ? $formatoEntrega->summaryForSchool($school)
+            : [];
         return view('schools.show', compact('school', 'formatoResumen'));
     }
 

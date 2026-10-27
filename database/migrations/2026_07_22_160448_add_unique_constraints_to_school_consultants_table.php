@@ -9,13 +9,24 @@ return new class extends Migration
     public function up(): void
     {
         // Eliminar duplicados antes de agregar constraints
-        \DB::statement('
-            DELETE sc1 FROM school_consultants sc1
-            INNER JOIN school_consultants sc2
-            WHERE sc1.id > sc2.id
-              AND sc1.school_id = sc2.school_id
-              AND sc1.consultant_id = sc2.consultant_id
-        ');
+        if (\DB::getDriverName() === 'mysql') {
+            \DB::statement('
+                DELETE sc1 FROM school_consultants sc1
+                INNER JOIN school_consultants sc2
+                WHERE sc1.id > sc2.id
+                  AND sc1.school_id = sc2.school_id
+                  AND sc1.consultant_id = sc2.consultant_id
+            ');
+        } elseif (\DB::getDriverName() === 'sqlite') {
+            \DB::statement('
+                DELETE FROM school_consultants
+                WHERE id NOT IN (
+                    SELECT MIN(id)
+                    FROM school_consultants
+                    GROUP BY school_id, consultant_id
+                )
+            ');
+        }
 
         Schema::table('school_consultants', function (Blueprint $table) {
             // Un consultor solo puede tener UN rol por colegio

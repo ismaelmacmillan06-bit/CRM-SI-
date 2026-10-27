@@ -28,6 +28,7 @@ class FormatoEntregaTest extends TestCase
             'consultant_id' => $consultant->id,
             'nexus_id' => 'MEXMP0908389',
         ]);
+        $school->services()->attach(\App\Models\SchoolServiceType::where('name', 'Global Educa')->value('id'));
         $formatController = app(FormatoEntregaController::class);
 
         Student::create([
@@ -182,6 +183,7 @@ class FormatoEntregaTest extends TestCase
             'status' => 'activo',
             'consultant_id' => $consultant->id,
         ]);
+        $school->services()->attach(\App\Models\SchoolServiceType::where('name', 'Global Educa')->value('id'));
         $formatController = app(FormatoEntregaController::class);
 
         $summary = $formatController->summaryForSchool($school);
@@ -206,6 +208,7 @@ class FormatoEntregaTest extends TestCase
             'consultant_id' => $consultant->id,
             'nexus_id' => 'MEXMP0908389',
         ]);
+        $school->services()->attach(\App\Models\SchoolServiceType::where('name', 'Global Educa')->value('id'));
 
         Student::create([
             'school_id' => $school->id,

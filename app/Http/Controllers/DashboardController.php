@@ -303,8 +303,8 @@ class DashboardController extends Controller
             ->join('schools', 'schools.id', '=', 'school_level.school_id')
             ->when($schoolIds, fn($q) => $q->whereIn('school_level.school_id', $schoolIds))
             ->where('schools.status', '!=', 'inactivo')
-            ->selectRaw('processes.id, processes.name, processes.slug, processes.order, COUNT(*) as total,
-                         SUM(CASE WHEN school_level_process.status = "done" THEN 1 ELSE 0 END) as done')
+            ->select('processes.id', 'processes.name', 'processes.slug', 'processes.order')
+            ->selectRaw('COUNT(*) as total, SUM(CASE WHEN school_level_process.status = "done" THEN 1 ELSE 0 END) as done')
             ->groupBy('processes.id', 'processes.name', 'processes.slug', 'processes.order')
             ->orderBy('processes.order')
             ->get()

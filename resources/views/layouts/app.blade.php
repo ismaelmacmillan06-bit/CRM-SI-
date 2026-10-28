@@ -148,7 +148,9 @@
         .nav-group-toggle::-webkit-details-marker { display: none; }
         .nav-group-toggle:hover { background: rgba(255,255,255,0.08); color: #fff; }
         .nav-group[open] > .nav-group-toggle { color: #fff; }
-        .nav-group-arrow { margin-left: auto; font-size: 11px; transition: transform 0.2s; }
+        .nav-group-arrow { margin-left: auto; font-size: 11px; transition: transform 0.6s cubic-bezier(.22,1,.36,1); }
+        .nav-group-items { overflow: hidden; }
+        .nav-group.closing .nav-group-arrow { transform: rotate(0deg); }
         .nav-group[open] .nav-group-arrow { transform: rotate(180deg); }
         .nav-item.nav-subitem { padding-left: 28px; }
 
@@ -525,12 +527,14 @@
                 <span class="nav-icon">🌐</span> Seguimiento
                 <span class="nav-group-arrow">▾</span>
             </summary>
+            <div class="nav-group-items">
             @foreach(\App\Http\Controllers\SeguimientoController::PLATAFORMAS as $slugSeg => $plataformaSeg)
                 <a href="{{ route('seguimiento.show', $slugSeg) }}"
                    class="nav-item nav-subitem {{ request()->routeIs('seguimiento.show') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
                     <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
                 </a>
             @endforeach
+            </div>
         </details>
         @endhasanyrole
         <div class="nav-label">Gestión</div>
@@ -685,6 +689,49 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
+
+    // ── Menús desplegables del sidebar (Seguimiento): abrir suave en 1.5 s ──
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('details.nav-group').forEach(function (group) {
+        const summary = group.querySelector('summary');
+        const items = group.querySelector('.nav-group-items');
+        if (!summary || !items || reduceMotion || !items.animate) return;
+        let animacion = null;
+
+        summary.addEventListener('click', function (e) {
+            e.preventDefault();
+            const abierto = group.open && !group.classList.contains('closing');
+            const altoInicial = items.offsetHeight;
+            animacion?.cancel();
+            group.querySelectorAll('.nav-subitem').forEach(a => a.getAnimations().forEach(x => x.cancel()));
+
+            if (!abierto) {
+                group.classList.remove('closing');
+                group.open = true;
+                const altoFinal = items.scrollHeight;
+                animacion = items.animate(
+                    [{ height: altoInicial + 'px', opacity: 0.3 }, { height: altoFinal + 'px', opacity: 1 }],
+                    { duration: 1500, easing: 'cubic-bezier(.22,1,.36,1)' }
+                );
+                group.querySelectorAll('.nav-subitem').forEach(function (a, i) {
+                    a.animate(
+                        [{ opacity: 0, transform: 'translateX(-14px)' }, { opacity: 1, transform: 'translateX(0)' }],
+                        { duration: 900, delay: 150 + i * 180, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }
+                    );
+                });
+            } else {
+                group.classList.add('closing');
+                animacion = items.animate(
+                    [{ height: altoInicial + 'px', opacity: 1 }, { height: '0px', opacity: 0 }],
+                    { duration: 600, easing: 'cubic-bezier(.4,0,.2,1)' }
+                );
+                animacion.onfinish = function () {
+                    group.open = false;
+                    group.classList.remove('closing');
+                };
+            }
+        });
+    });
 
     // ── Auto-dismiss flash messages ──
     document.querySelectorAll('.alert:not([data-persistent])').forEach(function(el) {

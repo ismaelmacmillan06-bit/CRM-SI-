@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <script>
+        try { if (localStorage.getItem('sic-sidebar-mini') === '1') document.documentElement.classList.add('sidebar-mini'); } catch (e) {}
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -218,6 +221,58 @@
         }
 
         .logout-btn:hover { color: var(--accent); background: rgba(226,35,26,0.1); }
+
+        /* SIDEBAR CONTRAÍDA (solo emojis) — solo escritorio, la elige el usuario */
+        .sidebar-collapse-btn {
+            position: absolute; top: 22px; right: -12px; z-index: 101;
+            width: 24px; height: 24px; border-radius: 50%;
+            border: 2px solid var(--surface2); background: var(--accent); color: #fff;
+            font-size: 12px; line-height: 1; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .sidebar-collapse-btn:hover { background: var(--accent2); transform: scale(1.1); }
+        .sidebar-collapse-btn .icono-abrir { display: none; }
+
+        @media (min-width: 901px) {
+            .sidebar { transition: width 0.35s cubic-bezier(.22,1,.36,1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+            .main { transition: margin-left 0.35s cubic-bezier(.22,1,.36,1); }
+
+            .sidebar-mini .sidebar { width: 68px; }
+            .sidebar-mini .main { margin-left: 68px; }
+            .sidebar-mini .sidebar-collapse-btn .icono-abrir { display: inline; }
+            .sidebar-mini .sidebar-collapse-btn .icono-cerrar { display: none; }
+
+            .sidebar-mini .sidebar-brand { padding: 16px 4px; }
+            .sidebar-mini .sidebar-brand h1 { font-size: 0; }
+            .sidebar-mini .sidebar-brand h1 span { font-size: 16px; }
+            .sidebar-mini .sidebar-brand p { display: none; }
+
+            .sidebar-mini .sidebar-nav { padding: 12px 8px; overflow-x: hidden; }
+            .sidebar-mini .nav-section-toggle { display: none; }
+            .sidebar-mini .nav-section + .nav-section,
+            .sidebar-mini .nav-section + details,
+            .sidebar-mini details + .nav-section { border-top: 1px solid rgba(255,255,255,0.1); margin-top: 6px; padding-top: 6px; }
+
+            .sidebar-mini .nav-item,
+            .sidebar-mini .nav-group-toggle {
+                font-size: 0; justify-content: center; padding: 9px 0; position: relative; gap: 0;
+            }
+            .sidebar-mini .nav-item.nav-subitem { padding-left: 0; }
+            .sidebar-mini .nav-icon { font-size: 16px; width: auto; }
+            .sidebar-mini .nav-group-arrow { display: none; }
+            .sidebar-mini .nav-dot { position: absolute; top: 6px; right: 12px; margin: 0; }
+
+            .sidebar-mini .sidebar-footer { padding: 10px 8px; }
+            .sidebar-mini .user-info { justify-content: center; padding: 6px 0; background: none; }
+            .sidebar-mini .user-info > div:last-child { display: none; }
+            .sidebar-mini .logout-btn { font-size: 0; width: 100%; }
+            .sidebar-mini .logout-btn::before { content: '⏻'; font-size: 15px; }
+        }
+        @media (max-width: 900px) {
+            .sidebar-collapse-btn { display: none; }
+        }
 
         /* MAIN */
         .main {
@@ -500,6 +555,9 @@
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
 <div class="sidebar" id="sidebar">
+    <button type="button" class="sidebar-collapse-btn" id="sidebar-collapse-btn" aria-label="Ocultar menú" title="Ocultar menú">
+        <span class="icono-cerrar">«</span><span class="icono-abrir">»</span>
+    </button>
     <div class="sidebar-brand">
         <h1><span>SI</span>Central</h1>
         <p>CRM de Colegios</p>
@@ -549,7 +607,7 @@
             <div class="nav-group-items">
         <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
             <summary class="nav-group-toggle">
-                <span class="nav-icon">🌐</span> Seguimiento
+                <span class="nav-icon">🧭</span> Seguimiento
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
@@ -724,6 +782,42 @@
         navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
+    // ── Ocultar menú (solo emojis): la preferencia se guarda en este navegador ──
+    const raiz = document.documentElement;
+    const btnMini = document.getElementById('sidebar-collapse-btn');
+    const desplegables = () => document.querySelectorAll('#sidebar details.nav-section, #sidebar details.nav-group');
+    const esMini = () => raiz.classList.contains('sidebar-mini') && window.innerWidth > 900;
+
+    function aplicarMini(mini) {
+        desplegables().forEach(function (d) {
+            if (mini) {
+                if (d.dataset.abiertoAntes === undefined) d.dataset.abiertoAntes = d.open ? '1' : '0';
+                d.open = true;   // en modo emojis se ven todas las opciones
+            } else if (d.dataset.abiertoAntes !== undefined) {
+                d.open = d.dataset.abiertoAntes === '1';
+                delete d.dataset.abiertoAntes;
+            }
+        });
+        // al pasar el mouse se ve el nombre de cada opción
+        document.querySelectorAll('#sidebar .nav-item, #sidebar .nav-group-toggle').forEach(function (el) {
+            if (mini) el.title = el.textContent.replace(/\s+/g, ' ').trim();
+            else el.removeAttribute('title');
+        });
+        if (btnMini) {
+            const txt = mini ? 'Mostrar menú' : 'Ocultar menú';
+            btnMini.title = txt;
+            btnMini.setAttribute('aria-label', txt);
+        }
+    }
+
+    if (raiz.classList.contains('sidebar-mini')) aplicarMini(true);
+    btnMini?.addEventListener('click', function () {
+        const mini = !raiz.classList.contains('sidebar-mini');
+        raiz.classList.toggle('sidebar-mini', mini);
+        try { localStorage.setItem('sic-sidebar-mini', mini ? '1' : '0'); } catch (e) {}
+        aplicarMini(mini);
+    });
+
     // ── Secciones y menús desplegables del sidebar: abrir suave en 1.5 s ──
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('details.nav-group, details.nav-section').forEach(function (group) {
@@ -735,6 +829,7 @@
 
         summary.addEventListener('click', function (e) {
             e.preventDefault();
+            if (esMini()) return;
             const abierto = group.open && !group.classList.contains('closing');
             const altoInicial = items.offsetHeight;
             animacion?.cancel();

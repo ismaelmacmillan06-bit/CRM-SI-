@@ -8,7 +8,7 @@ class SeguimientoController extends Controller
     public const PLATAFORMAS = [
         'meta'          => ['nombre' => 'Meta',          'icono' => '🎯'],
         'global-educa'  => ['nombre' => 'Global Educa',  'icono' => '🌐'],
-        'frances'       => ['nombre' => 'Francés',       'icono' => '🇫🇷'],
+        'frances'       => ['nombre' => 'Francés',       'icono' => '🗼'],
         'red-roo-reads' => ['nombre' => 'Red Roo Reads', 'icono' => '📖'],
     ];
 

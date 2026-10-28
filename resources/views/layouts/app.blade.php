@@ -563,7 +563,7 @@
         <p>CRM de Colegios</p>
     </div>
     <nav class="sidebar-nav">
-        <details class="nav-section" {{ request()->routeIs(['dashboard', 'tareas.*', 'tablero.*', 'bitacora.*', 'avance-colegios.*', 'reporte-semanal.*']) ? 'open' : '' }}>
+        <details class="nav-section" data-menu="principal" open>
             <summary class="nav-label nav-section-toggle">
                 Principal
                 @if(($hayTareaNueva ?? false) || ($hayComunicadoNuevo ?? false))<span class="nav-dot nav-section-dot" title="Hay algo nuevo"></span>@endif
@@ -599,13 +599,13 @@
             </div>
         </details>
         @hasanyrole('admin|consultor_digital')
-        <details class="nav-section" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
+        <details class="nav-section" data-menu="plataformas" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión Plataformas
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
-        <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
+        <details class="nav-group" data-menu="seguimiento" {{ request()->routeIs('seguimiento.*') ? 'open data-forzar-abierto' : '' }}>
             <summary class="nav-group-toggle">
                 <span class="nav-icon">🧭</span> Seguimiento
                 <span class="nav-group-arrow">▾</span>
@@ -622,7 +622,7 @@
             </div>
         </details>
         @endhasanyrole
-        <details class="nav-section" {{ request()->routeIs(['schools.*', 'alumnos-docentes.*', 'ssa.*', 'consultants.*', 'bundles.*', 'herramientas.*', 'produccion.*', 'seguimiento-sic.*', 'configuracion.*', 'notes.*']) ? 'open' : '' }}>
+        <details class="nav-section" data-menu="gestion" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión
                 <span class="nav-group-arrow">▾</span>
@@ -673,6 +673,16 @@
             </div>
         </details>
     </nav>
+    <script>
+        // Restaura qué secciones dejó abiertas o cerradas el usuario (antes de pintar, sin saltos)
+        try {
+            const estado = JSON.parse(localStorage.getItem('sic-menu-estado') || '{}');
+            document.querySelectorAll('#sidebar details[data-menu]').forEach(function (d) {
+                if (d.hasAttribute('data-forzar-abierto')) return;   // la sección de la página actual se queda abierta
+                if (d.dataset.menu in estado) d.open = estado[d.dataset.menu] === 1;
+            });
+        } catch (e) {}
+    </script>
     <div class="sidebar-footer">
         <div class="user-info">
             
@@ -818,6 +828,16 @@
         aplicarMini(mini);
     });
 
+    // Recuerda en este navegador qué secciones abre o cierra el usuario
+    function guardarEstadoMenu(d, abierto) {
+        if (!d.dataset.menu) return;
+        try {
+            const estado = JSON.parse(localStorage.getItem('sic-menu-estado') || '{}');
+            estado[d.dataset.menu] = abierto ? 1 : 0;
+            localStorage.setItem('sic-menu-estado', JSON.stringify(estado));
+        } catch (e) {}
+    }
+
     // ── Secciones y menús desplegables del sidebar: abrir suave en 1.5 s ──
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('details.nav-group, details.nav-section').forEach(function (group) {
@@ -838,6 +858,7 @@
             if (!abierto) {
                 group.classList.remove('closing');
                 group.open = true;
+                guardarEstadoMenu(group, true);
                 const altoFinal = items.scrollHeight;
                 animacion = items.animate(
                     [{ height: altoInicial + 'px', opacity: 0.3 }, { height: altoFinal + 'px', opacity: 1 }],
@@ -853,14 +874,19 @@
                 });
             } else {
                 group.classList.add('closing');
-                animacion = items.animate(
+                const esta = animacion = items.animate(
                     [{ height: altoInicial + 'px', opacity: 1 }, { height: '0px', opacity: 0 }],
-                    { duration: 600, easing: 'cubic-bezier(.4,0,.2,1)' }
+                    { duration: 600, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }
                 );
-                animacion.onfinish = function () {
+                const terminarCierre = function () {
+                    if (animacion !== esta || !group.classList.contains('closing')) return; // ya se reabrió
                     group.open = false;
                     group.classList.remove('closing');
+                    esta.cancel();
+                    guardarEstadoMenu(group, false);
                 };
+                esta.onfinish = terminarCierre;
+                setTimeout(terminarCierre, 650); // respaldo por si el navegador no avisa al terminar
             }
         });
     });

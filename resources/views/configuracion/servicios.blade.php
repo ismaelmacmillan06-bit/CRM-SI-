@@ -20,7 +20,9 @@
             {{-- Lista de servicios --}}
             <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:28px">
                 @forelse($types as $type)
-                <div style="display:flex; align-items:center; gap:12px; padding:12px 16px;
+                @php $errEditar = $errors->getBag('editar_' . $type->id); @endphp
+                <div class="servicio-item" data-editando="{{ $errEditar->any() ? '1' : '0' }}">
+                <div class="servicio-vista" style="display:flex; align-items:center; gap:12px; padding:12px 16px;
                             border:1px solid var(--border); border-radius:10px; background:var(--surface)">
                     <span style="font-size:22px; width:32px; text-align:center">{{ $type->icon }}</span>
                     <div style="flex:1">
@@ -36,6 +38,12 @@
                                      color:{{ $type->active ? '#15803d' : '#64748b' }}">
                             {{ $type->active ? 'Activo' : 'Inactivo' }}
                         </span>
+                        {{-- Editar --}}
+                        <button type="button" class="servicio-btn-editar"
+                                style="padding:5px 10px; border-radius:6px; font-size:12px; font-weight:500;
+                                       cursor:pointer; border:1px solid var(--border); background:var(--surface-alt)">
+                            ✏️ Editar
+                        </button>
                         {{-- Toggle activo --}}
                         <form method="POST" action="{{ route('configuracion.servicios.toggle', $type) }}" style="margin:0">
                             @csrf @method('PATCH')
@@ -56,6 +64,54 @@
                             </button>
                         </form>
                     </div>
+                </div>
+
+                {{-- Edición en línea --}}
+                <form method="POST" action="{{ route('configuracion.servicios.update', $type) }}" class="servicio-editar"
+                      style="padding:14px 16px; border:1px solid var(--accent); border-radius:10px; background:var(--surface)">
+                    @csrf @method('PATCH')
+                    <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:10px">
+                        Editando: {{ $type->name }}
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:end">
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Nombre *</label>
+                            <input type="text" name="name" class="form-control" required maxlength="100"
+                                   value="{{ $errEditar->any() ? old('name', $type->name) : $type->name }}">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Ícono</label>
+                            <input type="text" name="icon" class="form-control" maxlength="4"
+                                   value="{{ $errEditar->any() ? old('icon', $type->icon) : $type->icon }}"
+                                   style="width:64px; text-align:center; font-size:20px">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0">
+                            <label class="form-label">Color</label>
+                            <input type="color" name="color" class="form-control"
+                                   value="{{ $errEditar->any() ? old('color', $type->color) : $type->color }}"
+                                   style="width:48px; height:42px; padding:3px; cursor:pointer">
+                        </div>
+                    </div>
+                    @if($errEditar->any())
+                        <small style="display:block; margin-top:6px; color:var(--danger)">{{ $errEditar->first() }}</small>
+                    @endif
+                    @if(mb_strtolower(trim($type->name)) === 'global educa')
+                        <div style="font-size:11.5px; color:#b45309; background:#fffbeb; border:1px solid #fde68a;
+                                    border-radius:6px; padding:6px 10px; margin-top:8px">
+                            ⚠️ El sistema usa el nombre exacto <strong>Global Educa</strong> para mostrar el Formato de Entrega.
+                            Si lo cambias, ese botón dejará de aparecer en los colegios.
+                        </div>
+                    @endif
+                    @if($type->schools()->count() > 0)
+                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:8px">
+                            Los {{ $type->schools()->count() }} colegio(s) que ya lo tienen lo conservan con el nombre nuevo.
+                        </div>
+                    @endif
+                    <div style="margin-top:12px; display:flex; justify-content:flex-end; gap:8px">
+                        <button type="button" class="btn btn-secondary btn-sm servicio-btn-cancelar">Cancelar</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Guardar cambios</button>
+                    </div>
+                </form>
                 </div>
                 @empty
                 <div style="text-align:center; padding:32px; color:var(--text-muted); font-size:14px">
@@ -102,4 +158,24 @@
     </div>
 
 </div>
+
+<style>
+    .servicio-item .servicio-editar { display: none; }
+    .servicio-item[data-editando="1"] .servicio-vista { display: none !important; }
+    .servicio-item[data-editando="1"] .servicio-editar { display: block; }
+</style>
+<script>
+    document.querySelectorAll('.servicio-item').forEach(function (item) {
+        const form = item.querySelector('.servicio-editar');
+        item.querySelector('.servicio-btn-editar')?.addEventListener('click', function () {
+            document.querySelectorAll('.servicio-item[data-editando="1"]').forEach(o => { if (o !== item) o.dataset.editando = '0'; });
+            item.dataset.editando = '1';
+            form.querySelector('input[name="name"]').focus();
+        });
+        item.querySelector('.servicio-btn-cancelar')?.addEventListener('click', function () {
+            form.reset();
+            item.dataset.editando = '0';
+        });
+    });
+</script>
 @endsection

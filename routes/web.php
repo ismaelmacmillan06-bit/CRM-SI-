@@ -214,6 +214,7 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('configuracion/servicios',                  [SchoolServiceTypeController::class, 'index'])  ->name('configuracion.servicios.index');
      Route::post('configuracion/servicios',                 [SchoolServiceTypeController::class, 'store'])  ->name('configuracion.servicios.store');
      Route::patch('configuracion/servicios/{type}/toggle',  [SchoolServiceTypeController::class, 'toggle']) ->name('configuracion.servicios.toggle');
+     Route::patch('configuracion/servicios/{type}',         [SchoolServiceTypeController::class, 'update']) ->name('configuracion.servicios.update');
      Route::delete('configuracion/servicios/{type}',        [SchoolServiceTypeController::class, 'destroy'])->name('configuracion.servicios.destroy');
 
      // Tareas SI

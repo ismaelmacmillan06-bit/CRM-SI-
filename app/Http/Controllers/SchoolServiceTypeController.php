@@ -35,6 +35,31 @@ class SchoolServiceTypeController extends Controller
         return back()->with('success', "Servicio \"{$request->name}\" creado correctamente.");
     }
 
+    public function update(Request $request, SchoolServiceType $type)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $request->merge(['name' => trim((string) $request->name)]);
+        $request->validateWithBag('editar_' . $type->id, [
+            'name'  => 'required|string|max:100|unique:school_service_types,name,' . $type->id,
+            'icon'  => 'nullable|string|max:10',
+            'color' => 'nullable|string|max:20',
+        ], [
+            'name.unique' => 'Ya existe otro servicio con ese nombre.',
+        ]);
+
+        $anterior = $type->name;
+        $type->update([
+            'name'  => $request->name,
+            'icon'  => $request->icon  ?: $type->icon,
+            'color' => $request->color ?: $type->color,
+        ]);
+
+        $msg = $anterior !== $type->name
+            ? "Servicio \"{$anterior}\" renombrado a \"{$type->name}\"."
+            : "Servicio \"{$type->name}\" actualizado.";
+        return back()->with('success', $msg);
+    }
+
     public function toggle(SchoolServiceType $type)
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);

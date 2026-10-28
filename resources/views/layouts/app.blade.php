@@ -150,8 +150,20 @@
         .nav-group[open] > .nav-group-toggle { color: #fff; }
         .nav-group-arrow { margin-left: auto; font-size: 11px; transition: transform 0.6s cubic-bezier(.22,1,.36,1); }
         .nav-group-items { overflow: hidden; }
-        .nav-group.closing .nav-group-arrow { transform: rotate(0deg); }
-        .nav-group[open] .nav-group-arrow { transform: rotate(180deg); }
+        .nav-section-toggle {
+            display: flex; align-items: center; gap: 6px;
+            cursor: pointer; list-style: none; user-select: none;
+            padding: 6px 10px; border-radius: 6px; transition: color 0.2s;
+        }
+        .nav-section-toggle::-webkit-details-marker { display: none; }
+        .nav-section-toggle:hover, .nav-section[open] > .nav-section-toggle { color: rgba(255,255,255,0.6); }
+        .nav-section-dot { display: none; margin-left: 2px; }
+        .nav-section:not([open]) .nav-section-dot { display: inline-block; }
+        .nav-section.closing .nav-section-dot { display: none; }
+        .nav-group.closing > summary .nav-group-arrow,
+        .nav-section.closing > summary .nav-group-arrow { transform: rotate(0deg) !important; }
+        .nav-group[open] > summary .nav-group-arrow,
+        .nav-section[open] > summary .nav-group-arrow { transform: rotate(180deg); }
         .nav-item.nav-subitem { padding-left: 28px; }
 
         .nav-dot {
@@ -493,7 +505,13 @@
         <p>CRM de Colegios</p>
     </div>
     <nav class="sidebar-nav">
-        <div class="nav-label">Principal</div>
+        <details class="nav-section" {{ request()->routeIs(['dashboard', 'tareas.*', 'tablero.*', 'bitacora.*', 'avance-colegios.*', 'reporte-semanal.*']) ? 'open' : '' }}>
+            <summary class="nav-label nav-section-toggle">
+                Principal
+                @if(($hayTareaNueva ?? false) || ($hayComunicadoNuevo ?? false))<span class="nav-dot nav-section-dot" title="Hay algo nuevo"></span>@endif
+                <span class="nav-group-arrow">▾</span>
+            </summary>
+            <div class="nav-group-items">
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span> Dashboard
         </a>
@@ -520,8 +538,15 @@
             <span class="nav-icon">🗓️</span> Reporte Semanal
         </a>
         @endhasanyrole
+            </div>
+        </details>
         @hasanyrole('admin|consultor_digital')
-        <div class="nav-label">Gestión Plataformas</div>
+        <details class="nav-section" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
+            <summary class="nav-label nav-section-toggle">
+                Gestión Plataformas
+                <span class="nav-group-arrow">▾</span>
+            </summary>
+            <div class="nav-group-items">
         <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
             <summary class="nav-group-toggle">
                 <span class="nav-icon">🌐</span> Seguimiento
@@ -536,8 +561,15 @@
             @endforeach
             </div>
         </details>
+            </div>
+        </details>
         @endhasanyrole
-        <div class="nav-label">Gestión</div>
+        <details class="nav-section" {{ request()->routeIs(['schools.*', 'alumnos-docentes.*', 'ssa.*', 'consultants.*', 'bundles.*', 'herramientas.*', 'produccion.*', 'seguimiento-sic.*', 'configuracion.*', 'notes.*']) ? 'open' : '' }}>
+            <summary class="nav-label nav-section-toggle">
+                Gestión
+                <span class="nav-group-arrow">▾</span>
+            </summary>
+            <div class="nav-group-items">
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios
         </a>
@@ -580,6 +612,8 @@
         <a href="{{ route('notes.index') }}" class="nav-item {{ request()->routeIs('notes.*') ? 'active' : '' }}">
             <span class="nav-icon">📝</span> Mis Notas SI
         </a>
+            </div>
+        </details>
     </nav>
     <div class="sidebar-footer">
         <div class="user-info">
@@ -690,11 +724,12 @@
         navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    // ── Menús desplegables del sidebar (Seguimiento): abrir suave en 1.5 s ──
+    // ── Secciones y menús desplegables del sidebar: abrir suave en 1.5 s ──
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('details.nav-group').forEach(function (group) {
-        const summary = group.querySelector('summary');
-        const items = group.querySelector('.nav-group-items');
+    document.querySelectorAll('details.nav-group, details.nav-section').forEach(function (group) {
+        const summary = group.querySelector(':scope > summary');
+        const items = group.querySelector(':scope > .nav-group-items');
+        const hijos = () => items.querySelectorAll(':scope > .nav-item, :scope > details > summary');
         if (!summary || !items || reduceMotion || !items.animate) return;
         let animacion = null;
 
@@ -703,7 +738,7 @@
             const abierto = group.open && !group.classList.contains('closing');
             const altoInicial = items.offsetHeight;
             animacion?.cancel();
-            group.querySelectorAll('.nav-subitem').forEach(a => a.getAnimations().forEach(x => x.cancel()));
+            hijos().forEach(a => a.getAnimations().forEach(x => x.cancel()));
 
             if (!abierto) {
                 group.classList.remove('closing');
@@ -713,10 +748,12 @@
                     [{ height: altoInicial + 'px', opacity: 0.3 }, { height: altoFinal + 'px', opacity: 1 }],
                     { duration: 1500, easing: 'cubic-bezier(.22,1,.36,1)' }
                 );
-                group.querySelectorAll('.nav-subitem').forEach(function (a, i) {
+                const lista = hijos();
+                const paso = Math.min(180, 700 / Math.max(lista.length, 1));
+                lista.forEach(function (a, i) {
                     a.animate(
                         [{ opacity: 0, transform: 'translateX(-14px)' }, { opacity: 1, transform: 'translateX(0)' }],
-                        { duration: 900, delay: 150 + i * 180, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }
+                        { duration: 900, delay: 150 + i * paso, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }
                     );
                 });
             } else {

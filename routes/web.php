@@ -26,7 +26,7 @@ use App\Http\Controllers\SeguimientoSicController;
 use App\Http\Controllers\AlumnosDocentesController;
 use App\Http\Controllers\AvanceColegiosController;
 use App\Http\Controllers\ProduccionController;
-use App\Http\Controllers\SeguimientoExternoController;
+use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\ReporteSemanalController;
 
@@ -198,11 +198,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::post('produccion/cargar', [ProduccionController::class, 'upload'])->name('produccion.upload');
      Route::delete('produccion', [ProduccionController::class, 'destroy'])->name('produccion.destroy');
 
-     // Seguimiento Externo (beta) — Meta, Read Roo Reads y Espacevirtuel por colegio (solo admin / consultor_digital)
-     Route::get('seguimiento-externo', [SeguimientoExternoController::class, 'index'])->name('seguimiento-externo.index');
-     Route::get('seguimiento-externo/{school}', [SeguimientoExternoController::class, 'platforms'])->name('seguimiento-externo.school');
-     Route::get('seguimiento-externo/{school}/{platform}', [SeguimientoExternoController::class, 'checklist'])->name('seguimiento-externo.checklist');
-     Route::post('seguimiento-externo/{school}/{platform}/{item}', [SeguimientoExternoController::class, 'update'])->name('seguimiento-externo.update');
+     // Seguimiento — Meta, Global Educa, Francés y Red Roo Reads (solo admin / consultor_digital)
+     Route::get('seguimiento/{plataforma}', [SeguimientoController::class, 'show'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.show');
 
      // Reporte Semanal — novedades de la semana por consultor digital (solo admin / consultor_digital)
      Route::get('reporte-semanal',            [ReporteSemanalController::class, 'index'])   ->name('reporte-semanal.index');

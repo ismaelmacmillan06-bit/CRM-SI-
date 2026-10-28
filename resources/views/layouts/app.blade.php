@@ -130,6 +130,28 @@
 
         .nav-icon { font-size: 14px; width: 18px; text-align: center; }
 
+        /* Menú desplegable (ej. Seguimiento) */
+        .nav-group-toggle {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 10px;
+            border-radius: 7px;
+            color: rgba(255,255,255,0.6);
+            font-size: 13px;
+            cursor: pointer;
+            list-style: none;
+            transition: all 0.2s;
+            margin-bottom: 1px;
+            user-select: none;
+        }
+        .nav-group-toggle::-webkit-details-marker { display: none; }
+        .nav-group-toggle:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-group[open] > .nav-group-toggle { color: #fff; }
+        .nav-group-arrow { margin-left: auto; font-size: 11px; transition: transform 0.2s; }
+        .nav-group[open] .nav-group-arrow { transform: rotate(180deg); }
+        .nav-item.nav-subitem { padding-left: 28px; }
+
         .nav-dot {
             display: inline-block;
             width: 7px;
@@ -529,9 +551,18 @@
         <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
             <span class="nav-icon">📈</span> Seguimiento SIC
         </a>
-        <a href="{{ route('seguimiento-externo.index') }}" class="nav-item {{ request()->routeIs('seguimiento-externo.*') ? 'active' : '' }}">
-            <span class="nav-icon">🌐</span> Seguimiento Externo <span style="font-size:9px; font-weight:700; color:var(--accent); margin-left:4px">BETA</span>
-        </a>
+        <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
+            <summary class="nav-group-toggle">
+                <span class="nav-icon">🌐</span> Seguimiento
+                <span class="nav-group-arrow">▾</span>
+            </summary>
+            @foreach(\App\Http\Controllers\SeguimientoController::PLATAFORMAS as $slugSeg => $plataformaSeg)
+                <a href="{{ route('seguimiento.show', $slugSeg) }}"
+                   class="nav-item nav-subitem {{ request()->routeIs('seguimiento.show') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
+                    <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
+                </a>
+            @endforeach
+        </details>
         @endhasanyrole
         @hasrole('admin')
         <a href="{{ route('configuracion.servicios.index') }}" class="nav-item {{ request()->routeIs('configuracion.*') ? 'active' : '' }}">

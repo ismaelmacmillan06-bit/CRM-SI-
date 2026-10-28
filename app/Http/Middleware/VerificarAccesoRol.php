@@ -60,8 +60,8 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Seguimiento Externo (beta): solo admin y consultor_digital
-        if ($request->routeIs('seguimiento-externo.*') && !$user->hasRole('consultor_digital')) {
+        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads): solo admin y consultor_digital
+        if ($request->routeIs('seguimiento.*') && !$user->hasRole('consultor_digital')) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }

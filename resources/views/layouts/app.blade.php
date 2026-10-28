@@ -518,6 +518,21 @@
             <span class="nav-icon">🗓️</span> Reporte Semanal
         </a>
         @endhasanyrole
+        @hasanyrole('admin|consultor_digital')
+        <div class="nav-label">Gestión Plataformas</div>
+        <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
+            <summary class="nav-group-toggle">
+                <span class="nav-icon">🌐</span> Seguimiento
+                <span class="nav-group-arrow">▾</span>
+            </summary>
+            @foreach(\App\Http\Controllers\SeguimientoController::PLATAFORMAS as $slugSeg => $plataformaSeg)
+                <a href="{{ route('seguimiento.show', $slugSeg) }}"
+                   class="nav-item nav-subitem {{ request()->routeIs('seguimiento.show') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
+                    <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
+                </a>
+            @endforeach
+        </details>
+        @endhasanyrole
         <div class="nav-label">Gestión</div>
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios
@@ -551,18 +566,6 @@
         <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
             <span class="nav-icon">📈</span> Seguimiento SIC
         </a>
-        <details class="nav-group" {{ request()->routeIs('seguimiento.*') ? 'open' : '' }}>
-            <summary class="nav-group-toggle">
-                <span class="nav-icon">🌐</span> Seguimiento
-                <span class="nav-group-arrow">▾</span>
-            </summary>
-            @foreach(\App\Http\Controllers\SeguimientoController::PLATAFORMAS as $slugSeg => $plataformaSeg)
-                <a href="{{ route('seguimiento.show', $slugSeg) }}"
-                   class="nav-item nav-subitem {{ request()->routeIs('seguimiento.show') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
-                    <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
-                </a>
-            @endforeach
-        </details>
         @endhasanyrole
         @hasrole('admin')
         <a href="{{ route('configuracion.servicios.index') }}" class="nav-item {{ request()->routeIs('configuracion.*') ? 'active' : '' }}">

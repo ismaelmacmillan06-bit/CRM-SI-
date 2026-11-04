@@ -211,13 +211,12 @@
 <div class="card" style="margin-bottom:20px">
     <div class="card-body" style="padding:16px 24px">
         <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:space-between">
-            <div style="display:flex; gap:10px; align-items:center">
-                <input type="text" id="buscador" class="form-control"
-                       placeholder="🔍 Buscar en esta página por nombre, apellido o usuario MEE..."
-                       style="max-width:400px">
-                <span id="contador" style="font-size:13px; color:var(--text-muted)"></span>
+            <div style="flex:1; min-width:240px; max-width:460px">
+                <input type="search" id="buscador" class="form-control" value="{{ $q }}" autocomplete="off"
+                       placeholder="🔍 Buscar por nombre, apellido o usuario MEE...">
             </div>
             <form method="GET" style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-muted)">
+                <input type="hidden" name="q" id="per_page_q" value="{{ $q }}">
                 <label for="per_page" style="white-space:nowrap">Mostrar</label>
                 <select name="per_page" id="per_page" class="form-control" style="width:auto; padding:6px 10px"
                         onchange="this.form.submit()">
@@ -234,8 +233,8 @@
 <div class="card">
     <div class="card-header">
         <span class="card-title">👨‍🎓 Alumnos — {{ $school->name }}</span>
-        <span style="font-size:13px; color:var(--text-muted)">
-            {{ $students->total() }} registrados
+        <span id="alumnos-resumen" style="font-size:13px; color:var(--text-muted)">
+            {{ $students->total() }} {{ $q !== '' ? ($students->total() === 1 ? 'resultado' : 'resultados') : 'registrados' }}
             @if($students->lastPage() > 1)
                 · página {{ $students->currentPage() }} de {{ $students->lastPage() }}
             @endif
@@ -252,7 +251,7 @@
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="alumnos-tbody">
             @forelse($students as $student)
             <tr>
                 <td><strong>{{ $student->name }} {{ $student->last_name }}</strong></td>
@@ -305,15 +304,20 @@
             @empty
             <tr>
                 <td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px">
-                    No hay alumnos registrados.
-                    <a href="{{ route('schools.students.create', $school) }}">Agrega uno</a>,
-                    usa la <strong>carga masiva Excel</strong> o la <strong>carga masiva PDF</strong>.
+                    @if($q !== '')
+                        No se encontró ningún alumno con "{{ $q }}" en este colegio.
+                    @else
+                        No hay alumnos registrados.
+                        <a href="{{ route('schools.students.create', $school) }}">Agrega uno</a>,
+                        usa la <strong>carga masiva Excel</strong> o la <strong>carga masiva PDF</strong>.
+                    @endif
                 </td>
             </tr>
             @endforelse
         </tbody>
     </table>
 
+    <div id="alumnos-paginador">
     @if($students->lastPage() > 1)
     <div style="display:flex; align-items:center; justify-content:center; gap:10px; padding:16px; border-top:1px solid var(--border, #e5e7eb)">
         @if($students->onFirstPage())
@@ -333,59 +337,76 @@
         @endif
     </div>
     @endif
+    </div>
 </div>
 
 
 <script>
-// ===== Buscador (ignora la columna de contraseña) =====
+// ===== Buscador: consulta todos los alumnos del colegio en el servidor =====
 const buscador = document.getElementById('buscador');
-const contador = document.getElementById('contador');
-const filas    = document.querySelectorAll('tbody tr');
+const perPageQ = document.getElementById('per_page_q');
+let esperaBusqueda = null;
+let peticionBusqueda = null;
 
-buscador.addEventListener('input', function() {
-    const query = this.value.toLowerCase().trim();
-    let visibles = 0;
+async function buscarAlumnos() {
+    const q = buscador.value.trim();
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
 
-    filas.forEach(fila => {
-        const celdas = fila.querySelectorAll('td');
-        if (celdas.length < 4) return; // fila de "no hay alumnos"
-        // Solo nombre, nivel, grado y usuario MEE (columnas 0 a 3)
-        const texto = [celdas[0], celdas[1], celdas[2], celdas[3]]
-            .map(c => c.innerText.toLowerCase()).join(' ');
+    peticionBusqueda?.abort();
+    peticionBusqueda = new AbortController();
 
-        if (texto.includes(query)) {
-            fila.style.display = '';
-            visibles++;
-        } else {
-            fila.style.display = 'none';
-        }
-    });
+    try {
+        const respuesta = await fetch(url, { credentials: 'same-origin', signal: peticionBusqueda.signal });
+        const doc = new DOMParser().parseFromString(await respuesta.text(), 'text/html');
+        const partes = ['alumnos-tbody', 'alumnos-resumen', 'alumnos-paginador'];
+        if (!respuesta.ok || partes.some(id => !doc.getElementById(id))) throw new Error('respuesta inesperada');
 
-    contador.textContent = query ? `${visibles} resultado(s)` : '';
+        partes.forEach(id => { document.getElementById(id).innerHTML = doc.getElementById(id).innerHTML; });
+        history.replaceState(null, '', url);
+        perPageQ.value = q;
+    } catch (error) {
+        if (error.name !== 'AbortError') window.location.href = url; // ej. la sesión expiró
+    }
+}
+
+buscador.addEventListener('input', function () {
+    clearTimeout(esperaBusqueda);
+    esperaBusqueda = setTimeout(buscarAlumnos, 300);
+});
+buscador.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    clearTimeout(esperaBusqueda);
+    buscarAlumnos();
 });
 
 buscador.focus();
+buscador.setSelectionRange(buscador.value.length, buscador.value.length);
 
 // ===== Mostrar / ocultar contraseñas =====
-document.querySelectorAll('.pwd-toggle').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const cont = this.closest('div');
-        const dots = cont.querySelector('.pwd-dots');
-        const real = cont.querySelector('.pwd-real');
+// Delegado en el tbody porque las filas se reemplazan al buscar
+document.getElementById('alumnos-tbody').addEventListener('click', function (e) {
+    const btn = e.target.closest('.pwd-toggle');
+    if (!btn) return;
 
-        const eyeOpen = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
-        const eyeOff  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+    const cont = btn.closest('div');
+    const dots = cont.querySelector('.pwd-dots');
+    const real = cont.querySelector('.pwd-real');
 
-        if (real.style.display === 'none') {
-            real.style.display = '';
-            dots.style.display = 'none';
-            this.innerHTML = eyeOff;   // contraseña visible → mostrar ojo tachado
-        } else {
-            real.style.display = 'none';
-            dots.style.display = '';
-            this.innerHTML = eyeOpen;  // contraseña oculta → mostrar ojo normal
-        }
-    });
+    const eyeOpen = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const eyeOff  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+    if (real.style.display === 'none') {
+        real.style.display = '';
+        dots.style.display = 'none';
+        btn.innerHTML = eyeOff;   // contraseña visible → mostrar ojo tachado
+    } else {
+        real.style.display = 'none';
+        dots.style.display = '';
+        btn.innerHTML = eyeOpen;  // contraseña oculta → mostrar ojo normal
+    }
 });
 </script>
 @endsection

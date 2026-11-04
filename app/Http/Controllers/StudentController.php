@@ -25,7 +25,23 @@ class StudentController extends Controller
             $perPage = 50;
         }
 
+        // La búsqueda corre en el servidor sobre todos los alumnos del colegio, no solo la
+        // página actual. Cada palabra debe aparecer en algún campo, así "Leonardo Gonzales"
+        // encuentra al alumno aunque el nombre y el apellido estén en columnas distintas.
+        $q = trim((string) $request->query('q', ''));
+        $terminos = preg_split('/\s+/u', $q, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
         $students = $school->students()
+            ->when($terminos !== [], function ($query) use ($terminos) {
+                foreach ($terminos as $termino) {
+                    $like = '%' . addcslashes($termino, '\\%_') . '%';
+                    $query->where(function ($sub) use ($like) {
+                        foreach (['name', 'last_name', 'mee_username', 'level', 'grade'] as $columna) {
+                            $sub->orWhere($columna, 'like', $like);
+                        }
+                    });
+                }
+            })
             ->orderBy('level')->orderBy('grade')->orderBy('name')
             ->paginate($perPage)
             ->withQueryString();
@@ -50,7 +66,7 @@ class StudentController extends Controller
         }
         $porNivel = $porNivel->sortKeys();
 
-        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage'));
+        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage', 'q'));
     }
 
     public function create(School $school)

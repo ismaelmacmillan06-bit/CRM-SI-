@@ -91,7 +91,13 @@ public function bundles()
 
 public function tieneGlobalEduca(): bool
 {
-    return $this->services->contains(fn ($s) => mb_strtolower(trim($s->name)) === 'global educa');
+    return $this->tienePlataforma('global-educa');
+}
+
+// La plataforma se identifica por la clave del servicio, nunca por su nombre o ID
+public function tienePlataforma(string $plataforma): bool
+{
+    return $this->services->contains(fn ($s) => $s->plataforma === $plataforma);
 }
 
 public function services()

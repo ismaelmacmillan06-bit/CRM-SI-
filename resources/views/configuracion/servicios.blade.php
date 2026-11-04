@@ -29,6 +29,9 @@
                         <div style="font-weight:600; font-size:14px; color:var(--text)">{{ $type->name }}</div>
                         <div style="font-size:11.5px; color:var(--text-muted); margin-top:1px">
                             {{ $type->schools()->count() }} colegio(s) asignados
+                            @if($type->plataforma && isset($plataformas[$type->plataforma]))
+                                · 🧭 {{ $plataformas[$type->plataforma]['nombre'] }}
+                            @endif
                         </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px">
@@ -92,15 +95,19 @@
                                    style="width:48px; height:42px; padding:3px; cursor:pointer">
                         </div>
                     </div>
+                    <div class="form-group" style="margin:10px 0 0">
+                        <label class="form-label">Gestor de plataformas</label>
+                        @php $plataformaActual = $errEditar->any() ? old('plataforma', $type->plataforma) : $type->plataforma; @endphp
+                        <select name="plataforma" class="form-control">
+                            <option value="">Ninguna</option>
+                            @foreach($plataformas as $clave => $plataforma)
+                                <option value="{{ $clave }}" @selected($plataformaActual === $clave)>{{ $plataforma['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                        <small style="color:var(--text-muted)">Liga este servicio con su apartado de Seguimiento. Puedes cambiar el nombre sin perder la relación.</small>
+                    </div>
                     @if($errEditar->any())
                         <small style="display:block; margin-top:6px; color:var(--danger)">{{ $errEditar->first() }}</small>
-                    @endif
-                    @if(mb_strtolower(trim($type->name)) === 'global educa')
-                        <div style="font-size:11.5px; color:#b45309; background:#fffbeb; border:1px solid #fde68a;
-                                    border-radius:6px; padding:6px 10px; margin-top:8px">
-                            ⚠️ El sistema usa el nombre exacto <strong>Global Educa</strong> para mostrar el Formato de Entrega.
-                            Si lo cambias, ese botón dejará de aparecer en los colegios.
-                        </div>
                     @endif
                     @if($type->schools()->count() > 0)
                         <div style="font-size:11.5px; color:var(--text-muted); margin-top:8px">
@@ -147,6 +154,18 @@
                                    value="{{ old('color', '#6366f1') }}"
                                    style="width:48px; height:42px; padding:3px; cursor:pointer">
                         </div>
+                    </div>
+                    <div class="form-group" style="margin:12px 0 0">
+                        <label class="form-label">Gestor de plataformas</label>
+                        <select name="plataforma" class="form-control">
+                            <option value="">Ninguna</option>
+                            @foreach($plataformas as $clave => $plataforma)
+                                <option value="{{ $clave }}" @selected(old('plataforma') === $clave)>{{ $plataforma['nombre'] }}</option>
+                            @endforeach
+                        </select>
+                        @error('plataforma')
+                        <small style="color:var(--danger)">{{ $message }}</small>
+                        @enderror
                     </div>
                     <div style="margin-top:14px; text-align:right">
                         <button type="submit" class="btn btn-primary">Guardar servicio</button>

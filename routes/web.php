@@ -202,6 +202,12 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('seguimiento/{plataforma}', [SeguimientoController::class, 'show'])
           ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
           ->name('seguimiento.show');
+     Route::get('seguimiento/{plataforma}/{school}', [SeguimientoController::class, 'colegio'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.colegio');
+     Route::post('seguimiento/{plataforma}/{school}', [SeguimientoController::class, 'guardar'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.guardar');
      // La sección vieja "Seguimiento Externo" se eliminó: sus ligas guardadas llevan al nuevo Seguimiento
      Route::redirect('seguimiento-externo/{any?}', '/seguimiento/meta')->where('any', '.*');
 

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SchoolServiceType extends Model
 {
-    protected $fillable = ['name', 'icon', 'color', 'order', 'active'];
+    protected $fillable = ['name', 'icon', 'color', 'order', 'active', 'plataforma'];
 
     protected $casts = ['active' => 'boolean'];
 

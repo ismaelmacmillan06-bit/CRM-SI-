@@ -613,7 +613,7 @@
             <div class="nav-group-items">
             @foreach(\App\Http\Controllers\SeguimientoController::PLATAFORMAS as $slugSeg => $plataformaSeg)
                 <a href="{{ route('seguimiento.show', $slugSeg) }}"
-                   class="nav-item nav-subitem {{ request()->routeIs('seguimiento.show') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
+                   class="nav-item nav-subitem {{ request()->routeIs('seguimiento.*') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
                     <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
                 </a>
             @endforeach

@@ -56,6 +56,7 @@
             <tr>
                 <th>Colegio</th>
                 <th>Consultor digital</th>
+                <th>Niveles</th>
                 <th style="min-width:180px">Avance</th>
                 <th>Siguiente acción</th>
                 <th></th>
@@ -69,6 +70,15 @@
                     <div style="font-size:12px; color:var(--text-muted)">{{ $fila['colegio']->state ?? $fila['colegio']->city ?? '—' }}</div>
                 </td>
                 <td style="font-size:13px">{{ $fila['consultor'] ?? 'Sin asignar' }}</td>
+                <td>
+                    <div style="display:flex; flex-wrap:wrap; gap:4px; max-width:220px">
+                        @forelse($fila['colegio']->levels as $nivel)
+                            <span class="badge badge-info">{{ $nivel->name }}</span>
+                        @empty
+                            <span style="color:var(--text-muted)">—</span>
+                        @endforelse
+                    </div>
+                </td>
                 <td>
                     <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:4px">
                         <span>{{ $fila['hechas'] }}/{{ $totalAcciones }}</span>
@@ -93,7 +103,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="5" style="text-align:center; color:var(--text-muted); padding:40px">
+                <td colspan="6" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay colegios con {{ $nombre }}. Márcalo en <strong>Servicios adicionales</strong> al editar un colegio.
                 </td>
             </tr>

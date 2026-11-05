@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\SeguimientoController;
 use App\Models\ActivityLog;
 use App\Models\Consultant;
+use App\Models\Level;
 use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
@@ -64,6 +65,16 @@ class SeguimientoTest extends TestCase
             ->assertDontSee('Sin servicio')
             ->assertDontSee('Inactivo con servicio')
             ->assertSee('Kickoff (contacto con el colegio)');
+    }
+
+    public function test_school_levels_are_shown_in_dashboard_and_detail(): void
+    {
+        $school = $this->colegio('Con niveles');
+        $school->levels()->attach(Level::create(['name' => 'Nivel de prueba'])->id);
+
+        $this->actingAs($this->usuario('admin'));
+        $this->get(route('seguimiento.show', 'global-educa'))->assertSee('Nivel de prueba');
+        $this->get(route('seguimiento.colegio', ['global-educa', $school]))->assertSee('Nivel de prueba');
     }
 
     public function test_renaming_the_service_does_not_break_the_relation(): void

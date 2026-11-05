@@ -17,6 +17,15 @@
             <span style="font-size:13px; color:var(--text-muted)">{{ $hechas }}/{{ $total }} completadas</span>
         </div>
 
+        <div style="padding:16px 24px 0; display:flex; flex-wrap:wrap; align-items:center; gap:6px">
+            <span style="font-size:13px; color:var(--text-muted); margin-right:4px">Niveles:</span>
+            @forelse($school->levels as $nivel)
+                <span class="badge badge-info">{{ $nivel->name }}</span>
+            @empty
+                <span style="font-size:13px; color:var(--text-muted)">Sin niveles registrados</span>
+            @endforelse
+        </div>
+
         <div style="padding:16px 24px 0">
             <div style="background:var(--surface2); border-radius:20px; height:7px; overflow:hidden">
                 <div style="height:100%; width:{{ round($hechas / $total * 100) }}%; border-radius:20px;

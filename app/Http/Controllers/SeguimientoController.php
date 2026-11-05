@@ -44,7 +44,7 @@ class SeguimientoController extends Controller
         $servicioLigado = SchoolServiceType::where('plataforma', $plataforma)->exists();
 
         $colegios = $this->colegiosDe($plataforma)
-            ->with(['schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')])
+            ->with(['levels', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')])
             ->orderBy('name')
             ->get();
 

@@ -141,6 +141,7 @@ class AlumnosDocentesController extends Controller
                 'nombre'      => trim($s->name . ' ' . $s->last_name),
                 'usuario'     => $s->mee_username,
                 'contrasena'  => $s->mee_password,
+                'detalle'     => collect([$s->level, $s->grade])->filter()->implode(' · '),
                 'school_id'   => $s->school_id,
                 'school_name' => $s->school?->name ?? '—',
             ]);
@@ -153,6 +154,7 @@ class AlumnosDocentesController extends Controller
                 'nombre'      => trim($t->name . ' ' . $t->last_name),
                 'usuario'     => $t->mee_username,
                 'contrasena'  => $t->mee_password,
+                'detalle'     => collect([$t->subject, $t->grade])->filter()->implode(' · '),
                 'school_id'   => $t->school_id,
                 'school_name' => $t->school?->name ?? '—',
             ]);

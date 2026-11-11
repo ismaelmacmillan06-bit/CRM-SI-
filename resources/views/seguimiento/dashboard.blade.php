@@ -97,8 +97,14 @@
                     @endif
                 </td>
                 <td style="text-align:right">
-                    <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn btn-secondary btn-sm"
-                       style="white-space:nowrap">Gestionar →</a>
+                    <div style="display:inline-flex; gap:6px; flex-wrap:nowrap; justify-content:flex-end">
+                        <a href="{{ route('schools.tickets.index', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
+                           style="white-space:nowrap" title="Tickets de {{ $fila['colegio']->name }}">🎫 Tickets</a>
+                        <a href="{{ route('schools.visits.index', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
+                           style="white-space:nowrap" title="Sesiones de {{ $fila['colegio']->name }}">📅 Sesiones</a>
+                        <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn btn-secondary btn-sm"
+                           style="white-space:nowrap">Gestionar →</a>
+                    </div>
                 </td>
             </tr>
             @empty

@@ -67,6 +67,19 @@ class SeguimientoTest extends TestCase
             ->assertSee('Kickoff (contacto con el colegio)');
     }
 
+    public function test_dashboard_and_detail_link_to_school_tickets_and_sessions(): void
+    {
+        $school = $this->colegio('Con accesos directos');
+        $this->actingAs($this->usuario('admin'));
+
+        foreach ([route('seguimiento.show', 'global-educa'), route('seguimiento.colegio', ['global-educa', $school])] as $url) {
+            $this->get($url)
+                ->assertOk()
+                ->assertSee(route('schools.tickets.index', $school), false)
+                ->assertSee(route('schools.visits.index', $school), false);
+        }
+    }
+
     public function test_school_levels_are_shown_in_dashboard_and_detail(): void
     {
         $school = $this->colegio('Con niveles');

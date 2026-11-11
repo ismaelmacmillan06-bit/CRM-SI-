@@ -5,8 +5,10 @@
 @section('content')
 @php $total = count($acciones); @endphp
 
-<div style="margin-bottom:20px">
+<div style="margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap">
     <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm" style="margin-left:auto">🎫 Tickets</a>
+    <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
 </div>
 
 <form method="POST" action="{{ route('seguimiento.guardar', [$slug, $school]) }}">

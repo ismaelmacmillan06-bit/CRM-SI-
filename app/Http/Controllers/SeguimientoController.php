@@ -19,7 +19,15 @@ class SeguimientoController extends Controller
     // guarda en school_service_types.plataforma. Sin 'acciones' la página queda "en construcción".
     public const PLATAFORMAS = [
         // Meta no lleva acciones de arranque: usa su agenda de exámenes (tabla seguimiento_meta)
-        'meta'          => ['nombre' => 'Meta',          'icono' => '🎯', 'agenda' => true],
+        'meta'          => ['nombre' => 'Meta',          'icono' => '🎯', 'agenda' => true,
+            // Responsable de Meta: botón "Contacto Responsable" con correo y WhatsApp
+            'contacto' => [
+                'nombre'   => 'Celeste May',
+                'correo'   => 'celeste.may.contractor@macmillaneducation.com',
+                'telefono' => '9994456141',
+                'saludo'   => 'Celeste',
+            ],
+        ],
         'global-educa'  => ['nombre' => 'Global Educa',  'icono' => '🌐', 'acciones' => [
             'kickoff'                   => 'Kickoff (contacto con el colegio)',
             'entrega-informacion'       => 'Entrega de información por parte del colegio',
@@ -111,6 +119,7 @@ class SeguimientoController extends Controller
         return view('seguimiento.meta', $datos + [
             'filas'          => $filas,
             'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
+            'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
         ]);
     }
 

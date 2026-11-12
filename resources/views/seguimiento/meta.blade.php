@@ -60,7 +60,27 @@
     .mt-err { grid-column:1 / -1; background:#fee2e2; color:#991b1b; border-radius:8px; padding:10px 12px; font-size:13px; }
 
     /* Selector de vista */
-    .mt-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; margin-bottom:14px; }
+    .mt-barra { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .mt-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; }
+    .mt-contacto-btn { white-space:nowrap; }
+
+    /* Contacto responsable */
+    .mt-ct-persona { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .mt-ct-avatar { flex:none; width:46px; height:46px; border-radius:50%; background:var(--accent); color:#fff;
+                    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:19px; }
+    .mt-ct-nombre { font-weight:700; font-size:16px; }
+    .mt-ct-dato { font-size:12.5px; color:var(--text-muted); }
+    .mt-ct-fila { display:flex; gap:8px; align-items:center; background:var(--surface2); border-radius:8px; padding:8px 12px;
+                  margin-bottom:6px; font-size:13.5px; }
+    .mt-ct-fila span { overflow-wrap:anywhere; }
+    .mt-ct-label { display:block; font-size:12.5px; font-weight:600; color:var(--text-muted); margin:14px 0 5px; }
+    .mt-ct-mensaje { background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px 14px; font-size:13.5px;
+                     line-height:1.5; white-space:pre-line; }
+    .mt-ct-acciones { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+    .mt-ct-acciones .btn { justify-content:center; gap:7px; color:#fff; border:none; font-weight:600; display:inline-flex; align-items:center; }
+    .mt-ct-correo { background:#2563eb; } .mt-ct-correo:hover { background:#1d4ed8; }
+    .mt-ct-wa { background:#16a34a; } .mt-ct-wa:hover { background:#15803d; }
+    @media (max-width: 600px) { .mt-contacto-btn { flex:1 1 100%; justify-content:center; } }
     .mt-vista-btn { border:none; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--text-muted);
                     padding:7px 16px; border-radius:7px; cursor:pointer; }
     .mt-vista-btn.activa { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
@@ -167,11 +187,59 @@
     </button>
 </div>
 
-{{-- Selector de vista --}}
-<div class="mt-vistas" role="tablist">
-    <button type="button" class="mt-vista-btn activa" data-vista="tabla" role="tab">📋 Tabla</button>
-    <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
+{{-- Selector de vista + contacto responsable --}}
+<div class="mt-barra">
+    <div class="mt-vistas" role="tablist">
+        <button type="button" class="mt-vista-btn activa" data-vista="tabla" role="tab">📋 Tabla</button>
+        <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
+    </div>
+    @if($contacto)
+        <button type="button" class="btn btn-secondary mt-contacto-btn" onclick="mtContacto(true)">
+            👤 Contacto Responsable
+        </button>
+    @endif
 </div>
+
+@if($contacto)
+<div id="mt-contacto" class="mt-overlay" role="dialog" aria-modal="true" aria-labelledby="mt-contacto-titulo">
+    <div class="mt-modal" style="width:440px">
+        <div class="mt-head">
+            <h3 id="mt-contacto-titulo">👤 Contacto Responsable</h3>
+            <button type="button" class="mt-close" onclick="mtContacto(false)" aria-label="Cerrar">✕</button>
+        </div>
+        <div style="padding:20px 22px; overflow-y:auto">
+            <div class="mt-ct-persona">
+                <div class="mt-ct-avatar">{{ mb_substr($contacto['nombre'], 0, 1) }}</div>
+                <div style="min-width:0">
+                    <div class="mt-ct-nombre">{{ $contacto['nombre'] }}</div>
+                    <div class="mt-ct-dato">Responsable de {{ $nombre }}</div>
+                </div>
+            </div>
+            <div class="mt-ct-fila">✉️ <span>{{ $contacto['correo'] }}</span></div>
+            <div class="mt-ct-fila">📱 <span>{{ preg_replace('/(\d{3})(\d{3})(\d{4})/', '$1 $2 $3', $contacto['telefono']) }}</span></div>
+
+            <label for="mt-ct-colegio" class="mt-ct-label">Colegio a revisar <span style="font-weight:400">(opcional)</span></label>
+            <select id="mt-ct-colegio" class="form-control">
+                <option value="">— Sin colegio específico —</option>
+                @foreach($filas as $fila)
+                    <option value="{{ $fila['colegio']->name }}{{ $fila['colegio']->nexus_id ? ' (ID ' . $fila['colegio']->nexus_id . ')' : '' }}">{{ $fila['colegio']->name }}</option>
+                @endforeach
+            </select>
+
+            <div class="mt-ct-label" style="margin-top:14px">Mensaje</div>
+            <div class="mt-ct-mensaje" id="mt-ct-mensaje"></div>
+
+            <div class="mt-ct-acciones">
+                <a id="mt-ct-correo" class="btn mt-ct-correo" target="_blank" rel="noopener">✉️ Correo</a>
+                <a id="mt-ct-wa" class="btn mt-ct-wa" target="_blank" rel="noopener">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.08c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.12-.27-.2-.57-.35zM12.04 21.5h-.01a9.45 9.45 0 0 1-4.82-1.32l-.35-.21-3.58.94.96-3.49-.23-.36a9.43 9.43 0 0 1-1.45-5.03c0-5.22 4.25-9.46 9.48-9.46 2.53 0 4.91.99 6.7 2.78a9.4 9.4 0 0 1 2.77 6.69c0 5.22-4.25 9.46-9.47 9.46zm8.06-17.52A11.32 11.32 0 0 0 12.04.65C5.76.65.65 5.76.65 12.03c0 2 .52 3.96 1.52 5.69L.55 23.35l5.77-1.51a11.37 11.37 0 0 0 5.72 1.46h.01c6.28 0 11.39-5.11 11.39-11.38 0-3.04-1.18-5.9-3.34-8.05z"/></svg>
+                    WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ── Vista calendario ─────────────────────────────────────────── --}}
 @php
@@ -565,6 +633,36 @@
             lista.appendChild(li);
         });
     }
+
+    // ── Contacto responsable ──
+    @if($contacto)
+    const CONTACTO = {!! json_encode($contacto, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+    const ctModal = document.getElementById('mt-contacto');
+    const ctColegio = document.getElementById('mt-ct-colegio');
+
+    function mensajeContacto() {
+        const col = ctColegio.value;
+        return 'Hola ' + CONTACTO.saludo + ', solicito de tu amable apoyo para poder revisar el estatus de Meta '
+            + (col ? 'del colegio ' + col : 'de este colegio') + '.\nQuedo atento a tus comentarios.';
+    }
+    function actualizarContacto() {
+        const msg = mensajeContacto();
+        const asunto = 'Estatus de Meta' + (ctColegio.value ? ' — ' + ctColegio.value : '');
+        document.getElementById('mt-ct-mensaje').textContent = msg;
+        document.getElementById('mt-ct-correo').href = 'mailto:' + CONTACTO.correo
+            + '?subject=' + encodeURIComponent(asunto) + '&body=' + encodeURIComponent(msg);
+        document.getElementById('mt-ct-wa').href = 'https://wa.me/52' + CONTACTO.telefono.replace(/\D/g, '')
+            + '?text=' + encodeURIComponent(msg);
+    }
+    ctColegio.addEventListener('change', actualizarContacto);
+    window.mtContacto = abrir => {
+        ctModal.classList.toggle('abierto', abrir);
+        document.body.style.overflow = abrir ? 'hidden' : '';
+        if (abrir) actualizarContacto();
+    };
+    ctModal.addEventListener('click', e => { if (e.target === ctModal) mtContacto(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && ctModal.classList.contains('abierto')) mtContacto(false); });
+    @endif
 
     let vistaGuardada = null;
     try { vistaGuardada = localStorage.getItem('sic-meta-vista'); } catch (e) {}

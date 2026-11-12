@@ -31,6 +31,12 @@ class School extends Model
         return $this->belongsTo(Consultant::class);
     }
 
+    // Agenda de exámenes Meta (un renglón por colegio)
+    public function seguimientoMeta()
+    {
+        return $this->hasOne(SeguimientoMeta::class);
+    }
+
     public function levels()
 {
     return $this->belongsToMany(Level::class, 'school_level', 'school_id', 'level_id');

@@ -8,6 +8,7 @@ use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
+use App\Models\SeguimientoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -17,7 +18,8 @@ class SeguimientoController extends Controller
     // slug => datos de la plataforma. El slug es el de la URL (/seguimiento/{slug}) y el que se
     // guarda en school_service_types.plataforma. Sin 'acciones' la página queda "en construcción".
     public const PLATAFORMAS = [
-        'meta'          => ['nombre' => 'Meta',          'icono' => '🎯'],
+        // Meta no lleva acciones de arranque: usa su agenda de exámenes (tabla seguimiento_meta)
+        'meta'          => ['nombre' => 'Meta',          'icono' => '🎯', 'agenda' => true],
         'global-educa'  => ['nombre' => 'Global Educa',  'icono' => '🌐', 'acciones' => [
             'kickoff'                   => 'Kickoff (contacto con el colegio)',
             'entrega-informacion'       => 'Entrega de información por parte del colegio',
@@ -35,6 +37,10 @@ class SeguimientoController extends Controller
     {
         $info = self::PLATAFORMAS[$plataforma];
         $datos = ['slug' => $plataforma, 'nombre' => $info['nombre'], 'icono' => $info['icono']];
+
+        if (!empty($info['agenda'])) {
+            return $this->agendaMeta($datos);
+        }
 
         if (empty($info['acciones'])) {
             return view('seguimiento.show', $datos);
@@ -78,8 +84,73 @@ class SeguimientoController extends Controller
         ]);
     }
 
+    // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
+    private function agendaMeta(array $datos)
+    {
+        $colegios = $this->colegiosDe($datos['slug'])
+            ->with('seguimientoMeta')
+            ->orderBy('name')
+            ->get();
+
+        $hoy = today();
+        $limite = today()->addDays(30);
+        $proxima = fn ($fecha) => $fecha && $fecha->between($hoy, $limite);
+
+        $filas = $colegios->map(function (School $colegio) use ($proxima) {
+            $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
+
+            return [
+                'colegio'              => $colegio,
+                'meta'                 => $meta,
+                'capacitacion_proxima' => $proxima($meta->fecha_capacitacion),
+                'aplicacion_proxima'   => $proxima($meta->fecha_aplicacion),
+                'pendiente'            => $meta->fechasPendientes(),
+            ];
+        });
+
+        return view('seguimiento.meta', $datos + [
+            'filas'          => $filas,
+            'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
+        ]);
+    }
+
+    private function guardarMeta(Request $request, School $school)
+    {
+        $datos = $request->validateWithBag('meta_' . $school->id, [
+            'administrador'      => 'nullable|string|max:255',
+            'usuario'            => 'nullable|string|max:255',
+            'contrasena'         => 'nullable|string|max:255',
+            'capacitacion'       => 'nullable|string|max:255',
+            'fecha_capacitacion' => 'nullable|date',
+            'fecha_aplicacion'   => 'nullable|date',
+            'notas'              => 'nullable|string|max:2000',
+        ]);
+
+        $meta = SeguimientoMeta::firstOrNew(['school_id' => $school->id]);
+        $meta->fill($datos);
+        $meta->updated_by = auth()->id();
+
+        $cambiados = collect(array_keys($meta->getDirty()))
+            ->intersect(array_keys(SeguimientoMeta::CAMPOS))
+            ->map(fn ($campo) => SeguimientoMeta::CAMPOS[$campo]);
+
+        if ($cambiados->isEmpty()) {
+            return back()->with('success', 'Sin cambios en ' . $school->name . '.');
+        }
+
+        $meta->save();
+        ActivityLog::log('seguimiento', 'Meta: actualizó ' . $cambiados->implode(', '), $school->id, '🎯');
+
+        return back()->with('success', 'Datos de Meta guardados para ' . $school->name . '.');
+    }
+
     public function colegio(string $plataforma, School $school)
     {
+        if (!empty(self::PLATAFORMAS[$plataforma]['agenda'])) {
+            // Meta se edita directo desde su tabla
+            return redirect()->route('seguimiento.show', $plataforma);
+        }
+
         $info = $this->plataformaDelColegio($plataforma, $school);
 
         $guardadas = SeguimientoAccion::with('completedBy')
@@ -101,6 +172,12 @@ class SeguimientoController extends Controller
 
     public function guardar(Request $request, string $plataforma, School $school)
     {
+        if (!empty(self::PLATAFORMAS[$plataforma]['agenda'])) {
+            abort_unless($school->status !== 'inactivo' && $school->tienePlataforma($plataforma), 404);
+
+            return $this->guardarMeta($request, $school);
+        }
+
         $info = $this->plataformaDelColegio($plataforma, $school);
 
         $request->validate([

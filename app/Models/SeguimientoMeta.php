@@ -10,7 +10,7 @@ class SeguimientoMeta extends Model
 
     protected $fillable = [
         'school_id', 'administrador', 'usuario', 'contrasena', 'capacitacion',
-        'fecha_capacitacion', 'fecha_aplicacion', 'notas', 'updated_by',
+        'fecha_capacitacion', 'hora_capacitacion', 'fecha_aplicacion', 'notas', 'updated_by',
     ];
 
     protected $casts = [
@@ -25,9 +25,16 @@ class SeguimientoMeta extends Model
         'contrasena'         => 'Contraseña',
         'capacitacion'       => 'Capacitación',
         'fecha_capacitacion' => 'Fecha de capacitación',
+        'hora_capacitacion'  => 'Horario de capacitación',
         'fecha_aplicacion'   => 'Fecha de aplicación',
         'notas'              => 'Notas',
     ];
+
+    // "10:00:00" (como lo guarda MySQL) → "10:00"
+    public function horaCorta(): ?string
+    {
+        return $this->hora_capacitacion ? substr($this->hora_capacitacion, 0, 5) : null;
+    }
 
     public function school()
     {

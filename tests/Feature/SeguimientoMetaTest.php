@@ -43,6 +43,7 @@ class SeguimientoMetaTest extends TestCase
             'contrasena'         => 'Meta.2026',
             'capacitacion'       => 'Capacitación docentes',
             'fecha_capacitacion' => today()->addDays(5)->format('Y-m-d'),
+            'hora_capacitacion'  => '10:30',
             'fecha_aplicacion'   => today()->addDays(60)->format('Y-m-d'),
             'notas'              => 'Confirmar sala de cómputo',
         ], $extra);
@@ -83,7 +84,11 @@ class SeguimientoMetaTest extends TestCase
         $this->get(route('seguimiento.show', 'meta'))
             ->assertSee('Laura Pérez')
             ->assertSee('Capacitación docentes')
-            ->assertSee('En 5 días');
+            ->assertSee('En 5 días')
+            ->assertSee('10:30 h')
+            ->assertSee('"hora":"10:30"', false)
+            ->assertSee('"tipo":"apl"', false);
+        $this->assertSame('10:30', SeguimientoMeta::first()->horaCorta());
 
         // Volver a guardar lo mismo no duplica el renglón ni registra otra actividad
         $this->post(route('seguimiento.guardar', ['meta', $school]), $this->datos());
@@ -109,6 +114,15 @@ class SeguimientoMetaTest extends TestCase
             ->assertSee('mt-err"', false)
             ->assertSee('data-colegio="' . $school->id . '"', false)
             ->assertSee('"usuario":"admin.meta@colegio.com"', false);
+    }
+
+    public function test_invalid_time_is_rejected(): void
+    {
+        $school = $this->colegio('Colegio Meta');
+
+        $this->actingAs($this->usuario('admin'))
+            ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos(['hora_capacitacion' => '25:99']))
+            ->assertSessionHasErrors('hora_capacitacion', null, 'meta_' . $school->id);
     }
 
     public function test_school_without_meta_cannot_be_edited(): void

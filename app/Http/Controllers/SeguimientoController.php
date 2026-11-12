@@ -122,9 +122,15 @@ class SeguimientoController extends Controller
             'contrasena'         => 'nullable|string|max:255',
             'capacitacion'       => 'nullable|string|max:255',
             'fecha_capacitacion' => 'nullable|date',
+            'hora_capacitacion'  => 'nullable|date_format:H:i,H:i:s',
             'fecha_aplicacion'   => 'nullable|date',
             'notas'              => 'nullable|string|max:2000',
         ]);
+
+        // Se guarda siempre como HH:MM:SS para que reabrir y guardar sin tocar no cuente como cambio
+        if (!empty($datos['hora_capacitacion'])) {
+            $datos['hora_capacitacion'] = substr($datos['hora_capacitacion'], 0, 5) . ':00';
+        }
 
         $meta = SeguimientoMeta::firstOrNew(['school_id' => $school->id]);
         $meta->fill($datos);

@@ -59,6 +59,63 @@
     .mt-foot { display:flex; justify-content:flex-end; gap:8px; padding:14px 22px; border-top:1px solid var(--border); }
     .mt-err { grid-column:1 / -1; background:#fee2e2; color:#991b1b; border-radius:8px; padding:10px 12px; font-size:13px; }
 
+    /* Selector de vista */
+    .mt-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; margin-bottom:14px; }
+    .mt-vista-btn { border:none; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--text-muted);
+                    padding:7px 16px; border-radius:7px; cursor:pointer; }
+    .mt-vista-btn.activa { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+
+    /* Calendario */
+    .mt-dot { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+    .mt-dot.azul { background:#2563eb; } .mt-dot.naranja { background:#ea580c; }
+    .mt-cal-nav { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:16px 20px; border-bottom:1px solid var(--border); }
+    .mt-cal-titulo { font-family:'Bricolage Grotesque',sans-serif; font-size:21px; font-weight:700; line-height:1.1; }
+    .mt-cal-leyenda { display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--text-muted); margin-top:6px; }
+    .mt-cal-dias, .mt-cal-grid { display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); }
+    .mt-cal-dias { background:var(--surface2); border-bottom:1px solid var(--border); }
+    .mt-cal-dias div { padding:9px 6px; text-align:center; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); }
+    .mt-cal-celda { min-height:112px; padding:6px 7px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); background:#fff; min-width:0; }
+    .mt-cal-celda:nth-child(7n) { border-right:none; }
+    .mt-cal-celda.fuera { background:var(--surface2); }
+    .mt-cal-celda.hoy { background:#fff7ed; }
+    .mt-cal-num { text-align:right; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:4px; }
+    .mt-cal-num span { display:inline-flex; width:23px; height:23px; border-radius:50%; align-items:center; justify-content:center; }
+    .mt-cal-celda.hoy .mt-cal-num span { background:var(--accent); color:#fff; }
+    .mt-ev { display:flex; align-items:center; gap:4px; width:100%; border:none; font:inherit; font-size:11px; font-weight:600; color:#fff;
+             border-radius:5px; padding:3px 6px; margin-bottom:3px; cursor:pointer; text-align:left; min-width:0; }
+    .mt-ev span.nom { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
+    .mt-ev span.h { flex:none; opacity:.9; font-weight:700; }
+    .mt-ev.cap { background:#2563eb; } .mt-ev.cap:hover { background:#1d4ed8; }
+    .mt-ev.apl { background:#ea580c; } .mt-ev.apl:hover { background:#c2410c; }
+    .mt-ev.extra { display:none; }
+    .mt-cal-celda.expandida .mt-ev.extra { display:flex; }
+    .mt-cal-mas { border:none; background:none; font:inherit; font-size:11px; color:var(--text-muted); cursor:pointer; padding:1px 2px; }
+    .mt-cal-mas:hover { color:var(--text); text-decoration:underline; }
+    .mt-cal-lista-card { display:none; margin-top:14px; }
+    .mt-li { display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+    .mt-li:last-child { border-bottom:none; }
+    .mt-li:hover { background:var(--surface2); }
+    .mt-li .fecha { flex:none; width:46px; text-align:center; border-radius:8px; padding:4px 0; color:#fff; line-height:1.1; }
+    .mt-li .fecha b { display:block; font-size:17px; }
+    .mt-li .fecha small { font-size:10px; text-transform:uppercase; font-weight:600; }
+    .mt-li .fecha.cap { background:#2563eb; } .mt-li .fecha.apl { background:#ea580c; }
+    .mt-li .info { min-width:0; flex:1; }
+    .mt-li .info strong { display:block; font-size:14px; }
+    .mt-li .info span { font-size:12px; color:var(--text-muted); }
+
+    @media (max-width: 700px) {
+        .mt-cal-celda { min-height:58px; padding:3px; }
+        .mt-cal-num { text-align:center; font-size:11px; margin-bottom:2px; }
+        .mt-cal-num span { width:21px; height:21px; }
+        /* En celular cada evento es un punto de color; los nombres van en la lista de abajo */
+        .mt-ev, .mt-ev.extra { width:8px; height:8px; padding:0; border-radius:50%; display:inline-block; margin:0 1px; }
+        .mt-ev span { display:none; }
+        .mt-cal-mas { display:none; }
+        .mt-cal-eventos { text-align:center; line-height:8px; }
+        .mt-cal-lista-card { display:block; }
+        .mt-cal-dias div { font-size:10px; padding:8px 2px; letter-spacing:0; }
+    }
+
     @media (max-width: 600px) {
         .mt-overlay { align-items:flex-end; padding:0; }
         .mt-modal { width:100%; border-radius:18px 18px 0 0; max-height:92vh; }
@@ -110,7 +167,57 @@
     </button>
 </div>
 
-<div class="card">
+{{-- Selector de vista --}}
+<div class="mt-vistas" role="tablist">
+    <button type="button" class="mt-vista-btn activa" data-vista="tabla" role="tab">📋 Tabla</button>
+    <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
+</div>
+
+{{-- ── Vista calendario ─────────────────────────────────────────── --}}
+@php
+    $eventos = collect();
+    foreach ($filas as $fila) {
+        $m = $fila['meta'];
+        $base = ['id' => $fila['colegio']->id, 'colegio' => $fila['colegio']->name,
+                 'administrador' => $m->administrador, 'capacitacion' => $m->capacitacion];
+        if ($m->fecha_capacitacion) {
+            $eventos->push($base + ['tipo' => 'cap', 'fecha' => $m->fecha_capacitacion->format('Y-m-d'), 'hora' => $m->horaCorta()]);
+        }
+        if ($m->fecha_aplicacion) {
+            $eventos->push($base + ['tipo' => 'apl', 'fecha' => $m->fecha_aplicacion->format('Y-m-d'), 'hora' => null]);
+        }
+    }
+@endphp
+<div id="mt-vista-calendario" style="display:none">
+    <div class="card" style="overflow:hidden; padding:0">
+        <div class="mt-cal-nav">
+            <div>
+                <div id="mt-cal-titulo" class="mt-cal-titulo"></div>
+                <div class="mt-cal-leyenda">
+                    <span><span class="mt-dot azul"></span>Capacitación de administradores</span>
+                    <span><span class="mt-dot naranja"></span>Aplicación de examen</span>
+                </div>
+            </div>
+            <div style="display:flex; gap:6px">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="mtCalMes(-1)" aria-label="Mes anterior">←</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="mtCalHoy()">Hoy</button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="mtCalMes(1)" aria-label="Mes siguiente">→</button>
+            </div>
+        </div>
+        <div class="mt-cal-dias">
+            <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <div id="mt-cal-grid" class="mt-cal-grid"></div>
+    </div>
+
+    {{-- Lista del mes: en celular el calendario es muy chico para leer nombres --}}
+    <div class="card mt-cal-lista-card">
+        <div class="card-header"><span class="card-title" id="mt-cal-lista-titulo">Eventos del mes</span></div>
+        <div id="mt-cal-lista"></div>
+    </div>
+</div>
+
+<div class="card" id="mt-vista-tabla">
     <div class="card-header" style="gap:10px; flex-wrap:wrap">
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
         @if($filas->isNotEmpty())
@@ -162,6 +269,7 @@
                     'contrasena'         => $m->contrasena,
                     'capacitacion'       => $m->capacitacion,
                     'fecha_capacitacion' => $m->fecha_capacitacion?->format('Y-m-d'),
+                    'hora_capacitacion'  => $m->horaCorta(),
                     'fecha_aplicacion'   => $m->fecha_aplicacion?->format('Y-m-d'),
                     'notas'              => $m->notas,
                     'action'             => route('seguimiento.guardar', [$slug, $c]),
@@ -193,7 +301,11 @@
                     @php $f = $m->{$campoFecha}; @endphp
                     <td class="mt-fecha">
                         @if($f)
-                            {{ $f->format('d/m/Y') }}<br>
+                            {{ $f->format('d/m/Y') }}
+                            @if($campoFecha === 'fecha_capacitacion' && $m->horaCorta())
+                                <span style="color:var(--text-muted); font-size:12.5px">· {{ $m->horaCorta() }} h</span>
+                            @endif
+                            <br>
                             @if($f->isToday())
                                 <span class="mt-chip hoy">Hoy</span>
                             @elseif($f->isPast())
@@ -271,11 +383,15 @@
                 <input type="text" name="capacitacion" id="mt-capacitacion" class="form-control" maxlength="255" placeholder="Ej. Capacitación a docentes de inglés">
             </div>
             <div>
-                <label for="mt-fecha_capacitacion">Fecha de capacitación</label>
+                <label for="mt-fecha_capacitacion"><span class="mt-dot azul"></span>Fecha de capacitación</label>
                 <input type="date" name="fecha_capacitacion" id="mt-fecha_capacitacion" class="form-control">
             </div>
             <div>
-                <label for="mt-fecha_aplicacion">Fecha de aplicación</label>
+                <label for="mt-hora_capacitacion">🕒 Horario de capacitación</label>
+                <input type="time" name="hora_capacitacion" id="mt-hora_capacitacion" class="form-control">
+            </div>
+            <div class="full">
+                <label for="mt-fecha_aplicacion"><span class="mt-dot naranja"></span>Fecha de aplicación del examen</label>
                 <input type="date" name="fecha_aplicacion" id="mt-fecha_aplicacion" class="form-control">
             </div>
             <div class="full">
@@ -292,7 +408,7 @@
 
 <script>
 (function () {
-    const CAMPOS = ['administrador', 'usuario', 'contrasena', 'capacitacion', 'fecha_capacitacion', 'fecha_aplicacion', 'notas'];
+    const CAMPOS = @json(array_keys(\App\Models\SeguimientoMeta::CAMPOS));
     const modal = document.getElementById('mt-modal');
     const form  = document.getElementById('mt-form');
 
@@ -341,9 +457,118 @@
     filtro?.addEventListener('change', aplicar);
     cards.forEach(c => c.addEventListener('click', () => {
         if (!filtro) return;
+        cambiarVista('tabla'); // los filtros aplican a la tabla
         filtro.value = filtro.value === c.dataset.filtroCard ? '' : c.dataset.filtroCard;
         aplicar();
     }));
+
+    // ── Vista tabla / calendario (se recuerda por usuario en este navegador) ──
+    const EVENTOS = {!! json_encode($eventos->values(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const MAX_POR_DIA = 3;
+    let calAnio = new Date().getFullYear(), calMes = new Date().getMonth();
+
+    function cambiarVista(v) {
+        document.getElementById('mt-vista-tabla').style.display = v === 'tabla' ? '' : 'none';
+        document.getElementById('mt-vista-calendario').style.display = v === 'calendario' ? '' : 'none';
+        document.querySelectorAll('.mt-vista-btn').forEach(b => b.classList.toggle('activa', b.dataset.vista === v));
+        try { localStorage.setItem('sic-meta-vista', v); } catch (e) {}
+        if (v === 'calendario') pintarCalendario();
+    }
+    document.querySelectorAll('.mt-vista-btn').forEach(b => b.addEventListener('click', () => cambiarVista(b.dataset.vista)));
+
+    window.mtCalMes = d => {
+        calMes += d;
+        if (calMes < 0) { calMes = 11; calAnio--; }
+        if (calMes > 11) { calMes = 0; calAnio++; }
+        pintarCalendario();
+    };
+    window.mtCalHoy = () => { calAnio = new Date().getFullYear(); calMes = new Date().getMonth(); pintarCalendario(); };
+
+    const pad = n => String(n).padStart(2, '0');
+    const etiqueta = e => e.tipo === 'cap' ? 'Capacitación' : 'Aplicación de examen';
+    const detalle = e => [etiqueta(e) + (e.hora ? ' · ' + e.hora + ' h' : ''), e.administrador, e.capacitacion && e.tipo === 'cap' ? e.capacitacion : null]
+        .filter(Boolean).join(' · ');
+    // Capacitaciones primero y por hora; luego aplicaciones
+    const orden = (a, b) => (a.tipo === b.tipo ? (a.hora || '99').localeCompare(b.hora || '99') : (a.tipo === 'cap' ? -1 : 1));
+    const editarColegio = id => document.querySelector('[data-colegio="' + id + '"]')?.click();
+
+    function botonEvento(e, extra) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'mt-ev ' + e.tipo + (extra ? ' extra' : '');
+        b.title = e.colegio + ' — ' + detalle(e);
+        if (e.hora) { const h = document.createElement('span'); h.className = 'h'; h.textContent = e.hora; b.appendChild(h); }
+        const n = document.createElement('span'); n.className = 'nom'; n.textContent = e.colegio; b.appendChild(n);
+        b.addEventListener('click', () => editarColegio(e.id));
+        return b;
+    }
+
+    function pintarCalendario() {
+        document.getElementById('mt-cal-titulo').textContent = MESES[calMes] + ' ' + calAnio;
+        const grid = document.getElementById('mt-cal-grid');
+        grid.innerHTML = '';
+        const hoy = new Date();
+        const hoyStr = hoy.getFullYear() + '-' + pad(hoy.getMonth() + 1) + '-' + pad(hoy.getDate());
+        const inicio = (new Date(calAnio, calMes, 1).getDay() + 6) % 7; // lunes = 0
+        const diasMes = new Date(calAnio, calMes + 1, 0).getDate();
+        const celdas = Math.ceil((inicio + diasMes) / 7) * 7;
+        const prefijo = calAnio + '-' + pad(calMes + 1) + '-';
+
+        for (let i = 0; i < celdas; i++) {
+            const dia = i - inicio + 1;
+            const celda = document.createElement('div');
+            celda.className = 'mt-cal-celda';
+            if (dia < 1 || dia > diasMes) { celda.classList.add('fuera'); grid.appendChild(celda); continue; }
+
+            const fecha = prefijo + pad(dia);
+            if (fecha === hoyStr) celda.classList.add('hoy');
+            celda.innerHTML = '<div class="mt-cal-num"><span>' + dia + '</span></div>';
+            const cont = document.createElement('div');
+            cont.className = 'mt-cal-eventos';
+            const delDia = EVENTOS.filter(e => e.fecha === fecha).sort(orden);
+            delDia.forEach((e, idx) => cont.appendChild(botonEvento(e, idx >= MAX_POR_DIA)));
+            if (delDia.length > MAX_POR_DIA) {
+                const mas = document.createElement('button');
+                mas.type = 'button';
+                mas.className = 'mt-cal-mas';
+                mas.textContent = '+' + (delDia.length - MAX_POR_DIA) + ' más';
+                mas.addEventListener('click', () => {
+                    const abierta = celda.classList.toggle('expandida');
+                    mas.textContent = abierta ? 'Ver menos' : '+' + (delDia.length - MAX_POR_DIA) + ' más';
+                });
+                cont.appendChild(mas);
+            }
+            celda.appendChild(cont);
+            grid.appendChild(celda);
+        }
+
+        // Lista del mes (visible en celular)
+        const delMes = EVENTOS.filter(e => e.fecha.startsWith(prefijo))
+            .sort((a, b) => a.fecha.localeCompare(b.fecha) || orden(a, b));
+        document.getElementById('mt-cal-lista-titulo').textContent = '📅 ' + MESES[calMes] + ': ' + delMes.length + (delMes.length === 1 ? ' evento' : ' eventos');
+        const lista = document.getElementById('mt-cal-lista');
+        lista.innerHTML = '';
+        if (!delMes.length) {
+            lista.innerHTML = '<div style="padding:24px; text-align:center; color:var(--text-muted); font-size:13.5px">Sin capacitaciones ni aplicaciones este mes.</div>';
+        }
+        delMes.forEach(e => {
+            const li = document.createElement('div');
+            li.className = 'mt-li';
+            const d = parseInt(e.fecha.slice(8), 10);
+            li.innerHTML = '<div class="fecha ' + e.tipo + '"><b>' + d + '</b><small>' + MESES_CORTOS[calMes] + '</small></div>'
+                + '<div class="info"><strong></strong><span></span></div>';
+            li.querySelector('strong').textContent = e.colegio;
+            li.querySelector('.info span').textContent = detalle(e);
+            li.addEventListener('click', () => editarColegio(e.id));
+            lista.appendChild(li);
+        });
+    }
+
+    let vistaGuardada = null;
+    try { vistaGuardada = localStorage.getItem('sic-meta-vista'); } catch (e) {}
+    if (vistaGuardada === 'calendario') cambiarVista('calendario');
 
     @if($colegioConError)
         // Regresó con errores: reabrir con lo que se había escrito

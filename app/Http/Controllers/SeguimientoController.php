@@ -39,6 +39,7 @@ class SeguimientoController extends Controller
         ]],
         'frances'       => ['nombre' => 'Francés',       'icono' => '🗼'],
         'red-roo-reads' => ['nombre' => 'Red Roo Reads', 'icono' => '📖'],
+        'equipamiento'  => ['nombre' => 'Equipamiento',  'icono' => '🖥️'],
     ];
 
     public function show(string $plataforma)

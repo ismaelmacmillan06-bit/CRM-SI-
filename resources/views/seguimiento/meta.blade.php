@@ -28,6 +28,7 @@
     .mt-vacio { color:#b8b2aa; }
     .mt-pwd { display:inline-flex; align-items:center; gap:6px; font-family:ui-monospace,Consolas,monospace; white-space:nowrap; }
     .mt-pwd button { background:none; border:none; cursor:pointer; padding:2px; color:var(--text-muted); line-height:0; }
+    .mt-pwd button:hover { color:var(--text); }
     .mt-fecha { white-space:nowrap; }
     .mt-chip { display:inline-block; font-size:11px; font-weight:600; border-radius:20px; padding:1px 8px; margin-top:3px; }
     .mt-chip.prox { background:#dbeafe; color:#1d4ed8; }
@@ -358,7 +359,7 @@
                     @if($m->contrasena)
                         <span class="mt-pwd">
                             <span data-pwd="{{ $m->contrasena }}">••••••••</span>
-                            <button type="button" onclick="mtTogglePwd(this)" title="Mostrar / ocultar">👁</button>
+                            <button type="button" onclick="mtTogglePwd(this)" title="Mostrar / ocultar" aria-label="Mostrar contraseña"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         </span>
                     @else
                         <span class="mt-vacio">—</span>
@@ -495,11 +496,14 @@
     modal.addEventListener('click', e => { if (e.target === modal) mtCerrar(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('abierto')) mtCerrar(); });
 
+    const MT_OJO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const MT_OJO_TACHADO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
     window.mtTogglePwd = btn => {
         const s = btn.previousElementSibling;
         const oculta = s.textContent === '••••••••';
         s.textContent = oculta ? s.dataset.pwd : '••••••••';
-        btn.textContent = oculta ? '🙈' : '👁';
+        btn.innerHTML = oculta ? MT_OJO_TACHADO : MT_OJO;
+        btn.setAttribute('aria-label', oculta ? 'Ocultar contraseña' : 'Mostrar contraseña');
     };
 
     // Búsqueda + filtro (select y cards)

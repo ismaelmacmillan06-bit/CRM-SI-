@@ -53,9 +53,9 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Producción: admin, consultor_digital y coordinador (este último solo lectura,
-        // ver más abajo la rama de coordinador que bloquea los métodos de escritura)
-        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consultor_eca', 'consultor_elt'])) {
+        // Producción: admin y consultor_digital cargan/borran; coordinador, ECA, ELT y ventas solo
+        // consultan (sus ramas de abajo bloquean POST/DELETE y la vista oculta cargar/borrar)
+        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consultor_eca', 'consultor_elt', 'representante_ventas'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }

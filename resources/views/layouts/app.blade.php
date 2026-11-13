@@ -646,12 +646,14 @@
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI
         </a>
+        @endunlessrole
+        {{-- Lo que sigue ya filtra por rol cada liga (Producción sí la ven ECA y ELT) --}}
         @hasanyrole('admin|consultor_digital')
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
         </a>
         @endhasanyrole
-        @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt')
+        @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt|representante_ventas')
         <a href="{{ route('produccion.index') }}" class="nav-item {{ request()->routeIs('produccion.*') ? 'active' : '' }}">
             <span class="nav-icon">📦</span> Producción
         </a>
@@ -666,7 +668,6 @@
             <span class="nav-icon">⚙️</span> Configuración
         </a>
         @endhasrole
-        @endunlessrole
         <a href="{{ route('notes.index') }}" class="nav-item {{ request()->routeIs('notes.*') ? 'active' : '' }}">
             <span class="nav-icon">📝</span> Mis Notas SI
         </a>

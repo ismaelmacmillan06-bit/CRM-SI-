@@ -10,12 +10,12 @@
     @endhasanyrole
     <a href="{{ route('schools.processes.index', $school) }}" class="btn btn-secondary btn-sm">⚙️ Acciones de Arranque</a>
     <a href="{{ route('schools.teachers.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🏫 Docentes</a>
-    <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm">🎫 Tickets</a>
-    <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
     <a href="{{ route('schools.students.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🎓 Alumnos</a>
     @if($school->tieneGlobalEduca())
     <a href="{{ route('schools.formato-entrega', $school) }}" class="btn btn-secondary btn-sm" data-formato-entrega>🌐 Formato Global Educa</a>
     @endif
+    <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm">🎫 Tickets</a>
+    <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
     <a href="{{ route('schools.bundles.index', $school) }}" class="btn btn-secondary btn-sm">📚 Bundles</a>
     <a href="{{ route('schools.repositorio.index', $school) }}" class="btn btn-secondary btn-sm">📁 Repositorio</a>
     @hasanyrole('admin|consultor_digital|coordinador')

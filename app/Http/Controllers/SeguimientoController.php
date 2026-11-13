@@ -9,6 +9,7 @@ use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
 use App\Models\SeguimientoMeta;
+use App\Models\SeguimientoRecurso;
 use App\Models\Ticket;
 use App\Models\Visit;
 use Illuminate\Http\Request;
@@ -76,11 +77,29 @@ class SeguimientoController extends Controller
 
         $filas = $this->filasPlataforma($plataforma);
 
+        $resumenFormato = [];
+        $formatos = collect();
+        if ($plataforma === 'global-educa') {
+            $formatoController = app(FormatoEntregaController::class);
+            foreach ($filas as $fila) {
+                $colegio = $fila['colegio'];
+                $resumenFormato[$colegio->id] = $formatoController->summaryForSchool($colegio);
+            }
+            $formatos = SeguimientoRecurso::where('plataforma', 'global-educa')
+                ->where('categoria', 'formatos')
+                ->visiblePara(auth()->user())
+                ->with(['user', 'audiencias'])
+                ->latest()
+                ->get();
+        }
+
         return view('seguimiento.dashboard', $datos + [
             'filas'          => $filas,
             'totalAcciones'  => count($info['acciones']),
             'completos'      => $filas->where('completo', true)->count(),
             'servicioLigado' => SchoolServiceType::where('plataforma', $plataforma)->exists(),
+            'resumenFormato' => $resumenFormato,
+            'formatos'       => $formatos,
         ] + $this->actividad($info['nombre'], $filas->pluck('colegio.id')));
     }
 
@@ -88,12 +107,19 @@ class SeguimientoController extends Controller
     private function agendaMeta(array $datos)
     {
         $filas = $this->filasPlataforma($datos['slug']);
+        $manuales = SeguimientoRecurso::where('plataforma', $datos['slug'])
+            ->where('categoria', 'manuales')
+            ->visiblePara(auth()->user())
+            ->with(['user', 'audiencias'])
+            ->latest()
+            ->get();
 
         return view('seguimiento.meta', $datos + [
             'filas'          => $filas,
             'totalAcciones'  => count(self::PLATAFORMAS[$datos['slug']]['acciones']),
             'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
             'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
+            'manuales'       => $manuales,
         ] + $this->actividad($datos['nombre'], $filas->pluck('colegio.id')));
     }
 

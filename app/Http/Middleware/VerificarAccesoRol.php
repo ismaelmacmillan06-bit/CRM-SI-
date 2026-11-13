@@ -90,11 +90,15 @@ class VerificarAccesoRol
             if ($request->routeIs('tareas.update-status')) {
                 return $next($request);
             }
+            // Descarga de alumnos por clase (POST para soportar 20+ clases)
+            if ($request->routeIs('schools.students.export-by-class')) {
+                return $next($request);
+            }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index',
-                'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel'];
+            $rutasPermitidas = ['dashboard', 'schools.*', 'tickets.show', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index',
+                'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel', 'seguimiento.recursos.preview', 'seguimiento.recursos.download'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
                     ->with('error_acceso', 'No tienes acceso a esta sección.');
@@ -115,7 +119,7 @@ class VerificarAccesoRol
         // Bitácora (Seguimiento SIC y Herramientas exigen consultor_digital/admin
         // más arriba; el resto no está en la lista blanca de abajo).
         if ($user->hasRole('coordinador')) {
-            if ($request->routeIs('ssa.*') || $request->routeIs('tareas.*')) {
+            if ($request->routeIs('ssa.*') || $request->routeIs('tareas.*') || $request->routeIs('schools.students.export-by-class')) {
                 return $next($request);
             }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
@@ -129,7 +133,9 @@ class VerificarAccesoRol
                 'schools.index', 'schools.show', 'schools.reporte-master',
                 'schools.processes.index',
                 'schools.teachers.index', 'schools.tickets.index',
+                'schools.tickets.report.*', 'tickets.show',
                 'schools.visits.index', 'schools.students.index',
+                'schools.students.export-by-class',
                 'schools.formato-entrega', 'schools.formato-entrega.script', 'schools.formato-entrega.accesos',
                 'schools.bundles.index',
                 'schools.repositorio.index', 'schools.repositorio.download',
@@ -138,6 +144,7 @@ class VerificarAccesoRol
                 'produccion.index',
                 'tablero.index',
                 'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel',
+                'seguimiento.recursos.preview', 'seguimiento.recursos.download',
             ];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('dashboard')
@@ -146,9 +153,9 @@ class VerificarAccesoRol
             return $next($request);
         }
 
-        // Ventas: lectura en todo el sistema + escritura en SSA
+        // Ventas: lectura en todo el sistema + escritura en SSA + descarga de alumnos por clase
         if ($user->hasRole('representante_ventas')) {
-            if ($request->routeIs('ssa.*')) {
+            if ($request->routeIs('ssa.*') || $request->routeIs('schools.students.export-by-class')) {
                 return $next($request);
             }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {

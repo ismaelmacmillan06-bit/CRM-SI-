@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Alumnos — ' . $school->name)
 
@@ -30,6 +30,13 @@
         </button>
     </form>
     @endhasanyrole
+    <button type="button"
+            id="btn-descargar-por-clase"
+            onclick="abrirModalDescargarClases()"
+            class="btn btn-secondary"
+            @if($clasesDisponibles->isEmpty()) disabled title="No hay alumnos registrados para descargar" @endif>
+        📥 Descargar por clase
+    </button>
 </div>
 
 {{-- Modal Excel --}}
@@ -141,6 +148,261 @@
         </form>
     </div>
 </div>
+
+{{-- Modal: Descargar alumnos por clase (estilo Global Educa) --}}
+<div id="modal-descargar-clases" class="formato-modal-overlay" aria-hidden="true">
+    <section class="formato-modal-panel" role="dialog" aria-modal="true" aria-labelledby="descargar-clases-titulo">
+        <header class="formato-modal-header">
+            <div>
+                <span class="formato-modal-kicker">{{ $school->name }}</span>
+                <h2 id="descargar-clases-titulo">Descargar alumnos por clase</h2>
+                <span class="formato-modal-badge">
+                    📚 {{ $clasesDisponibles->count() }} {{ $clasesDisponibles->count() === 1 ? 'clase detectada' : 'clases detectadas' }}
+                </span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalDescargarClases()" aria-label="Cerrar">✕</button>
+        </header>
+
+        <form method="POST" action="{{ route('schools.students.export-by-class', $school) }}" id="form-descargar-clases">
+            @csrf
+            <input type="hidden" name="modo" id="descargar-clases-modo" value="hojas">
+
+            <div class="formato-modal-scroll">
+                <div class="formato-tabs" role="tablist" aria-label="Formato de Excel">
+                <button type="button" class="formato-tab is-active" role="tab" aria-selected="true"
+                        data-clase-modo="hojas" onclick="cambiarModoClases('hojas', this)">
+                    <span aria-hidden="true">📊</span> Excel por hojas
+                </button>
+                <button type="button" class="formato-tab" role="tab" aria-selected="false"
+                        data-clase-modo="unica" onclick="cambiarModoClases('unica', this)">
+                    <span aria-hidden="true">📋</span> Excel unificado
+                </button>
+            </div>
+            <p id="descargar-clases-modo-desc" style="margin:-14px 0 16px; font-size:12px; color:var(--text-muted)">
+                Genera un archivo Excel con una hoja independiente por cada clase seleccionada.
+            </p>
+
+            @if($clasesDisponibles->isEmpty())
+                <div class="formato-aviso">
+                    <strong>Sin clases disponibles</strong>
+                    <p>Este colegio aún no tiene alumnos registrados.</p>
+                </div>
+            @else
+                <div class="clases-toolbar">
+                    <div class="clases-search-wrap">
+                        <input type="search" id="filtro-clases" class="form-control"
+                               placeholder="🔍 Filtrar clase (ej. Primaria, 1°A, azul)..."
+                               autocomplete="off" oninput="filtrarClasesModal()">
+                    </div>
+                    <div class="clases-actions-bar">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="seleccionarTodasClases(true)">
+                                Seleccionar todas
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="seleccionarTodasClases(false)">
+                                Limpiar
+                            </button>
+                        </div>
+                        <span id="clases-contador" style="font-size:12px; font-weight:600; color:var(--text-muted)">
+                            0 seleccionadas · 0 alumnos
+                        </span>
+                    </div>
+                </div>
+
+                @php
+                    $clasesPorNivel = $clasesDisponibles->groupBy('level');
+                    $nivelIconos = [
+                        'Maternal'     => '🍼',
+                        'Preescolar'   => '🎨',
+                        'Primaria'     => '📚',
+                        'Secundaria'   => '🔬',
+                        'Bachillerato' => '🎓',
+                        'Preparatoria' => '🎓',
+                        'Universidad'  => '🏛️',
+                        'Licenciatura' => '🏛️',
+                    ];
+                @endphp
+
+                <div id="clases-grid" class="niveles-acordeon" role="group" aria-label="Clases disponibles por nivel">
+                    @foreach($clasesPorNivel as $nivelNombre => $clasesDelNivel)
+                        @php
+                            $nivelTotalAlumnos = $clasesDelNivel->sum('total');
+                            $nivelIcono = $nivelIconos[$nivelNombre] ?? '📋';
+                        @endphp
+                        <details class="nivel-grupo" @if($loop->first) open @endif>
+                            <summary class="nivel-grupo-header">
+                                <div class="nivel-grupo-titulo">
+                                    <span class="nivel-chevron" aria-hidden="true">▸</span>
+                                    <span>{{ $nivelIcono }}</span>
+                                    <strong>{{ $nivelNombre }}</strong>
+                                    <span class="nivel-grupo-meta">
+                                        {{ $clasesDelNivel->count() }} {{ $clasesDelNivel->count() === 1 ? 'clase' : 'clases' }}
+                                        · {{ $nivelTotalAlumnos }} {{ $nivelTotalAlumnos === 1 ? 'alumno' : 'alumnos' }}
+                                    </span>
+                                </div>
+                                <div class="nivel-grupo-acciones" onclick="event.preventDefault(); event.stopPropagation();">
+                                    <span class="nivel-sel-badge" hidden></span>
+                                    <button type="button" class="nivel-toggle-btn" onclick="alternarNivelClases(this)">
+                                        Seleccionar nivel
+                                    </button>
+                                </div>
+                            </summary>
+                            <div class="clases-grid">
+                                @foreach($clasesDelNivel as $clase)
+                                    <label class="formato-opcion clase-card"
+                                           data-clase-label="{{ mb_strtolower($clase['label']) }}"
+                                           data-clase-total="{{ $clase['total'] }}">
+                                        <input type="checkbox"
+                                               name="clases[]"
+                                               value="{{ $clase['key'] }}"
+                                               onchange="actualizarContadorClases()">
+                                        <span>
+                                            <strong>{{ $clase['label'] }}</strong>
+                                            <small>{{ $clase['total'] }} {{ $clase['total'] === 1 ? 'alumno' : 'alumnos' }}</small>
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </details>
+                    @endforeach
+                </div>
+
+                <div id="clases-sin-resultados" style="display:none; text-align:center; padding:24px 12px; color:var(--text-muted); font-size:13px">
+                    No hay clases que coincidan con tu búsqueda.
+                </div>
+            @endif
+            </div>
+
+            <footer class="formato-modal-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="cerrarModalDescargarClases()">Cancelar</button>
+                <button type="submit" id="btn-submit-descargar-clases" class="btn btn-primary btn-sm" disabled>
+                    📥 Descargar alumnos
+                </button>
+            </footer>
+        </form>
+    </section>
+</div>
+
+<style>
+    .formato-modal-overlay {
+        position:fixed; inset:0; z-index:1200; display:none; align-items:center; justify-content:center;
+        padding:14px; background:rgba(24,19,17,.58); backdrop-filter:blur(3px);
+    }
+    .formato-modal-overlay.is-open { display:flex; }
+    .formato-modal-panel {
+        position:relative; width:min(640px, 100%); max-height:calc(100vh - 28px); overflow:hidden;
+        display:flex; flex-direction:column;
+        border:1px solid var(--border); border-radius:12px; background:var(--surface);
+        color:var(--text); box-shadow:0 22px 64px rgba(24,19,17,.28);
+    }
+    .formato-modal-panel::before { content:""; position:absolute; inset:0 0 auto; height:4px; background:var(--accent); z-index:3; }
+    .formato-modal-header {
+        display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+        padding:22px 24px 14px; border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .formato-modal-kicker { display:block; margin-bottom:3px; color:var(--text-muted); font-size:12px; }
+    .formato-modal-badge {
+        display:inline-block; margin-top:6px; padding:3px 10px; border-radius:999px; font-size:11.5px;
+        font-weight:600; background:#dcfce7; color:#16a34a;
+    }
+    .formato-modal-header h2 { margin:0; font-family:'Bricolage Grotesque',sans-serif; font-size:20px; }
+    .formato-tabs {
+        display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin-bottom:18px;
+        border:1px solid var(--border); border-radius:10px; background:var(--surface2);
+    }
+    .formato-tab {
+        display:flex; align-items:center; justify-content:center; gap:8px; padding:9px 12px;
+        border:0; border-radius:7px; background:transparent; color:var(--text-muted);
+        font:600 13px 'Inter',sans-serif; cursor:pointer; transition:background .15s, color .15s, box-shadow .15s;
+    }
+    .formato-tab:hover { color:var(--text); }
+    .formato-tab.is-active { background:var(--surface); color:var(--accent); box-shadow:0 1px 4px rgba(24,19,17,.14); }
+    .formato-opcion {
+        display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border);
+        border-radius:8px; background:#fff; cursor:pointer; transition:border-color .15s, background .15s;
+    }
+    .formato-opcion:hover, .formato-opcion.is-selected { border-color:var(--accent); background:#fff8f6; }
+    .formato-opcion input[type="checkbox"] {
+        -webkit-appearance:none; appearance:none;
+        position:relative; width:18px; height:18px; margin:0; flex:0 0 auto;
+        border:1.5px solid #cfc9be; border-radius:5px; background:var(--surface);
+        cursor:pointer; transition:border-color .15s, background .15s, box-shadow .15s;
+    }
+    .formato-opcion:hover input[type="checkbox"] { border-color:var(--accent); }
+    .formato-opcion input[type="checkbox"]:focus-visible {
+        outline:none; box-shadow:0 0 0 3px rgba(226,35,26,.18);
+    }
+    .formato-opcion input[type="checkbox"]:checked {
+        border-color:var(--accent); background:var(--accent);
+        box-shadow:0 1px 3px rgba(226,35,26,.28);
+    }
+    .formato-opcion input[type="checkbox"]:checked::after {
+        content:""; position:absolute; left:5px; top:1.5px;
+        width:5px; height:9px;
+        border:solid #fff; border-width:0 2px 2px 0;
+        transform:rotate(42deg);
+    }
+    .formato-opcion span { display:grid; gap:2px; min-width:0; }
+    .formato-opcion strong { font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .formato-opcion small { color:var(--text-muted); font-size:12px; }
+    .formato-aviso {
+        padding:16px; border:1px solid var(--border); border-left:4px solid var(--accent);
+        border-radius:8px; background:var(--surface2);
+    }
+    .formato-aviso strong { display:block; margin-bottom:4px; font-size:14px; }
+    .formato-aviso p { margin:0; color:var(--text-muted); font-size:13px; }
+    .formato-modal-actions {
+        display:flex; justify-content:flex-end; gap:8px; flex-shrink:0;
+        background:var(--surface); padding:12px 24px 18px; border-top:1px solid var(--border);
+    }
+    #form-descargar-clases { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .formato-modal-scroll {
+        flex:1; min-height:0; overflow-y:auto; padding:16px 18px 16px 24px;
+        scrollbar-width:thin; scrollbar-color:#d6d1c8 transparent;
+    }
+    .formato-modal-scroll::-webkit-scrollbar { width:6px; }
+    .formato-modal-scroll::-webkit-scrollbar-track { background:transparent; margin:8px 0; }
+    .formato-modal-scroll::-webkit-scrollbar-thumb { background:#d6d1c8; border-radius:999px; }
+    .formato-modal-scroll::-webkit-scrollbar-thumb:hover { background:#b8b1a6; }
+    .formato-modal-scroll::-webkit-scrollbar-button { display:none; height:0; width:0; }
+    .clases-toolbar { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+    .clases-actions-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .niveles-acordeon {
+        display:flex; flex-direction:column; gap:8px;
+    }
+    .nivel-grupo {
+        border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; flex-shrink:0;
+    }
+    .nivel-grupo-header {
+        list-style:none; display:flex; align-items:center; justify-content:space-between; gap:10px;
+        padding:10px 14px; background:var(--surface2); cursor:pointer; user-select:none;
+        transition:background .15s;
+    }
+    .nivel-grupo-header::-webkit-details-marker { display:none; }
+    .nivel-grupo-header:hover { background:#ebe6dc; }
+    .nivel-grupo-titulo { display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
+    .nivel-grupo-titulo strong { font-size:13.5px; color:var(--text); }
+    .nivel-grupo-meta { font-size:11.5px; color:var(--text-muted); }
+    .nivel-chevron {
+        display:inline-block; font-size:12px; color:var(--text-muted); transition:transform .15s;
+    }
+    .nivel-grupo[open] .nivel-chevron { transform:rotate(90deg); color:var(--accent); }
+    .nivel-grupo-acciones { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+    .nivel-sel-badge {
+        padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600;
+        background:#fee2e2; color:var(--accent);
+    }
+    .nivel-toggle-btn {
+        padding:4px 9px; border:1px solid var(--border); border-radius:6px; background:#fff;
+        color:var(--text-muted); font-size:11.5px; font-weight:600; cursor:pointer; transition:all .15s;
+    }
+    .nivel-toggle-btn:hover { border-color:var(--accent); color:var(--accent); }
+    .clases-grid {
+        display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:8px;
+        padding:12px; border-top:1px solid var(--border);
+    }
+    #btn-submit-descargar-clases:disabled { opacity:.55; cursor:not-allowed; }
+</style>
 
 @if(session('error'))
     <div class="alert alert-danger">❌ {{ session('error') }}</div>
@@ -408,5 +670,137 @@ document.getElementById('alumnos-tbody').addEventListener('click', function (e) 
         btn.innerHTML = eyeOpen;  // contraseña oculta → mostrar ojo normal
     }
 });
+
+// ===== Modal: Descargar alumnos por clase =====
+const modalClases = document.getElementById('modal-descargar-clases');
+
+function abrirModalDescargarClases() {
+    if (!modalClases) return;
+    modalClases.classList.add('is-open');
+    modalClases.setAttribute('aria-hidden', 'false');
+    const filtro = document.getElementById('filtro-clases');
+    if (filtro) setTimeout(() => filtro.focus(), 50);
+    actualizarContadorClases();
+}
+
+function cerrarModalDescargarClases() {
+    if (!modalClases) return;
+    modalClases.classList.remove('is-open');
+    modalClases.setAttribute('aria-hidden', 'true');
+}
+
+if (modalClases) {
+    modalClases.addEventListener('click', function (e) {
+        if (e.target === modalClases) cerrarModalDescargarClases();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modalClases.classList.contains('is-open')) {
+            cerrarModalDescargarClases();
+        }
+    });
+}
+
+function cambiarModoClases(modo, btn) {
+    document.getElementById('descargar-clases-modo').value = modo;
+    document.querySelectorAll('[data-clase-modo]').forEach(el => {
+        const activo = el === btn;
+        el.classList.toggle('is-active', activo);
+        el.setAttribute('aria-selected', activo ? 'true' : 'false');
+    });
+    const desc = document.getElementById('descargar-clases-modo-desc');
+    if (desc) {
+        desc.textContent = modo === 'unica'
+            ? 'Genera un archivo Excel con todos los alumnos seleccionados en una sola hoja.'
+            : 'Genera un archivo Excel con una hoja independiente por cada clase seleccionada.';
+    }
+}
+
+function actualizarContadorClases() {
+    const cards = document.querySelectorAll('#clases-grid .clase-card');
+    let seleccionadas = 0;
+    let totalAlumnos = 0;
+
+    cards.forEach(card => {
+        const cb = card.querySelector('input[type="checkbox"]');
+        const checked = cb && cb.checked;
+        card.classList.toggle('is-selected', Boolean(checked));
+        if (checked) {
+            seleccionadas++;
+            totalAlumnos += parseInt(card.dataset.claseTotal || '0', 10);
+        }
+    });
+
+    document.querySelectorAll('#clases-grid .nivel-grupo').forEach(grupo => {
+        const visibles = Array.from(grupo.querySelectorAll('.clase-card')).filter(c => c.style.display !== 'none');
+        const marcadas = visibles.filter(c => c.querySelector('input[type="checkbox"]')?.checked).length;
+        const badge = grupo.querySelector('.nivel-sel-badge');
+        const btn = grupo.querySelector('.nivel-toggle-btn');
+        if (badge) {
+            badge.hidden = marcadas === 0;
+            badge.textContent = `${marcadas} sel.`;
+        }
+        if (btn) {
+            const todasMarcadas = visibles.length > 0 && marcadas === visibles.length;
+            btn.textContent = todasMarcadas ? 'Quitar nivel' : 'Seleccionar nivel';
+        }
+    });
+
+    const contador = document.getElementById('clases-contador');
+    if (contador) {
+        const labelClases = seleccionadas === 1 ? 'seleccionada' : 'seleccionadas';
+        const labelAlumnos = totalAlumnos === 1 ? 'alumno' : 'alumnos';
+        contador.textContent = `${seleccionadas} ${labelClases} · ${totalAlumnos} ${labelAlumnos}`;
+    }
+
+    const submitBtn = document.getElementById('btn-submit-descargar-clases');
+    if (submitBtn) {
+        submitBtn.disabled = seleccionadas === 0;
+    }
+}
+
+function alternarNivelClases(btn) {
+    const grupo = btn.closest('.nivel-grupo');
+    if (!grupo) return;
+    const visibles = Array.from(grupo.querySelectorAll('.clase-card')).filter(c => c.style.display !== 'none');
+    const todasMarcadas = visibles.length > 0 && visibles.every(c => c.querySelector('input[type="checkbox"]')?.checked);
+    visibles.forEach(card => {
+        const cb = card.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = !todasMarcadas;
+    });
+    if (!todasMarcadas) grupo.open = true;
+    actualizarContadorClases();
+}
+
+function seleccionarTodasClases(marcar) {
+    document.querySelectorAll('#clases-grid .clase-card').forEach(card => {
+        if (card.style.display === 'none') return;
+        const cb = card.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = marcar;
+    });
+    actualizarContadorClases();
+}
+
+function filtrarClasesModal() {
+    const q = (document.getElementById('filtro-clases')?.value || '').trim().toLowerCase();
+    let visibles = 0;
+
+    document.querySelectorAll('#clases-grid .nivel-grupo').forEach(grupo => {
+        let visiblesEnNivel = 0;
+        grupo.querySelectorAll('.clase-card').forEach(card => {
+            const match = !q || (card.dataset.claseLabel || '').includes(q);
+            card.style.display = match ? '' : 'none';
+            if (match) {
+                visibles++;
+                visiblesEnNivel++;
+            }
+        });
+        grupo.style.display = visiblesEnNivel > 0 ? '' : 'none';
+        if (q && visiblesEnNivel > 0) grupo.open = true;
+    });
+
+    const vacio = document.getElementById('clases-sin-resultados');
+    if (vacio) vacio.style.display = visibles === 0 ? '' : 'none';
+    actualizarContadorClases();
+}
 </script>
 @endsection

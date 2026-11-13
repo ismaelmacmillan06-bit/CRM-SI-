@@ -100,8 +100,10 @@
         .mt-contacto-btn { flex:1 1 0; justify-content:center; }
     }
     .mt-vista-btn { border:none; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--text-muted);
-                    padding:7px 16px; border-radius:7px; cursor:pointer; }
+                    padding:7px 16px; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
     .mt-vista-btn.activa { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    .mt-tab-count { font-size:11px; font-weight:700; padding:1px 7px; border-radius:99px; background:rgba(24,19,17,.08); color:var(--text-muted); }
+    .mt-vista-btn.activa .mt-tab-count { background:var(--accent); color:#fff; }
 
     /* Calendario */
     .mt-dot { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
@@ -222,6 +224,9 @@
     <div class="mt-vistas" role="tablist">
         <button type="button" class="mt-vista-btn activa" data-vista="tabla" role="tab">📋 Tabla</button>
         <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
+        <button type="button" class="mt-vista-btn" data-vista="manuales" role="tab">
+            📘 Manuales <span class="mt-tab-count">{{ $manuales->count() }}</span>
+        </button>
     </div>
     <div class="mt-barra-der">
         <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary mt-contacto-btn">📥 Descargar Excel</a>
@@ -316,6 +321,15 @@
         <div class="card-header"><span class="card-title" id="mt-cal-lista-titulo">Eventos del mes</span></div>
         <div id="mt-cal-lista"></div>
     </div>
+</div>
+
+<div id="mt-vista-manuales" style="display:none">
+    @include('seguimiento.partials._recursos_section', [
+        'recursos' => $manuales,
+        'categoria' => 'manuales',
+        'iconoCategoria' => '📘',
+        'nombre' => $nombre,
+    ])
 </div>
 
 <div class="card" id="mt-vista-tabla">
@@ -424,6 +438,7 @@
                 </td>
                 <td style="text-align:right">
                     <div class="mt-acc">
+                        <a href="{{ route('schools.students.index', $c) }}" class="btn btn-secondary btn-sm" title="Alumnos de {{ $c->name }}">👨‍🎓</a>
                         <a href="{{ route('schools.tickets.index', $c) }}" class="btn btn-secondary btn-sm" title="Tickets de {{ $c->name }}">🎫</a>
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
                         <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
@@ -493,8 +508,10 @@
     let calAnio = new Date().getFullYear(), calMes = new Date().getMonth();
 
     function cambiarVista(v) {
+        if (!['tabla', 'calendario', 'manuales'].includes(v)) v = 'tabla';
         document.getElementById('mt-vista-tabla').style.display = v === 'tabla' ? '' : 'none';
         document.getElementById('mt-vista-calendario').style.display = v === 'calendario' ? '' : 'none';
+        document.getElementById('mt-vista-manuales').style.display = v === 'manuales' ? '' : 'none';
         document.querySelectorAll('.mt-vista-btn').forEach(b => b.classList.toggle('activa', b.dataset.vista === v));
         try { localStorage.setItem('sic-meta-vista', v); } catch (e) {}
         if (v === 'calendario') pintarCalendario();
@@ -619,10 +636,17 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && ctModal.classList.contains('abierto')) mtContacto(false); });
     @endif
 
+    const tabFlash = @json(session('tab'));
+    const tieneErrorRecurso = @json($errors->has('titulo') || $errors->has('archivo') || $errors->has('audiencia'));
     let vistaGuardada = null;
     try { vistaGuardada = localStorage.getItem('sic-meta-vista'); } catch (e) {}
-    if (vistaGuardada === 'calendario') cambiarVista('calendario');
+    if (tabFlash === 'manuales' || tieneErrorRecurso) {
+        cambiarVista('manuales');
+    } else if (vistaGuardada === 'calendario' || vistaGuardada === 'manuales') {
+        cambiarVista(vistaGuardada);
+    }
 
 })();
 </script>
+@include('seguimiento.partials._recursos_modals', ['slug' => $slug, 'categoriaDefault' => 'manuales'])
 @endsection

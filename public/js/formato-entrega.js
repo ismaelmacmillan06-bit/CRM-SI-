@@ -1,11 +1,14 @@
 const formatoScript = document.currentScript;
-document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
-    const accesosUrl = formatoScript?.dataset.accesosUrl;
+const formatoButtons = document.querySelectorAll('[data-formato-entrega]');
+if (formatoButtons.length > 0) {
     const logoUrl = formatoScript?.dataset.logoUrl;
     const tabs = document.querySelector('[data-formato-tabs]');
     const loadingTitle = document.querySelector('#formato-entrega-overlay .formato-loading-title');
     let mode = 'excel';
+    let activeButton = formatoButtons[0];
     const dialog = document.getElementById('formato-entrega-dialog');
+    const kicker = dialog?.querySelector('.formato-modal-kicker');
+    const defaultKicker = kicker?.textContent || '';
     const status = document.getElementById('formato-entrega-resultado');
     const loadingOverlay = document.getElementById('formato-entrega-overlay');
     const dots = loadingOverlay?.querySelector('[data-formato-dots]');
@@ -46,7 +49,7 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
         dialog?.classList.remove('is-open');
         dialog?.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
-        button.focus();
+        activeButton?.focus();
     };
     const showLoading = () => {
         loadingOverlay?.classList.add('is-open');
@@ -80,13 +83,25 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     });
     setMode('excel');
 
-    button.addEventListener('click', (event) => {
-        event.preventDefault();
-        resetNotice();
-        dialog?.classList.add('is-open');
-        dialog?.setAttribute('aria-hidden', 'false');
-        document.body.style.overflow = 'hidden';
-        dialog?.querySelector('input[name="formato-tipo"]:checked')?.focus();
+    formatoButtons.forEach((button) => {
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            activeButton = button;
+            if (kicker) kicker.textContent = button.dataset.schoolName || defaultKicker;
+            if (status && button.dataset.studentCount !== undefined) {
+                status.dataset.studentReviewCount = button.dataset.studentReviewCount || '0';
+                status.dataset.studentClassCount = button.dataset.studentClassCount || '0';
+                status.dataset.teacherReviewCount = button.dataset.teacherReviewCount || '0';
+                status.dataset.teacherClassCount = button.dataset.teacherClassCount || '0';
+                status.dataset.studentCount = button.dataset.studentCount || '0';
+                status.dataset.teacherCount = button.dataset.teacherCount || '0';
+            }
+            resetNotice();
+            dialog?.classList.add('is-open');
+            dialog?.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            dialog?.querySelector('input[name="formato-tipo"]:checked')?.focus();
+        });
     });
 
     dialog?.querySelectorAll('[data-formato-cancel]').forEach((cancelButton) => {
@@ -121,7 +136,9 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
     });
 
     generateButton?.addEventListener('click', async () => {
-        if (!status || button.dataset.loading) return;
+        if (!status || !activeButton || activeButton.dataset.loading) return;
+        const button = activeButton;
+        const accesosUrl = button.dataset.accesosUrl || formatoScript?.dataset.accesosUrl;
 
         const tipo = dialog.querySelector('input[name="formato-tipo"]:checked')?.value || 'alumnos';
         const studentCount = Number(status.dataset.studentCount || 0);
@@ -270,4 +287,4 @@ document.querySelectorAll('[data-formato-entrega]').forEach((button) => {
             hideLoading();
         }
     });
-});
+}

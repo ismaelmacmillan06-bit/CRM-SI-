@@ -63,6 +63,33 @@
     </div>
 </div>
 
+@if($slug === 'global-educa')
+<style>
+    .ge-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+    .ge-vista-btn { border:none; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--text-muted);
+                    padding:7px 16px; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+    .ge-vista-btn.activa { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    .ge-tab-count { font-size:11px; font-weight:700; padding:1px 7px; border-radius:99px; background:rgba(24,19,17,.08); color:var(--text-muted); }
+    .ge-vista-btn.activa .ge-tab-count { background:var(--accent); color:#fff; }
+    .ge-badge-prox {
+        font-size:10.5px; font-weight:700; letter-spacing:.2px;
+        padding:2px 8px; border-radius:99px;
+        background:#fef3c7; color:#b45309; border:1px solid #fde68a;
+    }
+</style>
+
+<div class="ge-vistas" role="tablist">
+    <button type="button" class="ge-vista-btn activa" data-ge-vista="tabla" role="tab">📋 Tabla</button>
+    <button type="button" class="ge-vista-btn" data-ge-vista="formatos" role="tab">
+        📄 Formatos <span class="ge-tab-count">{{ ($formatos ?? collect())->count() }}</span>
+    </button>
+    <button type="button" class="ge-vista-btn" data-ge-vista="manuales" role="tab">
+        📘 Manuales <span class="ge-badge-prox">Próximamente</span>
+    </button>
+</div>
+@endif
+
+<div id="ge-vista-tabla">
 <div class="card">
     <div class="card-header" style="gap:12px; flex-wrap:wrap">
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
@@ -122,6 +149,24 @@
                 </td>
                 <td style="text-align:right">
                     <div style="display:inline-flex; gap:6px; flex-wrap:nowrap; justify-content:flex-end">
+                        @if($slug === 'global-educa')
+                        @php $resFormato = $resumenFormato[$fila['colegio']->id] ?? []; @endphp
+                        <a href="{{ route('schools.formato-entrega', $fila['colegio']) }}"
+                           class="btn btn-secondary btn-sm"
+                           style="white-space:nowrap"
+                           data-formato-entrega
+                           data-school-name="{{ $fila['colegio']->name }}"
+                           data-accesos-url="{{ route('schools.formato-entrega.accesos', $fila['colegio']) }}"
+                           data-student-review-count="{{ $resFormato['studentReviewCount'] ?? 0 }}"
+                           data-student-class-count="{{ $resFormato['studentClassCount'] ?? 0 }}"
+                           data-teacher-review-count="{{ $resFormato['teacherReviewCount'] ?? 0 }}"
+                           data-teacher-class-count="{{ $resFormato['teacherClassCount'] ?? 0 }}"
+                           data-student-count="{{ $resFormato['studentCount'] ?? 0 }}"
+                           data-teacher-count="{{ $resFormato['teacherCount'] ?? 0 }}"
+                           title="Formato de entrega Global Educa de {{ $fila['colegio']->name }}">
+                            🌐 Formato entrega
+                        </a>
+                        @endif
                         <a href="{{ route('schools.tickets.index', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
                            style="white-space:nowrap" title="Tickets de {{ $fila['colegio']->name }}">🎫 Tickets</a>
                         <a href="{{ route('schools.visits.index', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
@@ -142,6 +187,62 @@
     </table>
     </div>
 </div>
+</div>
+
+@if($slug === 'global-educa')
+<div id="ge-vista-formatos" style="display:none">
+    @include('seguimiento.partials._recursos_section', [
+        'recursos' => $formatos ?? collect(),
+        'categoria' => 'formatos',
+        'iconoCategoria' => '📄',
+        'nombre' => $nombre,
+    ])
+</div>
+
+<div id="ge-vista-manuales" style="display:none">
+    <div class="card" style="text-align:center; padding:54px 24px">
+        <div style="font-size:44px; line-height:1; margin-bottom:12px">📘</div>
+        <span class="ge-badge-prox" style="font-size:12px; padding:4px 12px">Próximamente</span>
+        <h2 style="font-family:'Bricolage Grotesque',sans-serif; font-size:20px; font-weight:700; margin:12px 0 6px; color:var(--text)">
+            Manuales de {{ $nombre }}
+        </h2>
+        <p style="font-size:13.5px; color:var(--text-muted); max-width:440px; margin:0 auto">
+            Esta sección estará disponible muy pronto con guías y manuales descargables para el equipo.
+        </p>
+    </div>
+</div>
+@endif
+
+@if($slug === 'global-educa')
+@include('seguimiento.partials._recursos_modals', ['slug' => $slug, 'categoriaDefault' => 'formatos'])
+<script>
+(function () {
+    function cambiarGeVista(v) {
+        if (!['tabla', 'formatos', 'manuales'].includes(v)) v = 'tabla';
+        document.getElementById('ge-vista-tabla').style.display = v === 'tabla' ? '' : 'none';
+        document.getElementById('ge-vista-formatos').style.display = v === 'formatos' ? '' : 'none';
+        document.getElementById('ge-vista-manuales').style.display = v === 'manuales' ? '' : 'none';
+        document.querySelectorAll('.ge-vista-btn').forEach(b => b.classList.toggle('activa', b.dataset.geVista === v));
+        try { localStorage.setItem('sic-ge-vista', v); } catch (e) {}
+    }
+    document.querySelectorAll('.ge-vista-btn').forEach(b => b.addEventListener('click', () => cambiarGeVista(b.dataset.geVista)));
+
+    const tabFlash = @json(session('tab'));
+    const tieneErrorRecurso = @json($errors->has('titulo') || $errors->has('archivo') || $errors->has('audiencia'));
+    let vistaGuardada = null;
+    try { vistaGuardada = localStorage.getItem('sic-ge-vista'); } catch (e) {}
+    if (tabFlash === 'formatos' || tieneErrorRecurso) {
+        cambiarGeVista('formatos');
+    } else if (vistaGuardada && ['tabla', 'formatos', 'manuales'].includes(vistaGuardada)) {
+        cambiarGeVista(vistaGuardada);
+    }
+})();
+</script>
+@include('partials.formato-entrega-modal', ['schoolName' => ''])
+<script src="{{ asset('js/accesos-pdf.js') }}" defer></script>
+<script src="{{ asset('js/formato-entrega.js') }}" defer
+    data-logo-url="{{ asset('images/logo-global-educa.png') }}"></script>
+@endif
 
 <script>
     document.getElementById('buscador-colegios')?.addEventListener('input', function () {

@@ -59,6 +59,16 @@ class DashboardController extends Controller
         $ticketsEnProceso = $schoolScope(Ticket::where('status', 'in_progress'))->count();
         $ticketsResueltos = $schoolScope(Ticket::where('status', 'closed'))->count();
 
+        // Detalle de tickets por status (abiertos / en proceso / resueltos), para el ojito de la card
+        $ticketsBase = fn() => $schoolScope(Ticket::with(['school', 'consultant.user']))
+            ->orderByDesc('created_at');
+
+        $ticketsDetalle = [
+            'abiertos'   => $ticketsBase()->where('status', 'open')->get(),
+            'en_proceso' => $ticketsBase()->where('status', 'in_progress')->get(),
+            'resueltos'  => $ticketsBase()->where('status', 'closed')->get(),
+        ];
+
         // Sesiones
         $visitasPendientes = $schoolScope(Visit::where('status', 'pendiente'))->count();
         $totalVisitas      = $schoolScope(Visit::query())->count();
@@ -191,7 +201,7 @@ class DashboardController extends Controller
 
         return view('dashboard', compact(
             'totalColegiosActivos', 'totalTeachers', 'totalStudents', 'totalConsultants',
-            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos',
+            'ticketsAbiertos', 'ticketsEnProceso', 'ticketsResueltos', 'ticketsDetalle',
             'visitasPendientes', 'totalVisitas', 'visitasDetalle',
             'totalDirectores', 'totalAdminsMee',
             'docentesELT', 'docentesECA',

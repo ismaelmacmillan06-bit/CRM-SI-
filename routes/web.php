@@ -27,6 +27,7 @@ use App\Http\Controllers\AlumnosDocentesController;
 use App\Http\Controllers\AvanceColegiosController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\SeguimientoController;
+use App\Http\Controllers\SeguimientoRecursoController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\ReporteSemanalController;
 
@@ -97,8 +98,11 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('consultants.password');
 
     // Tickets
+    Route::get('schools/{school}/tickets-report/excel', [TicketController::class, 'reportExcel'])
+        ->name('schools.tickets.report.excel');
+    Route::get('schools/{school}/tickets-report/pdf', [TicketController::class, 'reportPdf'])
+        ->name('schools.tickets.report.pdf');
     Route::resource('schools.tickets', TicketController::class)
-     ->except(['show'])
      ->shallow();    
     
     // Visitas
@@ -117,6 +121,8 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
          ->name('schools.processes.evidence.destroy');
 
     // Alumnos
+    Route::post('schools/{school}/students/export-by-class', [StudentController::class, 'exportByClass'])
+        ->name('schools.students.export-by-class');
     Route::resource('schools.students', StudentController::class)
         ->except(['show'])
          ->shallow();
@@ -197,6 +203,21 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('produccion', [ProduccionController::class, 'index'])->name('produccion.index');
      Route::post('produccion/cargar', [ProduccionController::class, 'upload'])->name('produccion.upload');
      Route::delete('produccion', [ProduccionController::class, 'destroy'])->name('produccion.destroy');
+
+     // Seguimiento — Manuales y Formatos (antes de {plataforma}/{school} para evitar colisión de rutas)
+     Route::post('seguimiento/{plataforma}/recursos', [SeguimientoRecursoController::class, 'store'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.recursos.store');
+     Route::put('seguimiento/recursos/{recurso}', [SeguimientoRecursoController::class, 'update'])
+          ->name('seguimiento.recursos.update');
+     Route::put('seguimiento/recursos/{recurso}/audiencia', [SeguimientoRecursoController::class, 'updateAudiencia'])
+          ->name('seguimiento.recursos.audiencia.update');
+     Route::delete('seguimiento/recursos/{recurso}', [SeguimientoRecursoController::class, 'destroy'])
+          ->name('seguimiento.recursos.destroy');
+     Route::get('seguimiento/recursos/{recurso}/preview', [SeguimientoRecursoController::class, 'preview'])
+          ->name('seguimiento.recursos.preview');
+     Route::get('seguimiento/recursos/{recurso}/download', [SeguimientoRecursoController::class, 'download'])
+          ->name('seguimiento.recursos.download');
 
      // Seguimiento — Meta, Global Educa, Francés y Red Roo Reads (solo admin / consultor_digital)
      Route::get('seguimiento/{plataforma}', [SeguimientoController::class, 'show'])

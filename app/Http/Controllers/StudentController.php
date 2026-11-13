@@ -12,7 +12,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Smalot\PdfParser\Parser;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class StudentController extends Controller
 {
@@ -66,7 +75,9 @@ class StudentController extends Controller
         }
         $porNivel = $porNivel->sortKeys();
 
-        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage', 'q'));
+        $clasesDisponibles = $this->clasesDisponibles($school);
+
+        return view('students.index', compact('school', 'students', 'nivelesDelColegio', 'porNivel', 'perPage', 'q', 'clasesDisponibles'));
     }
 
     public function create(School $school)
@@ -598,5 +609,334 @@ private function extractStudentsFromPdf(string $text): array
         ActivityLog::log('alumno', "Todos los alumnos de {$school->name} fueron eliminados", $school->id, '🗑️');
         return redirect()->route('schools.students.index', $school)
                          ->with('success', 'Todos los alumnos fueron eliminados.');
+    }
+
+    public function exportByClass(Request $request, School $school)
+    {
+        $request->validate([
+            'clases'   => 'required|array|min:1',
+            'clases.*' => 'required|string',
+            'modo'     => 'nullable|in:hojas,unica',
+        ], [
+            'clases.required' => 'Selecciona al menos una clase para descargar.',
+            'clases.min'      => 'Selecciona al menos una clase para descargar.',
+        ]);
+
+        $seleccionadosMap = [];
+        foreach ($request->input('clases', []) as $encoded) {
+            $decoded = json_decode(base64_decode($encoded, true) ?: '', true);
+            if (is_array($decoded) && count($decoded) === 2) {
+                $l = trim((string) $decoded[0]);
+                $g = trim((string) $decoded[1]);
+                $seleccionadosMap[$l . "\0" . $g] = [
+                    'level' => $l,
+                    'grade' => $g,
+                    'label' => ($l !== '' ? $l : 'Sin nivel') . ' · ' . ($g !== '' ? $g : 'Sin grado'),
+                ];
+            }
+        }
+
+        if ($seleccionadosMap === []) {
+            return back()->with('error', 'No se seleccionaron clases válidas.');
+        }
+
+        $students = $school->students()
+            ->orderBy('level')
+            ->orderBy('grade')
+            ->orderBy('last_name')
+            ->orderBy('name')
+            ->get(['name', 'last_name', 'level', 'grade', 'mee_username', 'mee_password']);
+
+        $agrupados = [];
+        $todos = [];
+
+        foreach ($students as $student) {
+            $l = trim((string) $student->level);
+            $g = trim((string) $student->grade);
+            $pairKey = $l . "\0" . $g;
+            if (!isset($seleccionadosMap[$pairKey])) {
+                continue;
+            }
+            $label = $seleccionadosMap[$pairKey]['label'];
+            $agrupados[$label] ??= [];
+            $agrupados[$label][] = $student;
+            $todos[] = $student;
+        }
+
+        if ($todos === []) {
+            return back()->with('error', 'No se encontraron alumnos en las clases seleccionadas.');
+        }
+
+        uksort($agrupados, fn ($a, $b) => strnatcasecmp($a, $b));
+
+        $modo = $request->input('modo', 'hojas');
+        $spreadsheet = new Spreadsheet();
+        $usedTitles = [];
+
+        if ($modo === 'unica') {
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle($this->uniqueSheetTitle('Alumnos por clase', $usedTitles));
+            $sheet->getTabColor()->setRGB('E2231A');
+            $this->writeStudentsSheet(
+                $sheet,
+                $school,
+                $agrupados,
+                count($agrupados) . ' ' . (count($agrupados) === 1 ? 'clase' : 'clases')
+            );
+        } else {
+            $first = true;
+            $paletteIdx = 0;
+            foreach ($agrupados as $classLabel => $classStudents) {
+                $sheet = $first ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
+                $first = false;
+                $sheet->setTitle($this->uniqueSheetTitle($classLabel, $usedTitles));
+                $this->writeStudentsSheet(
+                    $sheet,
+                    $school,
+                    [$classLabel => $classStudents],
+                    $classLabel,
+                    $paletteIdx++
+                );
+            }
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $safeSchoolName = trim(str_replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], '-', $school->name), ' .');
+        if (count($agrupados) === 1) {
+            $singleLabel = trim(str_replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*', '·'], '-', (string) array_key_first($agrupados)), ' .');
+            $singleLabel = preg_replace('/\s*-+\s*/', '_', $singleLabel) ?: 'Clase';
+            $filename = "Alumnos_{$safeSchoolName}_{$singleLabel}.xlsx";
+        } else {
+            $filename = "Alumnos_por_clase_{$safeSchoolName}.xlsx";
+        }
+
+        ActivityLog::log(
+            'alumno',
+            'Descarga de alumnos por clase (' . count($agrupados) . ' ' . (count($agrupados) === 1 ? 'clase' : 'clases') . ', ' . count($todos) . ' alumnos) en ' . $school->name,
+            $school->id,
+            '📥'
+        );
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'alumnos_clase_');
+        try {
+            (new Xlsx($spreadsheet))->save($tempFile);
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+
+            return response()->download($tempFile, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            @unlink($tempFile);
+            return back()->with('error', 'No se pudo generar el archivo Excel. Intenta de nuevo.');
+        }
+    }
+
+    private function clasesDisponibles(School $school)
+    {
+        $agrupados = [];
+        $rows = $school->students()
+            ->select('level', 'grade')
+            ->selectRaw('COUNT(*) as total')
+            ->groupBy('level', 'grade')
+            ->get();
+
+        foreach ($rows as $row) {
+            $levelVal = trim((string) $row->level);
+            $gradeVal = trim((string) $row->grade);
+            $key = base64_encode(json_encode([$levelVal, $gradeVal]));
+
+            if (!isset($agrupados[$key])) {
+                $levelLabel = $levelVal !== '' ? $levelVal : 'Sin nivel';
+                $gradeLabel = $gradeVal !== '' ? $gradeVal : 'Sin grado';
+                $agrupados[$key] = [
+                    'key'       => $key,
+                    'level_val' => $levelVal,
+                    'grade_val' => $gradeVal,
+                    'level'     => $levelLabel,
+                    'grade'     => $gradeLabel,
+                    'label'     => $levelLabel . ' · ' . $gradeLabel,
+                    'total'     => 0,
+                ];
+            }
+            $agrupados[$key]['total'] += (int) $row->total;
+        }
+
+        return collect(array_values($agrupados))
+            ->sort(fn ($a, $b) => strnatcasecmp($a['level'], $b['level']) ?: strnatcasecmp($a['grade'], $b['grade']))
+            ->values();
+    }
+
+    private function writeStudentsSheet($sheet, School $school, array $groupedStudents, string $subtitle, int $paletteOffset = 0): void
+    {
+        $palette = [
+            ['B31810', 'FFF1F2', 'FECDD3'], // Rojo carmesí
+            ['1D4ED8', 'EFF6FF', 'BFDBFE'], // Azul cobalto
+            ['047857', 'ECFDF5', 'A7F3D0'], // Verde esmeralda
+            ['B45309', 'FFFBEB', 'FDE68A'], // Ámbar cálido
+            ['6D28D9', 'F5F3FF', 'DDD6FE'], // Violeta
+            ['0F766E', 'F0FDFA', '99F6E4'], // Teal
+        ];
+
+        $totalAlumnos = array_sum(array_map('count', $groupedStudents));
+        $nexusLabel = $school->nexus_id ? "ID Nexus: {$school->nexus_id}" : 'Sin Nexus ID';
+        $generado = now()->format('d/m/Y H:i');
+
+        // Color de pestaña acorde a la paleta cuando es una hoja por clase
+        if (count($groupedStudents) === 1) {
+            [$tabColor] = $palette[$paletteOffset % count($palette)];
+            $sheet->getTabColor()->setRGB($tabColor);
+        }
+
+        // Fila 1-2: Banner principal con degradado completo y logo blanco transparente
+        $sheet->setCellValue('A1', 'LISTADO DE ALUMNOS — ' . strtoupper($school->name));
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1:F1')->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => [
+                'fillType'   => Fill::FILL_GRADIENT_LINEAR,
+                'rotation'   => 0,
+                'startColor' => ['rgb' => '181311'],
+                'endColor'   => ['rgb' => 'E2231A'],
+            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $sheet->getRowDimension(1)->setRowHeight(36);
+
+        // Fila 2: Sub-banner con Nexus ID, resumen y fecha
+        $sheet->setCellValue('A2', "{$nexusLabel}   |   {$subtitle}   |   Total: {$totalAlumnos} " . ($totalAlumnos === 1 ? 'alumno' : 'alumnos') . "   |   Generado: {$generado}");
+        $sheet->mergeCells('A2:F2');
+        $sheet->getStyle('A2:F2')->applyFromArray([
+            'font'      => ['size' => 10, 'italic' => true, 'color' => ['rgb' => 'F8FAFC']],
+            'fill'      => [
+                'fillType'   => Fill::FILL_GRADIENT_LINEAR,
+                'rotation'   => 0,
+                'startColor' => ['rgb' => '2D1B18'],
+                'endColor'   => ['rgb' => 'B31810'],
+            ],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders'   => ['bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'FBBF24']]],
+        ]);
+        $sheet->getRowDimension(2)->setRowHeight(24);
+
+        $logoPath = public_path('images/logo-si-pdf-white.png');
+        if (!is_file($logoPath)) {
+            $logoPath = public_path('images/logo-si-pdf.png');
+        }
+        if (is_file($logoPath)) {
+            $logo = new Drawing();
+            $logo->setName('Macmillan SI');
+            $logo->setDescription('Macmillan SI');
+            $logo->setPath($logoPath);
+            $logo->setCoordinates('A1');
+            $logo->setHeight(44);
+            $logo->setOffsetX(12);
+            $logo->setOffsetY(6);
+            $logo->setWorksheet($sheet);
+        }
+
+        // Fila 3: Separador
+        $sheet->getRowDimension(3)->setRowHeight(10);
+
+        $headers = ['Nombre', 'Apellidos', 'Nivel', 'Grado', 'Usuario MEE', 'Contraseña MEE'];
+        $rowNum = 4;
+        $groupIndex = 0;
+
+        foreach ($groupedStudents as $classLabel => $students) {
+            [$accentHex, $softHex, $borderHex] = $palette[($paletteOffset + $groupIndex) % count($palette)];
+            $count = count($students);
+
+            // Encabezado de clase con degradado de la paleta
+            $sheet->setCellValue("A{$rowNum}", "📚  {$classLabel}   —   {$count} " . ($count === 1 ? 'alumno' : 'alumnos'));
+            $sheet->mergeCells("A{$rowNum}:F{$rowNum}");
+            $sheet->getStyle("A{$rowNum}:F{$rowNum}")->applyFromArray([
+                'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
+                'fill'      => [
+                    'fillType'   => Fill::FILL_GRADIENT_LINEAR,
+                    'rotation'   => 0,
+                    'startColor' => ['rgb' => '181311'],
+                    'endColor'   => ['rgb' => $accentHex],
+                ],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT, 'vertical' => Alignment::VERTICAL_CENTER, 'indent' => 1],
+            ]);
+            $sheet->getRowDimension($rowNum)->setRowHeight(25);
+            $rowNum++;
+
+            // Encabezados de columna con tinte suave coordinado
+            foreach ($headers as $ci => $header) {
+                $col = Coordinate::stringFromColumnIndex($ci + 1);
+                $sheet->setCellValue("{$col}{$rowNum}", $header);
+            }
+            $sheet->getStyle("A{$rowNum}:F{$rowNum}")->applyFromArray([
+                'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => $accentHex]],
+                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $softHex]],
+                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                'borders'   => [
+                    'top'    => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => $borderHex]],
+                    'bottom' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => $accentHex]],
+                ],
+            ]);
+            $sheet->getRowDimension($rowNum)->setRowHeight(22);
+            $rowNum++;
+
+            // Filas de alumnos con zebra striping
+            foreach ($students as $idx => $student) {
+                $sheet->setCellValueExplicit("A{$rowNum}", trim((string) $student->name), DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit("B{$rowNum}", trim((string) $student->last_name), DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit("C{$rowNum}", trim((string) $student->level), DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit("D{$rowNum}", trim((string) $student->grade), DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit("E{$rowNum}", trim((string) $student->mee_username), DataType::TYPE_STRING);
+                $sheet->setCellValueExplicit("F{$rowNum}", trim((string) $student->mee_password), DataType::TYPE_STRING);
+
+                $rowBg = $idx % 2 === 1 ? 'F8FAFC' : 'FFFFFF';
+                $sheet->getStyle("A{$rowNum}:F{$rowNum}")->applyFromArray([
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $rowBg]],
+                    'alignment' => ['vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => [
+                        'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'E4E0D8']],
+                    ],
+                ]);
+                $sheet->getStyle("C{$rowNum}:D{$rowNum}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getRowDimension($rowNum)->setRowHeight(20);
+                $rowNum++;
+            }
+
+            // Separación notable entre clases
+            $sheet->getRowDimension($rowNum)->setRowHeight(14);
+            $rowNum++;
+            $groupIndex++;
+        }
+
+        $widths = ['A' => 26, 'B' => 26, 'C' => 16, 'D' => 16, 'E' => 30, 'F' => 20];
+        foreach ($widths as $col => $width) {
+            $sheet->getColumnDimension($col)->setWidth($width);
+        }
+
+        $sheet->setShowGridlines(false);
+        $sheet->freezePane('A4');
+        $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE)->setFitToWidth(1)->setFitToHeight(0);
+        $sheet->getHeaderFooter()->setOddFooter('&LMacmillan Castillo  |  Solución integral&R Página &P de &N');
+    }
+
+    private function uniqueSheetTitle(string $rawTitle, array &$usedTitles): string
+    {
+        $clean = str_replace(['\\', '/', '?', '*', ':', '[', ']'], '-', $rawTitle);
+        $clean = trim($clean, " '-");
+        if ($clean === '') {
+            $clean = 'Clase';
+        }
+
+        $base = mb_substr($clean, 0, 31);
+        $candidate = $base;
+        $i = 2;
+        while (isset($usedTitles[mb_strtolower($candidate)])) {
+            $suffix = ' (' . $i . ')';
+            $candidate = mb_substr($clean, 0, 31 - mb_strlen($suffix)) . $suffix;
+            $i++;
+        }
+        $usedTitles[mb_strtolower($candidate)] = true;
+
+        return $candidate;
     }
 }

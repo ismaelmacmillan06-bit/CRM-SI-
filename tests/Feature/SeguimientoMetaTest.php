@@ -236,8 +236,8 @@ class SeguimientoMetaTest extends TestCase
         $colegios = $libro->getSheetByName('Colegios');
         $this->assertSame('NX-77', $colegios->getCell('A5')->getValue());
         $this->assertSame('Colegio Excel', $colegios->getCell('B5')->getValue());
-        $this->assertSame('1/5 (20%)', $colegios->getCell('E5')->getValue());
-        $this->assertSame('Laura Pérez', $colegios->getCell('G5')->getValue());
+        $this->assertSame('1/5 (20%)', $colegios->getCell('F5')->getValue());
+        $this->assertSame('Laura Pérez', $colegios->getCell('H5')->getValue());
 
         $this->assertSame('Completado', $libro->getSheetByName('Acciones de arranque')->getCell('C5')->getValue());
         $this->assertSame('Pendiente', $libro->getSheetByName('Acciones de arranque')->getCell('D5')->getValue());
@@ -261,7 +261,7 @@ class SeguimientoMetaTest extends TestCase
         $this->assertSame('Colegio propio', $hoja->getCell('B5')->getValue());
         $this->assertNull($hoja->getCell('B6')->getValue());
 
-        $this->actingAs($this->usuario('admin'))->get(route('seguimiento.excel', 'global-educa'))->assertNotFound();
+        $this->actingAs($this->usuario('admin'))->get(route('seguimiento.excel', 'frances'))->assertNotFound();
     }
 
     public function test_school_without_meta_cannot_be_edited(): void

@@ -40,15 +40,39 @@
             <div style="font-size:12px; font-weight:600; color:#16a34a; opacity:.85; margin-top:2px">Implementación completa</div>
         </div>
     </div>
+    {{-- Tickets y sesiones registrados con el producto (Tickets/Sesiones → Producto) --}}
+    <div title="Tickets de estos colegios con el producto {{ $nombre }}"
+         style="background:#f5f3ff; border:1.5px solid #ddd6fe; border-radius:12px; padding:14px 20px;
+                display:flex; align-items:center; gap:12px; min-width:200px; flex:1; max-width:280px">
+        <span style="font-size:26px; line-height:1">🎫</span>
+        <div>
+            <div style="font-size:22px; font-weight:800; color:#7c3aed; line-height:1">{{ $tickets['total'] }}</div>
+            <div style="font-size:12px; font-weight:600; color:#7c3aed; opacity:.85; margin-top:2px">Tickets {{ $nombre }}</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px">{{ $tickets['abiertos'] }} abiertos · {{ $tickets['cerrados'] }} cerrados</div>
+        </div>
+    </div>
+    <div title="Sesiones de estos colegios con el producto {{ $nombre }}"
+         style="background:#ecfeff; border:1.5px solid #a5f3fc; border-radius:12px; padding:14px 20px;
+                display:flex; align-items:center; gap:12px; min-width:200px; flex:1; max-width:280px">
+        <span style="font-size:26px; line-height:1">📅</span>
+        <div>
+            <div style="font-size:22px; font-weight:800; color:#0891b2; line-height:1">{{ $sesiones['total'] }}</div>
+            <div style="font-size:12px; font-weight:600; color:#0891b2; opacity:.85; margin-top:2px">Sesiones {{ $nombre }}</div>
+            <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px">{{ $sesiones['realizadas'] }} realizadas · {{ $sesiones['pendientes'] }} pendientes</div>
+        </div>
+    </div>
 </div>
 
 <div class="card">
     <div class="card-header" style="gap:12px; flex-wrap:wrap">
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
-        @if($filas->isNotEmpty())
-            <input type="search" id="buscador-colegios" class="form-control" autocomplete="off"
-                   placeholder="🔍 Buscar colegio..." style="max-width:260px">
-        @endif
+        <div style="display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end">
+            @if($filas->isNotEmpty())
+                <input type="search" id="buscador-colegios" class="form-control" autocomplete="off"
+                       placeholder="🔍 Buscar colegio..." style="flex:1 1 200px; max-width:260px">
+            @endif
+            <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary" style="white-space:nowrap">📥 Descargar Excel</a>
+        </div>
     </div>
     <div style="overflow-x:auto">
     <table class="table">

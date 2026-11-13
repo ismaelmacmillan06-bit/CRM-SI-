@@ -13,10 +13,15 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
-// Reporte de Seguimiento → Meta: lo mismo que se ve en la agenda + tickets y sesiones con producto Meta
-class SeguimientoMetaExcel
+// Reporte de Seguimiento (Meta, Global Educa…): colegios con su avance de arranque + tickets y sesiones
+// marcados con el producto de la plataforma. Las plataformas con agenda (Meta) agregan sus datos de examen.
+class SeguimientoExcel
 {
-    private const COLOR = '7C3AED';
+    private const COLORES = ['meta' => '7C3AED', 'global-educa' => '16A34A'];
+    private const COLOR_DEFAULT = '4F46E5';
+
+    private string $color;
+    private bool $agenda;
 
     private const TICKET_STATUS = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
     private const TICKET_PRIORIDAD = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
@@ -26,12 +31,15 @@ class SeguimientoMetaExcel
     private string $generado;
 
     public function __construct(
+        private string $slug,
         private array $info,
         private Collection $filas,
         private Collection $tickets,
         private Collection $sesiones,
     ) {
         $this->generado = now()->format('d/m/Y H:i');
+        $this->color = self::COLORES[$slug] ?? self::COLOR_DEFAULT;
+        $this->agenda = !empty($info['agenda']);
     }
 
     // Guarda el archivo en un temporal y regresa la ruta
@@ -47,7 +55,7 @@ class SeguimientoMetaExcel
         $this->hojaSesiones($libro->createSheet());
         $libro->setActiveSheetIndex(0);
 
-        $ruta = tempnam(sys_get_temp_dir(), 'meta') . '.xlsx';
+        $ruta = tempnam(sys_get_temp_dir(), 'seg') . '.xlsx';
         (new Xlsx($libro))->save($ruta);
 
         return $ruta;
@@ -62,22 +70,27 @@ class SeguimientoMetaExcel
 
         $datos = [
             ['Colegios con ' . $nombre, $this->filas->count()],
-            ['Arranque completo (' . $total . '/' . $total . ')', $this->filas->where('completo', true)->count()],
-            ['Capacitaciones próximas (30 días)', $this->filas->where('capacitacion_proxima', true)->count()],
-            ['Aplicaciones próximas (30 días)', $this->filas->where('aplicacion_proxima', true)->count()],
-            ['Con fechas pendientes', $this->filas->where('pendiente', true)->count()],
+            [($this->agenda ? 'Arranque completo' : 'Implementación completa') . ' (' . $total . '/' . $total . ')', $this->filas->where('completo', true)->count()],
+        ];
+        if ($this->agenda) {
+            $datos[] = ['Capacitaciones próximas (30 días)', $this->filas->where('capacitacion_proxima', true)->count()];
+            $datos[] = ['Aplicaciones próximas (30 días)', $this->filas->where('aplicacion_proxima', true)->count()];
+            $datos[] = ['Con fechas pendientes', $this->filas->where('pendiente', true)->count()];
+        }
+        $filaTickets = 5 + count($datos);
+        $datos = array_merge($datos, [
             ['Tickets ' . $nombre, $this->tickets->count()],
             ['   Abiertos / en proceso', $this->tickets->where('status', '!=', 'closed')->count()],
             ['   Cerrados', $this->tickets->where('status', 'closed')->count()],
             ['Sesiones ' . $nombre, $this->sesiones->count()],
             ['   Realizadas (terminadas)', $this->sesiones->where('status', 'terminada')->count()],
             ['   Pendientes / en curso', $this->sesiones->where('status', '!=', 'terminada')->count()],
-        ];
+        ]);
         $this->encabezados($ws, 4, ['Indicador', 'Total'], false);
         $ws->fromArray($datos, null, 'A5');
         $ws->getStyle('B5:B' . (4 + count($datos)))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $ws->getStyle('A5:B' . (4 + count($datos)))->getFont()->setSize(11);
-        foreach ([5, 6, 10, 13] as $fila) {
+        foreach ([5, 6, $filaTickets, $filaTickets + 3] as $fila) {
             $ws->getStyle("A{$fila}:B{$fila}")->getFont()->setBold(true);
         }
 
@@ -98,8 +111,10 @@ class SeguimientoMetaExcel
     private function hojaColegios(Worksheet $ws): void
     {
         $ws->setTitle('Colegios');
-        $cab = ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Arranque', 'Siguiente acción', 'Administrador',
-                'Usuario', 'Contraseña', 'Capacitación', 'Fecha capacitación', 'Horario', 'Fecha aplicación', 'Notas'];
+        $cab = ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Niveles', 'Arranque', 'Siguiente acción'];
+        if ($this->agenda) {
+            array_push($cab, 'Administrador', 'Usuario', 'Contraseña', 'Capacitación', 'Fecha capacitación', 'Horario', 'Fecha aplicación', 'Notas');
+        }
         $this->titulo($ws, 'Colegios con ' . $this->info['nombre'] . ' (' . $this->filas->count() . ')', count($cab));
         $this->encabezados($ws, 4, $cab);
 
@@ -107,18 +122,23 @@ class SeguimientoMetaExcel
         $fila = 5;
         foreach ($this->filas as $i => $f) {
             $c = $f['colegio'];
-            $m = $f['meta'];
-            $ws->fromArray([[
+            $valores = [
                 $c->nexus_id ?: '—', $c->name, $c->state ?: '—', $f['consultor'] ?: '—',
+                $c->levels->pluck('name')->implode(', ') ?: '—',
                 "{$f['hechas']}/{$total} ({$f['pct']}%)", $f['completo'] ? 'Completo' : $f['siguiente'],
-                $m->administrador ?: '—', $m->usuario ?: '—', $m->contrasena ?: '—', $m->capacitacion ?: '—',
-                $m->fecha_capacitacion?->format('d/m/Y') ?? 'Pendiente', $m->horaCorta() ?: '—',
-                $m->fecha_aplicacion?->format('d/m/Y') ?? 'Pendiente', $m->notas ?: '—',
-            ]], null, "A{$fila}", true);
+            ];
+            if ($this->agenda) {
+                $m = $f['meta'];
+                array_push($valores,
+                    $m->administrador ?: '—', $m->usuario ?: '—', $m->contrasena ?: '—', $m->capacitacion ?: '—',
+                    $m->fecha_capacitacion?->format('d/m/Y') ?? 'Pendiente', $m->horaCorta() ?: '—',
+                    $m->fecha_aplicacion?->format('d/m/Y') ?? 'Pendiente', $m->notas ?: '—');
+            }
+            $ws->fromArray([$valores], null, "A{$fila}", true);
             $this->renglon($ws, $fila, count($cab), $i);
             $fila++;
         }
-        $this->anchos($ws, [15, 34, 18, 22, 13, 30, 22, 28, 16, 26, 16, 10, 16, 40]);
+        $this->anchos($ws, [15, 34, 18, 22, 30, 13, 34, 22, 28, 16, 26, 16, 10, 16, 40]);
     }
 
     private function hojaAcciones(Worksheet $ws): void
@@ -224,7 +244,7 @@ class SeguimientoMetaExcel
         $ws->mergeCells("A2:{$ultima}2");
         $ws->getStyle('A1')->applyFromArray([
             'font'      => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::COLOR]],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $this->color]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
         $ws->getRowDimension(1)->setRowHeight(26);
@@ -239,7 +259,7 @@ class SeguimientoMetaExcel
         $ws->fromArray([$titulos], null, "A{$fila}");
         $ws->getStyle("A{$fila}:" . $this->col(count($titulos)) . $fila)->applyFromArray([
             'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::COLOR]],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $this->color]],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
             'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
         ]);

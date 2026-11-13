@@ -10,6 +10,9 @@ use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
+use App\Models\Ticket;
+use App\Models\Visit;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -87,6 +90,70 @@ class SeguimientoTest extends TestCase
                 ->assertSee(route('schools.tickets.index', $school), false)
                 ->assertSee(route('schools.visits.index', $school), false);
         }
+    }
+
+    private function actividad(School $school, array $productos, string $ticketStatus = 'open', string $sesionStatus = 'pendiente'): void
+    {
+        $consultor = Consultant::firstOrCreate(['user_id' => User::factory()->create()->id]);
+        Ticket::create(['school_id' => $school->id, 'consultant_id' => $consultor->id, 'title' => 'Ticket ' . implode('+', $productos),
+            'description' => 'x', 'status' => $ticketStatus, 'priority' => 'medium', 'medium' => 'whatsapp', 'productos' => $productos]);
+        Visit::create(['school_id' => $school->id, 'consultant_id' => $consultor->id, 'status' => $sesionStatus, 'scheduled_date' => today(),
+            'modalidad' => 'virtual', 'tipo' => 'programada', 'prioridad' => 'media', 'productos' => $productos]);
+    }
+
+    public function test_cards_count_only_tickets_and_sessions_with_global_educa_product(): void
+    {
+        $school = $this->colegio('Colegio GE');
+        $sinServicio = $this->colegio('Colegio sin GE', false);
+        $this->actividad($school, ['Global Educa'], 'closed', 'terminada');
+        $this->actividad($school, ['MEE', 'Global Educa']);
+        $this->actividad($school, ['Meta']);              // otro producto: no cuenta
+        $this->actividad($sinServicio, ['Global Educa']); // colegio fuera de la lista: no cuenta
+
+        $this->actingAs($this->usuario('admin'))
+            ->get(route('seguimiento.show', 'global-educa'))
+            ->assertOk()
+            ->assertSee('Tickets Global Educa')
+            ->assertSee('1 abiertos · 1 cerrados')
+            ->assertSee('Sesiones Global Educa')
+            ->assertSee('1 realizadas · 1 pendientes')
+            ->assertSee(route('seguimiento.excel', 'global-educa'), false);
+    }
+
+    public function test_excel_download_for_global_educa(): void
+    {
+        $school = School::create(['name' => 'Colegio Excel GE', 'status' => 'activo', 'nexus_id' => 'GE-1']);
+        $school->services()->attach(SchoolServiceType::where('plataforma', 'global-educa')->value('id'));
+        $school->levels()->attach(Level::create(['name' => 'Primaria X'])->id);
+        $this->actividad($school, ['Global Educa'], 'closed', 'terminada');
+        $this->actividad($school, ['Meta']);
+        $this->actingAs($this->usuario('admin'));
+        $this->post(route('seguimiento.guardar', ['global-educa', $school]), [
+            'acciones' => ['kickoff' => ['status' => 'done', 'notes' => null], 'pruebas' => ['status' => 'in_progress', 'notes' => null]],
+        ]);
+
+        $res = $this->get(route('seguimiento.excel', 'global-educa'))->assertOk();
+        $this->assertStringContainsString('Seguimiento_Global_Educa_', $res->headers->get('content-disposition'));
+
+        $libro = IOFactory::load($res->getFile()->getPathname());
+        $this->assertSame(['Resumen', 'Colegios', 'Acciones de arranque', 'Tickets', 'Sesiones'], $libro->getSheetNames());
+        $this->assertSame('Implementación completa (7/7)', $libro->getSheetByName('Resumen')->getCell('A6')->getValue());
+        $this->assertSame('Tickets Global Educa', $libro->getSheetByName('Resumen')->getCell('A7')->getValue());
+
+        $colegios = $libro->getSheetByName('Colegios');
+        $this->assertSame('GE-1', $colegios->getCell('A5')->getValue());
+        $this->assertSame('Primaria X', $colegios->getCell('E5')->getValue());
+        $this->assertSame('1/7 (14%)', $colegios->getCell('F5')->getValue());
+        $this->assertNull($colegios->getCell('H4')->getValue()); // sin columnas de Meta
+
+        $acciones = $libro->getSheetByName('Acciones de arranque');
+        $this->assertSame('Kickoff (contacto con el colegio)', $acciones->getCell('C4')->getValue());
+        $this->assertSame('Completado', $acciones->getCell('C5')->getValue());
+        $this->assertSame('En proceso', $acciones->getCell('F5')->getValue());
+
+        $this->assertSame('Ticket Global Educa', $libro->getSheetByName('Tickets')->getCell('C5')->getValue());
+        $this->assertNull($libro->getSheetByName('Tickets')->getCell('C6')->getValue());
+        $this->assertSame('Terminada', $libro->getSheetByName('Sesiones')->getCell('E5')->getValue());
     }
 
     public function test_school_levels_are_shown_in_dashboard_and_detail(): void

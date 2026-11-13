@@ -74,77 +74,56 @@ class SeguimientoController extends Controller
             return view('seguimiento.show', $datos);
         }
 
-        $totalAcciones = count($info['acciones']);
-        $servicioLigado = SchoolServiceType::where('plataforma', $plataforma)->exists();
-
-        $colegios = $this->colegiosDe($plataforma)
-            ->with(['levels', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')])
-            ->orderBy('name')
-            ->get();
-
-        $avance = SeguimientoAccion::where('plataforma', $plataforma)
-            ->whereIn('school_id', $colegios->pluck('id'))
-            ->whereIn('accion', array_keys($info['acciones']))
-            ->get()
-            ->groupBy('school_id');
-
-        $filas = $colegios->map(function (School $colegio) use ($avance, $info, $totalAcciones) {
-            $acciones = ($avance[$colegio->id] ?? collect())->keyBy('accion');
-            $hechas = $acciones->where('status', 'done')->count();
-            $siguiente = collect($info['acciones'])
-                ->first(fn ($etiqueta, $clave) => ($acciones[$clave]->status ?? 'pending') !== 'done');
-
-            return [
-                'colegio'   => $colegio,
-                'consultor' => $colegio->schoolConsultants->first()?->consultant?->user?->name,
-                'hechas'    => $hechas,
-                'pct'       => round($hechas / $totalAcciones * 100),
-                'completo'  => $hechas === $totalAcciones,
-                'siguiente' => $siguiente,
-            ];
-        });
+        $filas = $this->filasPlataforma($plataforma);
 
         return view('seguimiento.dashboard', $datos + [
             'filas'          => $filas,
-            'totalAcciones'  => $totalAcciones,
+            'totalAcciones'  => count($info['acciones']),
             'completos'      => $filas->where('completo', true)->count(),
-            'servicioLigado' => $servicioLigado,
-        ]);
+            'servicioLigado' => SchoolServiceType::where('plataforma', $plataforma)->exists(),
+        ] + $this->actividad($info['nombre'], $filas->pluck('colegio.id')));
     }
 
     // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
     private function agendaMeta(array $datos)
     {
-        $filas = $this->filasMeta($datos['slug']);
-        $ids = $filas->pluck('colegio.id');
-        $tickets = $this->ticketsDelProducto($datos['nombre'], $ids)->get(['id', 'status']);
-        $sesiones = $this->sesionesDelProducto($datos['nombre'], $ids)->get(['id', 'status']);
+        $filas = $this->filasPlataforma($datos['slug']);
 
         return view('seguimiento.meta', $datos + [
             'filas'          => $filas,
             'totalAcciones'  => count(self::PLATAFORMAS[$datos['slug']]['acciones']),
             'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
             'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
-            'tickets'        => [
+        ] + $this->actividad($datos['nombre'], $filas->pluck('colegio.id')));
+    }
+
+    // Cards de Tickets y Sesiones: los que tienen marcado el producto de la plataforma
+    private function actividad(string $producto, $schoolIds): array
+    {
+        $tickets = $this->ticketsDelProducto($producto, $schoolIds)->get(['id', 'status']);
+        $sesiones = $this->sesionesDelProducto($producto, $schoolIds)->get(['id', 'status']);
+
+        return [
+            'tickets'  => [
                 'total'    => $tickets->count(),
                 'abiertos' => $tickets->where('status', '!=', 'closed')->count(),
                 'cerrados' => $tickets->where('status', 'closed')->count(),
             ],
-            'sesiones'       => [
+            'sesiones' => [
                 'total'      => $sesiones->count(),
                 'realizadas' => $sesiones->where('status', 'terminada')->count(),
                 'pendientes' => $sesiones->where('status', '!=', 'terminada')->count(),
             ],
-        ]);
+        ];
     }
 
-    // Descarga en Excel de la agenda Meta: colegios, acciones de arranque, tickets y sesiones del producto
+    // Descarga en Excel: colegios, acciones de arranque, tickets y sesiones del producto
     public function excel(string $plataforma)
     {
         $info = self::PLATAFORMAS[$plataforma];
-        abort_if(empty($info['agenda']), 404);
+        abort_if(empty($info['acciones']), 404);
 
-        $filas = $this->filasMeta($plataforma);
+        $filas = $this->filasPlataforma($plataforma);
         $ids = $filas->pluck('colegio.id');
 
         $tickets = $this->ticketsDelProducto($info['nombre'], $ids)
@@ -152,7 +131,7 @@ class SeguimientoController extends Controller
         $sesiones = $this->sesionesDelProducto($info['nombre'], $ids)
             ->with(['school', 'consultant.user'])->orderByDesc('scheduled_date')->get();
 
-        $archivo = (new \App\Exports\SeguimientoMetaExcel($info, $filas, $tickets, $sesiones))->guardar();
+        $archivo = (new \App\Exports\SeguimientoExcel($plataforma, $info, $filas, $tickets, $sesiones))->guardar();
         $nombre = 'Seguimiento_' . str_replace(' ', '_', $info['nombre']) . '_' . now()->format('Y-m-d') . '.xlsx';
 
         return response()->download($archivo, $nombre, [
@@ -172,13 +151,18 @@ class SeguimientoController extends Controller
         return Visit::whereIn('school_id', $schoolIds)->where('productos', 'like', '%' . json_encode($producto) . '%');
     }
 
-    private function filasMeta(string $slug)
+    // Un renglón por colegio con su avance de arranque (y, en plataformas con agenda, sus datos de Meta)
+    private function filasPlataforma(string $slug)
     {
+        $agenda = !empty(self::PLATAFORMAS[$slug]['agenda']);
         $acciones = self::PLATAFORMAS[$slug]['acciones'];
         $totalAcciones = count($acciones);
 
         $colegios = $this->colegiosDe($slug)
-            ->with(['seguimientoMeta', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')])
+            ->with(array_merge(
+                ['levels', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')],
+                $agenda ? ['seguimientoMeta'] : []
+            ))
             ->orderBy('name')
             ->get();
 
@@ -192,17 +176,12 @@ class SeguimientoController extends Controller
         $limite = today()->addDays(30);
         $proxima = fn ($fecha) => $fecha && $fecha->between($hoy, $limite);
 
-        return $colegios->map(function (School $colegio) use ($proxima, $avance, $acciones, $totalAcciones) {
-            $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
+        return $colegios->map(function (School $colegio) use ($agenda, $proxima, $avance, $acciones, $totalAcciones) {
             $hechasPorClave = ($avance[$colegio->id] ?? collect())->keyBy('accion');
             $hechas = $hechasPorClave->where('status', 'done')->count();
 
-            return [
+            $fila = [
                 'colegio'              => $colegio,
-                'meta'                 => $meta,
-                'capacitacion_proxima' => $proxima($meta->fecha_capacitacion),
-                'aplicacion_proxima'   => $proxima($meta->fecha_aplicacion),
-                'pendiente'            => $meta->fechasPendientes(),
                 'hechas'               => $hechas,
                 'pct'                  => round($hechas / $totalAcciones * 100),
                 'completo'             => $hechas === $totalAcciones,
@@ -211,6 +190,18 @@ class SeguimientoController extends Controller
                 'acciones'             => $hechasPorClave,
                 'consultor'            => $colegio->schoolConsultants->first()?->consultant?->user?->name,
             ];
+
+            if ($agenda) {
+                $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
+                $fila += [
+                    'meta'                 => $meta,
+                    'capacitacion_proxima' => $proxima($meta->fecha_capacitacion),
+                    'aplicacion_proxima'   => $proxima($meta->fecha_aplicacion),
+                    'pendiente'            => $meta->fechasPendientes(),
+                ];
+            }
+
+            return $fila;
         });
     }
 

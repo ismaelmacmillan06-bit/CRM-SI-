@@ -8,7 +8,11 @@ class Ticket extends Model
 {
     protected $fillable = [
         'school_id', 'consultant_id', 'title',
-        'description', 'status', 'priority', 'medium', 'evidence', 'resolved_at',
+        'description', 'status', 'priority', 'medium', 'productos', 'evidence', 'resolved_at',
+    ];
+
+    protected $casts = [
+        'productos' => 'array',
     ];
 
     public function school()

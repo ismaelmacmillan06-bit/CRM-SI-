@@ -6,6 +6,7 @@ use App\Models\ActivityLog;
 use App\Models\Ticket;
 use App\Models\School;
 use App\Models\Consultant;
+use App\Models\Visit;
 use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -42,12 +43,15 @@ class TicketController extends Controller
             'priority'      => 'required|in:low,medium,high',
             'consultant_id' => 'required|exists:consultants,id',
             'medium'        => 'required|in:salesforce,whaticket,whatsapp',
+            'productos'     => 'required|array|min:1',
+            'productos.*'   => 'in:' . implode(',', Visit::PRODUCTOS),
             'evidence'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ], [
             'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
+            'productos.required' => 'Selecciona al menos un producto.',
         ]);
 
-        $data = $request->only(['title', 'description', 'priority', 'consultant_id', 'medium']);
+        $data = $request->only(['title', 'description', 'priority', 'consultant_id', 'medium', 'productos']);
 
         if ($request->hasFile('evidence')) {
             $data['evidence'] = $request->file('evidence')->store('tickets', 'public');
@@ -78,12 +82,15 @@ class TicketController extends Controller
             'status'        => 'required|in:open,in_progress,closed',
             'consultant_id' => 'nullable|exists:consultants,id',
             'medium'        => 'required|in:salesforce,whaticket,whatsapp',
+            'productos'     => 'required|array|min:1',
+            'productos.*'   => 'in:' . implode(',', Visit::PRODUCTOS),
             'evidence'      => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
         ], [
             'evidence.mimes' => 'Solo se permiten imágenes JPG, PNG o WEBP (máx. 5 MB).',
+            'productos.required' => 'Selecciona al menos un producto.',
         ]);
 
-        $data = $request->only(['title', 'description', 'priority', 'status', 'consultant_id', 'medium']);
+        $data = $request->only(['title', 'description', 'priority', 'status', 'consultant_id', 'medium', 'productos']);
 
         if ($request->hasFile('evidence')) {
             if ($ticket->evidence) {

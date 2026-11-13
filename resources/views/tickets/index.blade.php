@@ -30,6 +30,7 @@
     <tr>
         <th>Título</th>
         <th>Medio</th>
+        <th>Producto</th>
         <th>Prioridad</th>
         <th>Status</th>
         <th>Consultor</th>
@@ -57,6 +58,17 @@
                     @else
                         <span class="badge badge-success">WhatsApp</span>
                     @endif
+                </td>
+
+                <td>
+                    @forelse($ticket->productos ?? [] as $producto)
+                        @php [$ico, $color] = \App\Models\Visit::PRODUCTO_ESTILOS[$producto] ?? ['📦', '#64748b']; @endphp
+                        <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; margin:1px 0; border-radius:999px;
+                                     font-size:11.5px; font-weight:600; white-space:nowrap; color:{{ $color }};
+                                     background:color-mix(in srgb, {{ $color }} 12%, transparent)">{{ $ico }} {{ $producto }}</span>
+                    @empty
+                        <span style="color:var(--text-muted); font-size:12px">—</span>
+                    @endforelse
                 </td>
 
 
@@ -111,7 +123,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="9" style="text-align:center; color:var(--text-muted); padding:40px">
+                <td colspan="10" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay tickets registrados para este colegio.
                     <a href="{{ route('schools.tickets.create', $school) }}">Registra el primero</a>
                 </td>

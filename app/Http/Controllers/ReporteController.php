@@ -986,8 +986,8 @@ class ReporteController extends Controller
         // ══════════════════════════════════════════════════════════════════
         $ws5 = $spreadsheet->createSheet(4);
         $ws5->setTitle('Tickets');
-        $this->sheetTitle($ws5, "Tickets — {$school->name} ({$totalTickets})", 'D97706', 7, $generado);
-        $this->writeHeaders($ws5, 4, ['Título', 'Descripción', 'Status', 'Prioridad', 'Medio', 'Fecha', 'Evidencia'], 'D97706');
+        $this->sheetTitle($ws5, "Tickets — {$school->name} ({$totalTickets})", 'D97706', 8, $generado);
+        $this->writeHeaders($ws5, 4, ['Título', 'Descripción', 'Status', 'Prioridad', 'Medio', 'Producto(s)', 'Fecha', 'Evidencia'], 'D97706');
 
         $row = 5;
         foreach ($school->tickets->sortByDesc('created_at')->values() as $i => $t) {
@@ -1000,21 +1000,22 @@ class ReporteController extends Controller
             $ws5->fromArray([
                 $t->title, $t->description ?? '—', $status,
                 ucfirst($t->priority ?? '—'), ucfirst($t->medium ?? '—'),
+                implode(', ', $t->productos ?? []) ?: '—',
                 $t->created_at->format('d/m/Y'),
             ], null, "A{$row}");
 
             $hasImg = false;
             if ($t->evidence) {
-                $hasImg = $this->embedOrLink($ws5, "G{$row}", $t->evidence);
+                $hasImg = $this->embedOrLink($ws5, "H{$row}", $t->evidence);
             } else {
-                $ws5->setCellValue("G{$row}", '—');
+                $ws5->setCellValue("H{$row}", '—');
             }
 
-            if ($i % 2) $this->stripeRow($ws5, $row, 7);
+            if ($i % 2) $this->stripeRow($ws5, $row, 8);
             if ($hasImg) $ws5->getRowDimension($row)->setRowHeight(55);
             $row++;
         }
-        $this->setWidths($ws5, [30, 50, 16, 14, 16, 14, 40]);
+        $this->setWidths($ws5, [30, 50, 16, 14, 16, 24, 14, 40]);
 
         // ══════════════════════════════════════════════════════════════════
         // HOJA 6: VISITAS

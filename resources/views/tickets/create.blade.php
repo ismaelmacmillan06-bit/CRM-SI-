@@ -38,6 +38,8 @@
                     </div>
                 </div>
 
+                @include('visits.partials.sesion-productos', ['visit' => null])
+
                 <div class="form-group">
                     <label class="form-label">Descripción *</label>
                     <textarea name="description" class="form-control" rows="4" required>{{ old('description') }}</textarea>

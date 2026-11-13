@@ -1,0 +1,269 @@
+<?php
+
+namespace App\Exports;
+
+use App\Models\SeguimientoAccion;
+use App\Models\Visit;
+use Illuminate\Support\Collection;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+// Reporte de Seguimiento → Meta: lo mismo que se ve en la agenda + tickets y sesiones con producto Meta
+class SeguimientoMetaExcel
+{
+    private const COLOR = '7C3AED';
+
+    private const TICKET_STATUS = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
+    private const TICKET_PRIORIDAD = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
+    private const TICKET_MEDIO = ['salesforce' => 'Sales Force', 'whaticket' => 'Whaticket', 'whatsapp' => 'WhatsApp'];
+    private const SESION_STATUS = ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'terminada' => 'Terminada'];
+
+    private string $generado;
+
+    public function __construct(
+        private array $info,
+        private Collection $filas,
+        private Collection $tickets,
+        private Collection $sesiones,
+    ) {
+        $this->generado = now()->format('d/m/Y H:i');
+    }
+
+    // Guarda el archivo en un temporal y regresa la ruta
+    public function guardar(): string
+    {
+        $libro = new Spreadsheet();
+        $libro->getProperties()->setCreator('SICentral')->setTitle('Seguimiento ' . $this->info['nombre']);
+
+        $this->hojaResumen($libro->getActiveSheet());
+        $this->hojaColegios($libro->createSheet());
+        $this->hojaAcciones($libro->createSheet());
+        $this->hojaTickets($libro->createSheet());
+        $this->hojaSesiones($libro->createSheet());
+        $libro->setActiveSheetIndex(0);
+
+        $ruta = tempnam(sys_get_temp_dir(), 'meta') . '.xlsx';
+        (new Xlsx($libro))->save($ruta);
+
+        return $ruta;
+    }
+
+    private function hojaResumen(Worksheet $ws): void
+    {
+        $nombre = $this->info['nombre'];
+        $total = count($this->info['acciones']);
+        $ws->setTitle('Resumen');
+        $this->titulo($ws, "Seguimiento {$nombre} — Resumen", 2);
+
+        $datos = [
+            ['Colegios con ' . $nombre, $this->filas->count()],
+            ['Arranque completo (' . $total . '/' . $total . ')', $this->filas->where('completo', true)->count()],
+            ['Capacitaciones próximas (30 días)', $this->filas->where('capacitacion_proxima', true)->count()],
+            ['Aplicaciones próximas (30 días)', $this->filas->where('aplicacion_proxima', true)->count()],
+            ['Con fechas pendientes', $this->filas->where('pendiente', true)->count()],
+            ['Tickets ' . $nombre, $this->tickets->count()],
+            ['   Abiertos / en proceso', $this->tickets->where('status', '!=', 'closed')->count()],
+            ['   Cerrados', $this->tickets->where('status', 'closed')->count()],
+            ['Sesiones ' . $nombre, $this->sesiones->count()],
+            ['   Realizadas (terminadas)', $this->sesiones->where('status', 'terminada')->count()],
+            ['   Pendientes / en curso', $this->sesiones->where('status', '!=', 'terminada')->count()],
+        ];
+        $this->encabezados($ws, 4, ['Indicador', 'Total'], false);
+        $ws->fromArray($datos, null, 'A5');
+        $ws->getStyle('B5:B' . (4 + count($datos)))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $ws->getStyle('A5:B' . (4 + count($datos)))->getFont()->setSize(11);
+        foreach ([5, 6, 10, 13] as $fila) {
+            $ws->getStyle("A{$fila}:B{$fila}")->getFont()->setBold(true);
+        }
+
+        // Avance por acción de arranque
+        $fila = 6 + count($datos);
+        $this->encabezados($ws, $fila, ['Acción de arranque', 'Colegios completados'], false);
+        foreach ($this->info['acciones'] as $clave => $etiqueta) {
+            $fila++;
+            $hechas = $this->filas->filter(fn ($f) => ($f['acciones'][$clave]->status ?? null) === 'done')->count();
+            $ws->setCellValue("A{$fila}", $etiqueta);
+            $ws->setCellValue("B{$fila}", $hechas . ' / ' . $this->filas->count());
+            $ws->getStyle("B{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+
+        $this->anchos($ws, [42, 22]);
+    }
+
+    private function hojaColegios(Worksheet $ws): void
+    {
+        $ws->setTitle('Colegios');
+        $cab = ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Arranque', 'Siguiente acción', 'Administrador',
+                'Usuario', 'Contraseña', 'Capacitación', 'Fecha capacitación', 'Horario', 'Fecha aplicación', 'Notas'];
+        $this->titulo($ws, 'Colegios con ' . $this->info['nombre'] . ' (' . $this->filas->count() . ')', count($cab));
+        $this->encabezados($ws, 4, $cab);
+
+        $total = count($this->info['acciones']);
+        $fila = 5;
+        foreach ($this->filas as $i => $f) {
+            $c = $f['colegio'];
+            $m = $f['meta'];
+            $ws->fromArray([[
+                $c->nexus_id ?: '—', $c->name, $c->state ?: '—', $f['consultor'] ?: '—',
+                "{$f['hechas']}/{$total} ({$f['pct']}%)", $f['completo'] ? 'Completo' : $f['siguiente'],
+                $m->administrador ?: '—', $m->usuario ?: '—', $m->contrasena ?: '—', $m->capacitacion ?: '—',
+                $m->fecha_capacitacion?->format('d/m/Y') ?? 'Pendiente', $m->horaCorta() ?: '—',
+                $m->fecha_aplicacion?->format('d/m/Y') ?? 'Pendiente', $m->notas ?: '—',
+            ]], null, "A{$fila}", true);
+            $this->renglon($ws, $fila, count($cab), $i);
+            $fila++;
+        }
+        $this->anchos($ws, [15, 34, 18, 22, 13, 30, 22, 28, 16, 26, 16, 10, 16, 40]);
+    }
+
+    private function hojaAcciones(Worksheet $ws): void
+    {
+        $ws->setTitle('Acciones de arranque');
+        $cab = array_merge(['ID Colegio', 'Colegio'], array_values($this->info['acciones']), ['Avance']);
+        $this->titulo($ws, 'Acciones de arranque — ' . $this->info['nombre'], count($cab));
+        $this->encabezados($ws, 4, $cab);
+        $ws->getStyle('A4:' . $this->col(count($cab)) . '4')->getAlignment()->setWrapText(true);
+        $ws->getRowDimension(4)->setRowHeight(32);
+
+        $colores = ['done' => 'DCFCE7', 'in_progress' => 'FEF3C7'];
+        $fila = 5;
+        foreach ($this->filas as $i => $f) {
+            $valores = [$f['colegio']->nexus_id ?: '—', $f['colegio']->name];
+            foreach (array_keys($this->info['acciones']) as $clave) {
+                $status = $f['acciones'][$clave]->status ?? 'pending';
+                $valores[] = trim(preg_replace('/^\S+\s/u', '', SeguimientoAccion::STATUS[$status]));
+            }
+            $valores[] = "{$f['hechas']}/" . count($this->info['acciones']);
+            $ws->fromArray([$valores], null, "A{$fila}", true);
+            $this->renglon($ws, $fila, count($cab), $i);
+
+            foreach (array_keys($this->info['acciones']) as $n => $clave) {
+                $status = $f['acciones'][$clave]->status ?? 'pending';
+                $celda = $this->col(3 + $n) . $fila;
+                $ws->getStyle($celda)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                if (isset($colores[$status])) {
+                    $ws->getStyle($celda)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($colores[$status]);
+                }
+            }
+            $fila++;
+        }
+        $this->anchos($ws, array_merge([15, 34], array_fill(0, count($this->info['acciones']), 20), [10]));
+    }
+
+    private function hojaTickets(Worksheet $ws): void
+    {
+        $ws->setTitle('Tickets');
+        $cab = ['ID Colegio', 'Colegio', 'Título', 'Descripción', 'Status', 'Prioridad', 'Medio', 'Producto(s)', 'Consultor', 'Creado', 'Resuelto'];
+        $this->titulo($ws, 'Tickets con producto ' . $this->info['nombre'] . ' (' . $this->tickets->count() . ')', count($cab));
+        $this->encabezados($ws, 4, $cab);
+
+        $fila = 5;
+        foreach ($this->tickets as $i => $t) {
+            $ws->fromArray([[
+                $t->school->nexus_id ?: '—', $t->school->name, $t->title, $t->description ?: '—',
+                self::TICKET_STATUS[$t->status] ?? $t->status, self::TICKET_PRIORIDAD[$t->priority] ?? $t->priority,
+                self::TICKET_MEDIO[$t->medium] ?? $t->medium, implode(', ', $t->productos ?? []),
+                $t->consultant?->user?->name ?? '—', $t->created_at?->format('d/m/Y') ?? '—',
+                $t->resolved_at ? \Carbon\Carbon::parse($t->resolved_at)->format('d/m/Y') : '—',
+            ]], null, "A{$fila}", true);
+            $this->renglon($ws, $fila, count($cab), $i);
+            $fila++;
+        }
+        if ($this->tickets->isEmpty()) {
+            $ws->setCellValue('A5', 'Sin tickets con producto ' . $this->info['nombre'] . '.');
+        }
+        $this->anchos($ws, [15, 30, 24, 44, 12, 11, 13, 22, 22, 12, 12]);
+    }
+
+    private function hojaSesiones(Worksheet $ws): void
+    {
+        $ws->setTitle('Sesiones');
+        $cab = ['ID Colegio', 'Colegio', 'Fecha programada', 'Fecha realizada', 'Status', 'Consultor', 'Modalidad', 'Tipo', 'Prioridad', 'Producto(s)', 'Motivo', 'Resumen'];
+        $this->titulo($ws, 'Sesiones con producto ' . $this->info['nombre'] . ' (' . $this->sesiones->count() . ')', count($cab));
+        $this->encabezados($ws, 4, $cab);
+
+        $sinIcono = fn (array $lista, ?string $clave) => $clave ? trim(preg_replace('/^\S+\s/u', '', $lista[$clave] ?? $clave)) : '—';
+        $fecha = fn ($valor) => $valor ? \Carbon\Carbon::parse($valor)->format('d/m/Y') : '—';
+
+        $fila = 5;
+        foreach ($this->sesiones as $i => $v) {
+            $ws->fromArray([[
+                $v->school->nexus_id ?: '—', $v->school->name, $fecha($v->scheduled_date), $fecha($v->visit_date),
+                self::SESION_STATUS[$v->status] ?? $v->status, $v->consultant?->user?->name ?? '—',
+                $sinIcono(Visit::MODALIDADES, $v->modalidad), $sinIcono(Visit::TIPOS, $v->tipo),
+                $sinIcono(Visit::PRIORIDADES, $v->prioridad), implode(', ', $v->productos ?? []),
+                $v->motivo ?: '—', $v->summary ?: '—',
+            ]], null, "A{$fila}", true);
+            $this->renglon($ws, $fila, count($cab), $i);
+            $fila++;
+        }
+        if ($this->sesiones->isEmpty()) {
+            $ws->setCellValue('A5', 'Sin sesiones con producto ' . $this->info['nombre'] . '.');
+        }
+        $this->anchos($ws, [15, 30, 16, 16, 12, 22, 12, 13, 12, 22, 34, 40]);
+    }
+
+    // ── Estilos ─────────────────────────────────────────────────────
+
+    private function col(int $n): string
+    {
+        return Coordinate::stringFromColumnIndex($n);
+    }
+
+    private function titulo(Worksheet $ws, string $texto, int $columnas): void
+    {
+        $ultima = $this->col(max($columnas, 2));
+        $ws->setCellValue('A1', $texto);
+        $ws->setCellValue('A2', 'Generado el ' . $this->generado);
+        $ws->mergeCells("A1:{$ultima}1");
+        $ws->mergeCells("A2:{$ultima}2");
+        $ws->getStyle('A1')->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 14, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::COLOR]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+        ]);
+        $ws->getRowDimension(1)->setRowHeight(26);
+        $ws->getStyle('A2')->applyFromArray([
+            'font'      => ['italic' => true, 'size' => 9, 'color' => ['rgb' => '6B7280']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        ]);
+    }
+
+    private function encabezados(Worksheet $ws, int $fila, array $titulos, bool $tabla = true): void
+    {
+        $ws->fromArray([$titulos], null, "A{$fila}");
+        $ws->getStyle("A{$fila}:" . $this->col(count($titulos)) . $fila)->applyFromArray([
+            'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => 'FFFFFF']],
+            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => self::COLOR]],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'FFFFFF']]],
+        ]);
+        $ws->getRowDimension($fila)->setRowHeight(20);
+        if (!$tabla) {
+            return;
+        }
+        $ws->freezePane('A' . ($fila + 1));
+        $ws->setAutoFilter("A{$fila}:" . $this->col(count($titulos)) . $fila);
+    }
+
+    private function renglon(Worksheet $ws, int $fila, int $columnas, int $i): void
+    {
+        $rango = "A{$fila}:" . $this->col($columnas) . $fila;
+        $ws->getStyle($rango)->getAlignment()->setVertical(Alignment::VERTICAL_TOP)->setWrapText(true);
+        if ($i % 2) {
+            $ws->getStyle($rango)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F5F3FF');
+        }
+    }
+
+    private function anchos(Worksheet $ws, array $anchos): void
+    {
+        foreach ($anchos as $i => $ancho) {
+            $ws->getColumnDimension($this->col($i + 1))->setWidth($ancho);
+        }
+    }
+}

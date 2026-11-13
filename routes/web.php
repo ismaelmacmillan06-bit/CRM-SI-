@@ -202,6 +202,10 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('seguimiento/{plataforma}', [SeguimientoController::class, 'show'])
           ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
           ->name('seguimiento.show');
+     // Antes de {school} para que "excel" no se tome como colegio
+     Route::get('seguimiento/{plataforma}/excel', [SeguimientoController::class, 'excel'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.excel');
      Route::get('seguimiento/{plataforma}/{school}', [SeguimientoController::class, 'colegio'])
           ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
           ->name('seguimiento.colegio');

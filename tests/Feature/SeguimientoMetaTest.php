@@ -9,6 +9,9 @@ use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
 use App\Models\SeguimientoMeta;
+use App\Models\Ticket;
+use App\Models\Visit;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -184,6 +187,82 @@ class SeguimientoMetaTest extends TestCase
 
         $this->assertSame(0, SeguimientoMeta::count());
         $this->assertSame(0, SeguimientoAccion::count());
+    }
+
+    private function actividad(School $school, array $productos, string $ticketStatus = 'open', string $sesionStatus = 'pendiente'): void
+    {
+        $consultor = Consultant::firstOrCreate(['user_id' => User::factory()->create()->id]);
+        Ticket::create(['school_id' => $school->id, 'consultant_id' => $consultor->id, 'title' => 'Ticket ' . implode('+', $productos), 'description' => 'x',
+            'status' => $ticketStatus, 'priority' => 'medium', 'medium' => 'whatsapp', 'productos' => $productos]);
+        Visit::create(['school_id' => $school->id, 'consultant_id' => $consultor->id, 'status' => $sesionStatus, 'scheduled_date' => today(),
+            'modalidad' => 'virtual', 'tipo' => 'programada', 'prioridad' => 'media', 'productos' => $productos]);
+    }
+
+    public function test_cards_count_only_tickets_and_sessions_with_meta_product(): void
+    {
+        $school = $this->colegio('Colegio con actividad');
+        $sinMeta = $this->colegio('Colegio sin Meta', false);
+        $this->actividad($school, ['Meta'], 'closed', 'terminada');
+        $this->actividad($school, ['MEE', 'Meta']);
+        $this->actividad($school, ['MEE']);              // otro producto: no cuenta
+        $this->actividad($sinMeta, ['Meta']);            // colegio fuera de la agenda: no cuenta
+
+        $this->actingAs($this->usuario('admin'))
+            ->get(route('seguimiento.show', 'meta'))
+            ->assertOk()
+            ->assertSee('Tickets Meta')
+            ->assertSee('1 abiertos · 1 cerrados')
+            ->assertSee('Sesiones Meta')
+            ->assertSee('1 realizadas · 1 pendientes')
+            ->assertSee(route('seguimiento.excel', 'meta'), false);
+    }
+
+    public function test_excel_download_contains_schools_actions_tickets_and_sessions(): void
+    {
+        $school = $this->colegio('Colegio Excel', true, 'activo', 'NX-77');
+        $this->actividad($school, ['Meta'], 'closed', 'terminada');
+        $this->actividad($school, ['MEE']);
+        $this->actingAs($this->usuario('admin'));
+        $this->post(route('seguimiento.guardar', ['meta', $school]), $this->datos([
+            'acciones' => ['compartir-edgar' => ['status' => 'done', 'notes' => null]],
+        ]));
+
+        $res = $this->get(route('seguimiento.excel', 'meta'))->assertOk();
+        $this->assertStringContainsString('Seguimiento_Meta_', $res->headers->get('content-disposition'));
+
+        $libro = IOFactory::load($res->getFile()->getPathname());
+        $this->assertSame(['Resumen', 'Colegios', 'Acciones de arranque', 'Tickets', 'Sesiones'], $libro->getSheetNames());
+
+        $colegios = $libro->getSheetByName('Colegios');
+        $this->assertSame('NX-77', $colegios->getCell('A5')->getValue());
+        $this->assertSame('Colegio Excel', $colegios->getCell('B5')->getValue());
+        $this->assertSame('1/5 (20%)', $colegios->getCell('E5')->getValue());
+        $this->assertSame('Laura Pérez', $colegios->getCell('G5')->getValue());
+
+        $this->assertSame('Completado', $libro->getSheetByName('Acciones de arranque')->getCell('C5')->getValue());
+        $this->assertSame('Pendiente', $libro->getSheetByName('Acciones de arranque')->getCell('D5')->getValue());
+
+        $tickets = $libro->getSheetByName('Tickets');
+        $this->assertSame('Ticket Meta', $tickets->getCell('C5')->getValue());
+        $this->assertNull($tickets->getCell('C6')->getValue()); // el de MEE no sale
+        $this->assertSame('Terminada', $libro->getSheetByName('Sesiones')->getCell('E5')->getValue());
+    }
+
+    public function test_excel_respects_digital_consultant_scope(): void
+    {
+        $user = $this->usuario('consultor_digital');
+        $consultant = Consultant::create(['user_id' => $user->id]);
+        $propio = $this->colegio('Colegio propio');
+        $this->colegio('Colegio ajeno');
+        SchoolConsultant::create(['school_id' => $propio->id, 'consultant_id' => $consultant->id, 'role' => 'digital']);
+
+        $res = $this->actingAs($user)->get(route('seguimiento.excel', 'meta'))->assertOk();
+        $hoja = IOFactory::load($res->getFile()->getPathname())->getSheetByName('Colegios');
+        $this->assertSame('Colegio propio', $hoja->getCell('B5')->getValue());
+        $this->assertNull($hoja->getCell('B6')->getValue());
+
+        $this->actingAs($this->usuario('consultor_eca'))->get(route('seguimiento.excel', 'meta'))->assertRedirect();
+        $this->actingAs($this->usuario('admin'))->get(route('seguimiento.excel', 'global-educa'))->assertNotFound();
     }
 
     public function test_school_without_meta_cannot_be_edited(): void

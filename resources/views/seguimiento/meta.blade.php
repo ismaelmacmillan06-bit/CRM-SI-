@@ -11,7 +11,7 @@
 @endphp
 
 <style>
-    .mt-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:12px; margin-bottom:20px; }
+    .mt-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:12px; margin-bottom:20px; }
     .mt-card { background:#fff; border:1px solid var(--border); border-left:4px solid var(--accent); border-radius:12px;
                padding:14px 18px; text-align:left; cursor:pointer; font:inherit; color:inherit; transition:box-shadow .15s, transform .15s; }
     .mt-card:hover { box-shadow:0 4px 14px rgba(0,0,0,.07); transform:translateY(-1px); }
@@ -21,6 +21,11 @@
     .mt-card.verde { border-left-color:#16a34a; } .mt-card.verde .num { color:#16a34a; }
     .mt-card.azul  { border-left-color:#2563eb; } .mt-card.azul .num  { color:#2563eb; }
     .mt-card.ambar { border-left-color:#d97706; } .mt-card.ambar .num { color:#d97706; }
+    .mt-card.morado { border-left-color:#7c3aed; } .mt-card.morado .num { color:#7c3aed; }
+    .mt-card.cian   { border-left-color:#0891b2; } .mt-card.cian .num   { color:#0891b2; }
+    .mt-card.info { cursor:default; }
+    .mt-card.info:hover { box-shadow:none; transform:none; }
+    .mt-card .det { font-size:11.5px; color:var(--text-muted); margin-top:4px; }
 
     .mt-table td { vertical-align:middle; font-size:13.5px; }
     .mt-table th { white-space:nowrap; }
@@ -72,6 +77,7 @@
     .mt-barra { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
     .mt-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; }
     .mt-contacto-btn { white-space:nowrap; }
+    .mt-barra-der { display:flex; gap:8px; flex-wrap:wrap; }
 
     /* Contacto responsable */
     .mt-ct-persona { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
@@ -89,7 +95,10 @@
     .mt-ct-acciones .btn { justify-content:center; gap:7px; color:#fff; border:none; font-weight:600; display:inline-flex; align-items:center; }
     .mt-ct-correo { background:#2563eb; } .mt-ct-correo:hover { background:#1d4ed8; }
     .mt-ct-wa { background:#16a34a; } .mt-ct-wa:hover { background:#15803d; }
-    @media (max-width: 600px) { .mt-contacto-btn { flex:1 1 100%; justify-content:center; } }
+    @media (max-width: 600px) {
+        .mt-barra-der { flex:1 1 100%; }
+        .mt-contacto-btn { flex:1 1 0; justify-content:center; }
+    }
     .mt-vista-btn { border:none; background:none; font:inherit; font-size:13.5px; font-weight:600; color:var(--text-muted);
                     padding:7px 16px; border-radius:7px; cursor:pointer; }
     .mt-vista-btn.activa { background:#fff; color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
@@ -195,6 +204,17 @@
         <div class="num">{{ $completos }}/{{ $filas->count() }}</div>
         <div class="lbl">🚀 Arranque completo</div>
     </button>
+    {{-- Tickets y sesiones registrados con producto Meta (en Tickets/Sesiones → Producto) --}}
+    <div class="mt-card morado info" title="Tickets de estos colegios con el producto {{ $nombre }}">
+        <div class="num">{{ $tickets['total'] }}</div>
+        <div class="lbl">🎫 Tickets {{ $nombre }}</div>
+        <div class="det">{{ $tickets['abiertos'] }} abiertos · {{ $tickets['cerrados'] }} cerrados</div>
+    </div>
+    <div class="mt-card cian info" title="Sesiones de estos colegios con el producto {{ $nombre }}">
+        <div class="num">{{ $sesiones['total'] }}</div>
+        <div class="lbl">📅 Sesiones {{ $nombre }}</div>
+        <div class="det">{{ $sesiones['realizadas'] }} realizadas · {{ $sesiones['pendientes'] }} pendientes</div>
+    </div>
 </div>
 
 {{-- Selector de vista + contacto responsable --}}
@@ -203,11 +223,14 @@
         <button type="button" class="mt-vista-btn activa" data-vista="tabla" role="tab">📋 Tabla</button>
         <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
     </div>
-    @if($contacto)
-        <button type="button" class="btn btn-secondary mt-contacto-btn" onclick="mtContacto(true)">
-            👤 Contacto Responsable
-        </button>
-    @endif
+    <div class="mt-barra-der">
+        <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary mt-contacto-btn">📥 Descargar Excel</a>
+        @if($contacto)
+            <button type="button" class="btn btn-secondary mt-contacto-btn" onclick="mtContacto(true)">
+                👤 Contacto Responsable
+            </button>
+        @endif
+    </div>
 </div>
 
 @if($contacto)

@@ -9,6 +9,8 @@ use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
 use App\Models\SeguimientoMeta;
+use App\Models\Ticket;
+use App\Models\Visit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -104,15 +106,74 @@ class SeguimientoController extends Controller
     // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
     private function agendaMeta(array $datos)
     {
-        $acciones = self::PLATAFORMAS[$datos['slug']]['acciones'];
+        $filas = $this->filasMeta($datos['slug']);
+        $ids = $filas->pluck('colegio.id');
+        $tickets = $this->ticketsDelProducto($datos['nombre'], $ids)->get(['id', 'status']);
+        $sesiones = $this->sesionesDelProducto($datos['nombre'], $ids)->get(['id', 'status']);
+
+        return view('seguimiento.meta', $datos + [
+            'filas'          => $filas,
+            'totalAcciones'  => count(self::PLATAFORMAS[$datos['slug']]['acciones']),
+            'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
+            'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
+            'tickets'        => [
+                'total'    => $tickets->count(),
+                'abiertos' => $tickets->where('status', '!=', 'closed')->count(),
+                'cerrados' => $tickets->where('status', 'closed')->count(),
+            ],
+            'sesiones'       => [
+                'total'      => $sesiones->count(),
+                'realizadas' => $sesiones->where('status', 'terminada')->count(),
+                'pendientes' => $sesiones->where('status', '!=', 'terminada')->count(),
+            ],
+        ]);
+    }
+
+    // Descarga en Excel de la agenda Meta: colegios, acciones de arranque, tickets y sesiones del producto
+    public function excel(string $plataforma)
+    {
+        $info = self::PLATAFORMAS[$plataforma];
+        abort_if(empty($info['agenda']), 404);
+
+        $filas = $this->filasMeta($plataforma);
+        $ids = $filas->pluck('colegio.id');
+
+        $tickets = $this->ticketsDelProducto($info['nombre'], $ids)
+            ->with(['school', 'consultant.user'])->latest()->get();
+        $sesiones = $this->sesionesDelProducto($info['nombre'], $ids)
+            ->with(['school', 'consultant.user'])->orderByDesc('scheduled_date')->get();
+
+        $archivo = (new \App\Exports\SeguimientoMetaExcel($info, $filas, $tickets, $sesiones))->guardar();
+        $nombre = 'Seguimiento_' . str_replace(' ', '_', $info['nombre']) . '_' . now()->format('Y-m-d') . '.xlsx';
+
+        return response()->download($archivo, $nombre, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    // Tickets y sesiones marcados con el producto (Tickets/Sesiones → Producto) de esos colegios.
+    // productos es JSON: se busca la cadena exacta entre comillas para no confundir nombres parecidos.
+    private function ticketsDelProducto(string $producto, $schoolIds)
+    {
+        return Ticket::whereIn('school_id', $schoolIds)->where('productos', 'like', '%' . json_encode($producto) . '%');
+    }
+
+    private function sesionesDelProducto(string $producto, $schoolIds)
+    {
+        return Visit::whereIn('school_id', $schoolIds)->where('productos', 'like', '%' . json_encode($producto) . '%');
+    }
+
+    private function filasMeta(string $slug)
+    {
+        $acciones = self::PLATAFORMAS[$slug]['acciones'];
         $totalAcciones = count($acciones);
 
-        $colegios = $this->colegiosDe($datos['slug'])
-            ->with('seguimientoMeta')
+        $colegios = $this->colegiosDe($slug)
+            ->with(['seguimientoMeta', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')])
             ->orderBy('name')
             ->get();
 
-        $avance = SeguimientoAccion::where('plataforma', $datos['slug'])
+        $avance = SeguimientoAccion::where('plataforma', $slug)
             ->whereIn('school_id', $colegios->pluck('id'))
             ->whereIn('accion', array_keys($acciones))
             ->get()
@@ -122,7 +183,7 @@ class SeguimientoController extends Controller
         $limite = today()->addDays(30);
         $proxima = fn ($fecha) => $fecha && $fecha->between($hoy, $limite);
 
-        $filas = $colegios->map(function (School $colegio) use ($proxima, $avance, $acciones, $totalAcciones) {
+        return $colegios->map(function (School $colegio) use ($proxima, $avance, $acciones, $totalAcciones) {
             $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
             $hechasPorClave = ($avance[$colegio->id] ?? collect())->keyBy('accion');
             $hechas = $hechasPorClave->where('status', 'done')->count();
@@ -138,15 +199,10 @@ class SeguimientoController extends Controller
                 'completo'             => $hechas === $totalAcciones,
                 'siguiente'            => collect($acciones)
                     ->first(fn ($etiqueta, $clave) => ($hechasPorClave[$clave]->status ?? 'pending') !== 'done'),
+                'acciones'             => $hechasPorClave,
+                'consultor'            => $colegio->schoolConsultants->first()?->consultant?->user?->name,
             ];
         });
-
-        return view('seguimiento.meta', $datos + [
-            'filas'          => $filas,
-            'totalAcciones'  => $totalAcciones,
-            'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
-            'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
-        ]);
     }
 
     private function guardarMeta(Request $request, School $school, array $info)

@@ -29,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Excel: los textos que empiezan con "=" se guardan como texto, no como fórmula
+        \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(new \App\Helpers\TextoSeguroValueBinder());
+
         View::composer('layouts.app', function ($view) {
             if (!auth()->check()) {
                 return;

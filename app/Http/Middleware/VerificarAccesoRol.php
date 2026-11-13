@@ -97,7 +97,8 @@ class VerificarAccesoRol
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*', 'tickets.show', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index',
+            $rutasPermitidas = ['dashboard', 'dashboard.acciones-arranque.excel', 'reportes.general', 'reportes.zonas',
+                'schools.*', 'tickets.show', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index',
                 'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel', 'seguimiento.recursos.preview', 'seguimiento.recursos.download'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
@@ -126,7 +127,7 @@ class VerificarAccesoRol
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
             $rutasPermitidas = [
-                'dashboard', 'dashboard.acciones-arranque.excel',
+                'dashboard', 'dashboard.acciones-arranque.excel', 'reportes.general', 'reportes.zonas',
                 'avance-colegios.*',
                 'alumnos-docentes.*',
                 'reporte-semanal.index', 'reporte-semanal.exportar',
@@ -167,6 +168,15 @@ class VerificarAccesoRol
         // Consultor Digital: solo sus colegios asignados
         if ($user->hasRole('consultor_digital')) {
             $schoolParam = $request->route('school');
+
+            // Rutas shallow de tickets (ver/editar/borrar): el colegio sale del ticket
+            if (!$schoolParam && $request->route('ticket')) {
+                $ticket = $request->route('ticket');
+                $schoolParam = $ticket instanceof \App\Models\Ticket
+                    ? $ticket->school_id
+                    : \App\Models\Ticket::whereKey($ticket)->value('school_id');
+                abort_unless($schoolParam, 404);
+            }
 
             if ($schoolParam) {
                 $consultant = Consultant::where('user_id', $user->id)->first();

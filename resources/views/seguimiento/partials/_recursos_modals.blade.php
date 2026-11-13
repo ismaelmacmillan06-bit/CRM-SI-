@@ -343,6 +343,11 @@
 @endif
 
 <script>
+    // Escapa texto antes de meterlo en innerHTML (títulos y nombres de archivo)
+    function srEsc(t) {
+        return String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
 (function () {
     // Buscador en vivo por categoría
     document.querySelectorAll('[id^="sr-buscar-"]').forEach(input => {
@@ -487,7 +492,7 @@
                 .then(r => r.json())
                 .then(json => {
                     if (!json.ok || !json.rows || !json.rows.length) {
-                        body.innerHTML = '<div class="sr-pv-fallback"><p style="margin:0 0 12px; color:var(--text-muted)">' + (json.message || 'Vista previa no disponible.') + '</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
+                        body.innerHTML = '<div class="sr-pv-fallback"><p style="margin:0 0 12px; color:var(--text-muted)">' + srEsc(json.message || 'Vista previa no disponible.') + '</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
                         return;
                     }
                     const wrap = document.createElement('div');
@@ -504,14 +509,14 @@
                         table.appendChild(tr);
                     });
                     wrap.appendChild(table);
-                    body.innerHTML = '<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px">Hoja: <strong>' + (json.sheetTitle || 'Principal') + '</strong> · Mostrando primeras ' + json.rows.length + ' de ' + json.totalRows + ' filas</div>';
+                    body.innerHTML = '<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px">Hoja: <strong>' + srEsc(json.sheetTitle || 'Principal') + '</strong> · Mostrando primeras ' + json.rows.length + ' de ' + json.totalRows + ' filas</div>';
                     body.appendChild(wrap);
                 })
                 .catch(() => {
                     body.innerHTML = '<div class="sr-pv-fallback"><p style="margin:0 0 12px; color:var(--text-muted)">No se pudo cargar la vista previa.</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
                 });
         } else {
-            body.innerHTML = '<div class="sr-pv-fallback"><div style="font-size:36px; margin-bottom:8px">📄</div><div style="font-weight:700; margin-bottom:4px">' + (d.nombreArchivo || d.titulo) + '</div><p style="color:var(--text-muted); font-size:13px; margin:0 0 16px">Los archivos ' + d.ext + ' no se renderizan directamente en el navegador. Descárgalo para abrirlo completo.</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
+            body.innerHTML = '<div class="sr-pv-fallback"><div style="font-size:36px; margin-bottom:8px">📄</div><div style="font-weight:700; margin-bottom:4px">' + srEsc(d.nombreArchivo || d.titulo) + '</div><p style="color:var(--text-muted); font-size:13px; margin:0 0 16px">Los archivos ' + srEsc(d.ext) + ' no se renderizan directamente en el navegador. Descárgalo para abrirlo completo.</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
         }
 
         document.getElementById('sr-preview-backdrop').classList.add('open');

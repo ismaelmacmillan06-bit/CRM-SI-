@@ -1436,7 +1436,10 @@ fetch('https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.js
         // No depende de cookies ni de iframes (que Chrome bloquea por SameSite).
         fetch('{{ route("reportes.general") }}')
             .then(function (res) {
-                if (!res.ok) throw new Error('error');
+                // Si el servidor redirige (sin permiso, sesión vencida) llega una página HTML:
+                // no guardarla como .xlsx, porque Excel dice que el archivo no se puede abrir
+                var tipo = res.headers.get('Content-Type') || '';
+                if (!res.ok || res.redirected || tipo.indexOf('spreadsheetml') === -1) throw new Error('error');
                 var cd   = res.headers.get('Content-Disposition') || '';
                 var m    = cd.match(/filename[^;=\n]*=['"]?([^'"\n;]+)/);
                 var name = m ? m[1] : 'reporte-general.xlsx';

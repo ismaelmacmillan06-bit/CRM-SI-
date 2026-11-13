@@ -203,11 +203,23 @@ class SeguimientoRecursoController extends Controller
 
         $safeName = $this->nombreDescarga($recurso);
         $mime = $recurso->mime_type ?: 'application/octet-stream';
+        // Un .txt con HTML adentro se detecta como text/html y se ejecutaría en el
+        // iframe de la vista previa: siempre se muestra como texto plano
+        if ($recurso->extension === 'txt' || str_contains($mime, 'html') || str_contains($mime, 'xml')) {
+            $mime = 'text/plain; charset=UTF-8';
+        }
 
-        return response()->file($fullPath, [
-            'Content-Type'        => $mime,
-            'Content-Disposition' => 'inline; filename="' . addslashes($safeName) . '"',
-        ]);
+        $headers = [
+            'Content-Type'           => $mime,
+            'Content-Disposition'    => 'inline; filename="' . addslashes($safeName) . '"',
+            'X-Content-Type-Options' => 'nosniff',
+        ];
+        if (str_starts_with($mime, 'text/')) {
+            // (No a PDF: Chrome no muestra PDFs en documentos con sandbox)
+            $headers['Content-Security-Policy'] = 'sandbox';
+        }
+
+        return response()->file($fullPath, $headers);
     }
 
     public function download(SeguimientoRecurso $recurso)

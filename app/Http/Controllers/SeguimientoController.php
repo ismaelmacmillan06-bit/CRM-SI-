@@ -221,7 +221,7 @@ class SeguimientoController extends Controller
                 'meta'      => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
                 'acciones'  => $info['acciones'],
                 'guardadas' => $guardadas,
-                'hechas'    => $guardadas->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+                'hechas'    => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
                 'contacto'  => $info['contacto'] ?? null,
             ]);
         }
@@ -233,7 +233,7 @@ class SeguimientoController extends Controller
             'school'   => $school,
             'acciones' => $info['acciones'],
             'guardadas' => $guardadas,
-            'hechas'   => $guardadas->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+            'hechas'   => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
         ]);
     }
 

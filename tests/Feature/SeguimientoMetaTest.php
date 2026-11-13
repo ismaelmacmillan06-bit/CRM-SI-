@@ -162,6 +162,8 @@ class SeguimientoMetaTest extends TestCase
         $this->assertSame($admin->id, $hecha->completed_by);
 
         $this->get(route('seguimiento.show', 'meta'))->assertSee('1/5')->assertSee('→ Capacitación');
+        // El contador de la página Gestionar también avanza
+        $this->get(route('seguimiento.colegio', ['meta', $school]))->assertSee('1/5 completadas');
 
         // Completar todo marca el arranque como completo
         $todas = collect(\App\Http\Controllers\SeguimientoController::PLATAFORMAS['meta']['acciones'])

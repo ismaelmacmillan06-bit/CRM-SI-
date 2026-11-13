@@ -125,6 +125,7 @@ class SeguimientoTest extends TestCase
         $this->assertSame(7, ActivityLog::where('tipo', 'seguimiento')->count());
 
         $this->get(route('seguimiento.show', 'global-educa'))->assertSee('7/7')->assertSee('100%');
+        $this->get(route('seguimiento.colegio', ['global-educa', $school]))->assertSee('7/7 completadas');
     }
 
     public function test_reverting_an_action_clears_who_completed_it(): void

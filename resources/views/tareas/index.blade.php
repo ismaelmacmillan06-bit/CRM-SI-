@@ -1,9 +1,28 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Tareas SI')
 
 @section('content')
-@php $puedeEditar = auth()->user()->hasAnyRole(['admin', 'consultor_digital']); @endphp
+@php
+    $usuario = auth()->user();
+    // null = puede marcar todos los colegios de la tarea; [] = ninguno
+    $puedeMarcar = $tarea && ($marcables === null || count($marcables) > 0);
+    $puedeGestionar = $tarea && $tarea->puedeGestionar($usuario);
+    $rolesTarea = $tarea ? $tarea->rolesColegio() : ['digital'];
+    $etiquetasRol = ['digital' => 'Consultor Digital', 'eca' => 'Consultor ECA', 'elt' => 'Consultor ELT'];
+    $estiloAudiencia = [
+        'digital'   => ['💻', '#4f46e5', '#eef2ff'],
+        'eca'       => ['📘', '#0369a1', '#e0f2fe'],
+        'elt'       => ['🗣️', '#b45309', '#fef3c7'],
+        'academico' => ['🎓', '#047857', '#d1fae5'],
+    ];
+    $chipAudiencia = function ($audiencia) use ($estiloAudiencia) {
+        [$ico, $color, $fondo] = $estiloAudiencia[$audiencia] ?? $estiloAudiencia['digital'];
+        $texto = \App\Models\TareaSI::AUDIENCIAS[$audiencia] ?? $audiencia;
+        return '<span style="display:inline-block; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; color:'
+            . $color . '; background:' . $fondo . '">' . $ico . ' ' . e($texto) . '</span>';
+    };
+@endphp
 
 {{-- Header --}}
 <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap">
@@ -17,7 +36,7 @@
         </p>
     </div>
 
-    @if(auth()->user()->hasRole('admin'))
+    @if($audienciasPublicables)
     <button onclick="document.getElementById('modal-nueva-tarea').style.display='flex'"
             style="margin-left:auto; display:inline-flex; align-items:center; gap:6px;
                    padding:10px 20px; background:var(--accent); color:#fff; border:none;
@@ -53,9 +72,17 @@
                 <textarea name="descripcion" class="form-control" rows="3"
                           placeholder="Detalla la acción que debe realizarse..."></textarea>
             </div>
-            <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
+            @php $audienciaInicial = in_array('academico', $audienciasPublicables) && !$usuario->hasRole('admin') ? 'academico' : ($audienciasPublicables[0] ?? 'digital'); @endphp
+            <div class="form-group">
+                <label class="form-label">Dirigida a *</label>
+                <select name="audiencia" id="nueva-tarea-audiencia" class="form-control" onchange="avisoAudiencia(this.value)">
+                    @foreach($audienciasPublicables as $a)
+                        <option value="{{ $a }}" @selected($a === $audienciaInicial)>{{ \App\Models\TareaSI::AUDIENCIAS[$a] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div id="aviso-audiencia" style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
                         padding:10px 14px; font-size:13px; color:#1e40af; margin-bottom:20px">
-                Esta tarea se creará como <strong>pendiente</strong> para todos los colegios registrados.
             </div>
             <div style="display:flex; gap:10px; justify-content:flex-end">
                 <button type="button"
@@ -123,6 +150,7 @@
                 <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px">
                     {{ $t->titulo }}
                 </div>
+                <div style="margin-bottom:6px">{!! $chipAudiencia($t->audiencia) !!}</div>
                 <div style="background:var(--surface2); border-radius:20px; height:4px; overflow:hidden; margin-bottom:4px">
                     <div style="height:100%; width:{{ $pct }}%; background:#10b981; border-radius:20px"></div>
                 </div>
@@ -133,7 +161,7 @@
             @empty
             <div style="text-align:center; padding:30px; color:var(--text-muted); font-size:13px">
                 No hay tareas aún.<br>
-                @if(auth()->user()->hasRole('admin'))
+                @if($audienciasPublicables)
                 <span style="font-size:12px">Usa "+ Tarea SI" para crear una.</span>
                 @endif
             </div>
@@ -147,6 +175,10 @@
             <div>
                 @if($tarea)
                     <span class="card-title">{{ $tarea->titulo }}</span>
+                    <span style="margin-left:6px">{!! $chipAudiencia($tarea->audiencia) !!}</span>
+                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px">
+                        Publicada por {{ $tarea->creator->name ?? '—' }} · {{ $tarea->created_at->format('d/m/Y') }}
+                    </div>
                     @if($tarea->descripcion)
                     <div style="font-size:12px; color:var(--text-muted); margin-top:2px">
                         {{ $tarea->descripcion }}
@@ -190,7 +222,7 @@
                         title="Filtrar: solo realizadas">
                     {{ $p['realizada'] }} listas
                 </button>
-                @if(auth()->user()->hasRole('admin'))
+                @if($puedeGestionar)
                 <button type="button" class="btn btn-secondary btn-sm" style="padding:4px 10px"
                         onclick="abrirEditarTarea({{ $tarea->id }}, {{ json_encode($tarea->titulo) }}, {{ json_encode($tarea->descripcion) }})">
                     ✏️ Editar
@@ -218,11 +250,13 @@
             <thead>
                 <tr>
                     <th>Colegio</th>
-                    <th>Consultor Digital</th>
+                    @foreach($rolesTarea as $rolCol)
+                    <th>{{ $etiquetasRol[$rolCol] }}</th>
+                    @endforeach
                     <th>Ciudad</th>
                     @if($tarea)
                     <th style="text-align:center">Estado</th>
-                    @if($puedeEditar)
+                    @if($puedeMarcar)
                     <th style="text-align:center; min-width:240px">Cambiar estado</th>
                     @endif
                     @endif
@@ -236,9 +270,11 @@
                     data-status="{{ $status }}"
                     id="row-{{ $school->id }}">
                     <td><strong>{{ $school->name }}</strong></td>
+                    @foreach($rolesTarea as $rolCol)
                     <td style="font-size:13px; color:var(--text-muted)">
-                        {{ $school->schoolConsultants->where('role','digital')->first()?->consultant->user->name ?? '—' }}
+                        {{ $school->schoolConsultants->where('role', $rolCol)->first()?->consultant->user->name ?? '—' }}
                     </td>
+                    @endforeach
                     <td style="font-size:13px; color:var(--text-muted)">{{ $school->state ?? $school->city ?? '—' }}</td>
 
                     @if($tarea)
@@ -248,8 +284,9 @@
                             {{ $status === 'realizada' ? '✓ Realizada' : ($status === 'en_proceso' ? '⟳ En proceso' : '○ Pendiente') }}
                         </span>
                     </td>
-                    @if($puedeEditar)
+                    @if($puedeMarcar)
                     <td style="text-align:center">
+                        @if($marcables === null || in_array($school->id, $marcables, true))
                         <div style="display:inline-flex; gap:4px">
                             <button onclick="cambiarEstado({{ $school->id }}, 'pendiente', this)"
                                     data-valor="pendiente"
@@ -276,15 +313,18 @@
                                 ✓ Realizada
                             </button>
                         </div>
+                        @else
+                        <span style="color:var(--text-muted)">—</span>
+                        @endif
                     </td>
                     @endif
                     @endif
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="{{ $tarea ? ($puedeEditar ? 5 : 4) : 3 }}"
+                    <td colspan="{{ 2 + count($rolesTarea) + ($tarea ? ($puedeMarcar ? 2 : 1) : 0) }}"
                         style="text-align:center; color:var(--text-muted); padding:40px">
-                        No hay colegios registrados.
+                        {{ $tarea && $tarea->esAcademica() ? 'No hay colegios asignados para esta tarea.' : 'No hay colegios registrados.' }}
                     </td>
                 </tr>
                 @endforelse
@@ -430,6 +470,18 @@ async function cambiarEstado(schoolId, nuevoStatus, btnClicked) {
 }
 
 document.getElementById('buscador-tareas')?.addEventListener('input', aplicarFiltroVisible);
+
+const AVISOS_AUDIENCIA = {
+    digital:   'Se creará como <strong>pendiente</strong> para todos los colegios registrados; la marcan los consultores digitales.',
+    eca:       'Se creará como <strong>pendiente</strong> en los colegios activos con consultor <strong>ECA</strong> asignado; cada consultor ECA la marca en sus colegios.',
+    elt:       'Se creará como <strong>pendiente</strong> en los colegios activos con consultor <strong>ELT</strong> asignado; cada consultor ELT la marca en sus colegios.',
+    academico: 'Se creará como <strong>pendiente</strong> en los colegios activos con consultor <strong>ECA o ELT</strong> asignado; cada consultor la marca en sus colegios.',
+};
+function avisoAudiencia(valor) {
+    const aviso = document.getElementById('aviso-audiencia');
+    if (aviso) aviso.innerHTML = AVISOS_AUDIENCIA[valor] || '';
+}
+avisoAudiencia(document.getElementById('nueva-tarea-audiencia')?.value);
 
 function abrirEditarTarea(id, titulo, descripcion) {
     document.getElementById('form-editar-tarea').action = '/tareas/' + id;

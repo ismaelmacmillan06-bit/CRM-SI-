@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with([
                 'hayComunicadoNuevo' => Comunicado::visiblePara(auth()->user())->activos()->where('created_at', '>=', $desde)->exists(),
-                'hayTareaNueva'      => TareaSI::where('created_at', '>=', $desde)->exists(),
+                'hayTareaNueva'      => TareaSI::visiblePara(auth()->user())->where('created_at', '>=', $desde)->exists(),
             ]);
         });
     }

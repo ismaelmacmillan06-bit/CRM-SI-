@@ -85,6 +85,11 @@ class VerificarAccesoRol
             if ($request->routeIs('ssa.*')) {
                 return $next($request);
             }
+            // Tareas SI: marcan el estado de las tareas dirigidas a su área en sus
+            // colegios (TareaController valida tarea y colegio)
+            if ($request->routeIs('tareas.update-status')) {
+                return $next($request);
+            }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
@@ -104,13 +109,13 @@ class VerificarAccesoRol
         // Coordinador: lectura amplia (Dashboard incl. Excel de arranque, Avance
         // Colegios, Colegios y todo dentro de un colegio, Alumnos Docentes, Equipo
         // SI, Bundles SI, Producción, Reporte Semanal incl. exportar, Tablero SI)
-        // + escritura solo en SSA y Mis Notas SI (ya permitido arriba). Sin acceso
-        // a Seguimiento SIC/Externo, Herramientas SI, Configuración, Tareas SI ni
-        // Bitácora (quedan bloqueados: las dos primeras y Herramientas exigen
-        // consultor_digital/admin más arriba; Tareas SI y Bitácora simplemente no
-        // están en la lista blanca de abajo).
+        // + escritura solo en SSA, Mis Notas SI (ya permitido arriba) y Tareas SI
+        // (publica tareas para ECA/ELT; TareaController limita qué puede tocar).
+        // Sin acceso a Seguimiento SIC, Herramientas SI, Configuración ni
+        // Bitácora (Seguimiento SIC y Herramientas exigen consultor_digital/admin
+        // más arriba; el resto no está en la lista blanca de abajo).
         if ($user->hasRole('coordinador')) {
-            if ($request->routeIs('ssa.*')) {
+            if ($request->routeIs('ssa.*') || $request->routeIs('tareas.*')) {
                 return $next($request);
             }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {

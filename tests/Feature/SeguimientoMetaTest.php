@@ -7,6 +7,7 @@ use App\Models\Consultant;
 use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
+use App\Models\SeguimientoAccion;
 use App\Models\SeguimientoMeta;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -105,18 +106,17 @@ class SeguimientoMetaTest extends TestCase
 
         $this->actingAs($this->usuario('admin'))
             ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos(['fecha_aplicacion' => 'no-es-fecha']))
-            ->assertSessionHasErrors('fecha_aplicacion', null, 'meta_' . $school->id);
+            ->assertSessionHasErrors('fecha_aplicacion');
 
         $this->assertSame(0, SeguimientoMeta::count());
 
-        // Al volver, la página muestra el error y reabre el modal con lo que se había escrito
-        $this->from(route('seguimiento.show', 'meta'))
+        // Al volver, la página Gestionar muestra el error y conserva lo que se había escrito
+        $this->from(route('seguimiento.colegio', ['meta', $school]))
             ->followingRedirects()
             ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos(['fecha_aplicacion' => 'no-es-fecha']))
             ->assertOk()
-            ->assertSee('mt-err"', false)
-            ->assertSee('data-colegio="' . $school->id . '"', false)
-            ->assertSee('"usuario":"admin.meta@colegio.com"', false);
+            ->assertSee('Gestionar Meta')
+            ->assertSee('value="admin.meta@colegio.com"', false);
     }
 
     public function test_invalid_time_is_rejected(): void
@@ -125,7 +125,63 @@ class SeguimientoMetaTest extends TestCase
 
         $this->actingAs($this->usuario('admin'))
             ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos(['hora_capacitacion' => '25:99']))
-            ->assertSessionHasErrors('hora_capacitacion', null, 'meta_' . $school->id);
+            ->assertSessionHasErrors('hora_capacitacion');
+    }
+
+    public function test_manage_page_saves_data_and_startup_actions_together(): void
+    {
+        $school = $this->colegio('Colegio arranque', true, 'activo', 'NX-9');
+        $admin = $this->usuario('admin');
+        $this->actingAs($admin);
+
+        $this->get(route('seguimiento.show', 'meta'))
+            ->assertSee(route('seguimiento.colegio', ['meta', $school]), false)
+            ->assertSee('Gestionar')
+            ->assertSee('0/5')
+            ->assertSee('→ Compartir información a Edgar');
+
+        $this->get(route('seguimiento.colegio', ['meta', $school]))
+            ->assertOk()
+            ->assertSee('Gestionar Meta — Colegio arranque')
+            ->assertSee('Acciones de arranque')
+            ->assertSee('Carga de alumnos en META')
+            ->assertSee(route('schools.tickets.index', $school), false);
+
+        $this->post(route('seguimiento.guardar', ['meta', $school]), $this->datos([
+            'acciones' => [
+                'compartir-edgar' => ['status' => 'done', 'notes' => 'Enviado por correo'],
+                'capacitacion'    => ['status' => 'in_progress', 'notes' => null],
+                'carga-alumnos'   => ['status' => 'pending', 'notes' => null],
+            ],
+        ]))->assertRedirect()->assertSessionHas('success');
+
+        $this->assertSame('Laura Pérez', SeguimientoMeta::first()->administrador);
+        $this->assertSame(2, SeguimientoAccion::where('school_id', $school->id)->where('plataforma', 'meta')->count());
+        $hecha = SeguimientoAccion::where('accion', 'compartir-edgar')->first();
+        $this->assertSame('done', $hecha->status);
+        $this->assertSame($admin->id, $hecha->completed_by);
+
+        $this->get(route('seguimiento.show', 'meta'))->assertSee('1/5')->assertSee('→ Capacitación');
+
+        // Completar todo marca el arranque como completo
+        $todas = collect(\App\Http\Controllers\SeguimientoController::PLATAFORMAS['meta']['acciones'])
+            ->map(fn () => ['status' => 'done', 'notes' => null])->all();
+        $this->post(route('seguimiento.guardar', ['meta', $school]), $this->datos(['acciones' => $todas]));
+        $this->get(route('seguimiento.show', 'meta'))->assertSee('5/5')->assertSee('✅ Completo');
+    }
+
+    public function test_invalid_action_status_is_rejected(): void
+    {
+        $school = $this->colegio('Colegio Meta');
+
+        $this->actingAs($this->usuario('admin'))
+            ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos([
+                'acciones' => ['capacitacion' => ['status' => 'inventado']],
+            ]))
+            ->assertSessionHasErrors('acciones.capacitacion.status');
+
+        $this->assertSame(0, SeguimientoMeta::count());
+        $this->assertSame(0, SeguimientoAccion::count());
     }
 
     public function test_school_without_meta_cannot_be_edited(): void
@@ -135,6 +191,7 @@ class SeguimientoMetaTest extends TestCase
         $this->actingAs($this->usuario('admin'))
             ->post(route('seguimiento.guardar', ['meta', $school]), $this->datos())
             ->assertNotFound();
+        $this->get(route('seguimiento.colegio', ['meta', $school]))->assertNotFound();
     }
 
     public function test_digital_consultant_only_edits_assigned_schools(): void
@@ -149,6 +206,8 @@ class SeguimientoMetaTest extends TestCase
             ->assertSee('Colegio propio')
             ->assertDontSee('Colegio ajeno');
 
+        $this->get(route('seguimiento.colegio', ['meta', $propio]))->assertOk();
+        $this->get(route('seguimiento.colegio', ['meta', $ajeno]))->assertForbidden();
         $this->post(route('seguimiento.guardar', ['meta', $propio]), $this->datos())->assertRedirect();
         $this->post(route('seguimiento.guardar', ['meta', $ajeno]), $this->datos())->assertForbidden();
         $this->assertSame([$propio->id], SeguimientoMeta::pluck('school_id')->all());

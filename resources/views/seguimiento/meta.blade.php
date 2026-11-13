@@ -7,8 +7,7 @@
     $proximasCap = $filas->where('capacitacion_proxima', true)->count();
     $proximasApl = $filas->where('aplicacion_proxima', true)->count();
     $pendientes  = $filas->where('pendiente', true)->count();
-    // Si una edición regresó con errores, se vuelve a abrir el modal de ese colegio
-    $colegioConError = $filas->first(fn ($f) => $errors->getBag('meta_' . $f['colegio']->id)->any())['colegio'] ?? null;
+    $completos   = $filas->where('completo', true)->count();
 @endphp
 
 <style>
@@ -34,7 +33,12 @@
     .mt-chip.prox { background:#dbeafe; color:#1d4ed8; }
     .mt-chip.hoy  { background:#fee2e2; color:#b91c1c; }
     .mt-chip.pas  { background:var(--surface2); color:var(--text-muted); }
-    .mt-notas { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-muted); }
+    .mt-chip.pend { background:#fef3c7; color:#b45309; }
+    .mt-fecha-linea { display:flex; align-items:center; gap:4px; line-height:1.9; }
+    .mt-fecha-linea .mt-chip { margin:0 0 0 2px; }
+    .mt-fecha-linea .mt-dot { margin-right:2px; }
+    .mt-fecha-lbl { font-size:11px; font-weight:600; color:var(--text-muted); width:28px; }
+    .mt-nota-ico { cursor:help; font-size:12px; margin-left:3px; }
     .mt-acc { display:inline-flex; gap:6px; flex-wrap:nowrap; }
     /* La columna de botones queda fija a la derecha aunque la tabla se deslice de lado */
     .mt-table th:last-child, .mt-table td:last-child { position:sticky; right:0; background:var(--surface);
@@ -52,13 +56,17 @@
     .mt-close { margin-left:auto; background:none; border:none; width:34px; height:34px; border-radius:8px; font-size:18px;
                 cursor:pointer; color:var(--text-muted); }
     .mt-close:hover { background:var(--surface2); }
-    .mt-body { padding:18px 22px; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .mt-body .full { grid-column:1 / -1; }
-    .mt-body label { display:block; font-size:12.5px; font-weight:600; color:var(--text-muted); margin-bottom:5px; }
-    .mt-sec { grid-column:1 / -1; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
-              color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:6px; margin-top:4px; }
-    .mt-foot { display:flex; justify-content:flex-end; gap:8px; padding:14px 22px; border-top:1px solid var(--border); }
-    .mt-err { grid-column:1 / -1; background:#fee2e2; color:#991b1b; border-radius:8px; padding:10px 12px; font-size:13px; }
+
+    /* Avance de acciones de arranque */
+    .mt-arr { min-width:140px; max-width:180px; }
+    .mt-arr .top { display:flex; justify-content:space-between; font-size:12px; font-weight:700; margin-bottom:4px; }
+    .mt-arr .barra { background:var(--surface2); border-radius:20px; height:6px; overflow:hidden; }
+    .mt-arr .barra div { height:100%; border-radius:20px; background:var(--accent); }
+    .mt-arr.ok .barra div { background:var(--success); }
+    .mt-arr .sig { font-size:11.5px; color:var(--text-muted); margin-top:4px;
+                   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .mt-acceso { font-family:ui-monospace,Consolas,monospace; font-size:12.5px; line-height:1.6; }
+    .mt-acceso .lbl { font-family:inherit; color:var(--text-muted); font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; margin-right:4px; }
 
     /* Selector de vista */
     .mt-barra { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
@@ -140,9 +148,6 @@
     @media (max-width: 600px) {
         .mt-overlay { align-items:flex-end; padding:0; }
         .mt-modal { width:100%; border-radius:18px 18px 0 0; max-height:92vh; }
-        .mt-body { grid-template-columns:1fr; padding:16px; }
-        .mt-foot { padding:12px 16px calc(12px + env(safe-area-inset-bottom)); }
-        .mt-foot .btn { flex:1; justify-content:center; }
     }
 </style>
 
@@ -151,7 +156,7 @@
         {{ $icono }} Agenda de exámenes {{ $nombre }}
     </h1>
     <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0">
-        Capacitaciones y fechas de aplicación del examen de los colegios con {{ $nombre }}.
+        Acciones de arranque, capacitaciones y fechas de aplicación del examen de los colegios con {{ $nombre }}.
     </p>
 </div>
 
@@ -185,6 +190,10 @@
     <button type="button" class="mt-card ambar" data-filtro-card="pend">
         <div class="num">{{ $pendientes }}</div>
         <div class="lbl">⏳ Con fechas pendientes</div>
+    </button>
+    <button type="button" class="mt-card verde" data-filtro-card="arr-ok">
+        <div class="num">{{ $completos }}/{{ $filas->count() }}</div>
+        <div class="lbl">🚀 Arranque completo</div>
     </button>
 </div>
 
@@ -247,7 +256,7 @@
     $eventos = collect();
     foreach ($filas as $fila) {
         $m = $fila['meta'];
-        $base = ['id' => $fila['colegio']->id, 'colegio' => $fila['colegio']->name,
+        $base = ['url' => route('seguimiento.colegio', [$slug, $fila['colegio']]), 'colegio' => $fila['colegio']->name,
                  'administrador' => $m->administrador, 'capacitacion' => $m->capacitacion];
         if ($m->fecha_capacitacion) {
             $eventos->push($base + ['tipo' => 'cap', 'fecha' => $m->fecha_capacitacion->format('Y-m-d'), 'hora' => $m->horaCorta()]);
@@ -299,6 +308,8 @@
                 <option value="apl">Aplicación próxima (30 días)</option>
                 <option value="pend">Con fechas pendientes</option>
                 <option value="listo">Con ambas fechas</option>
+                <option value="arr-pend">Arranque pendiente</option>
+                <option value="arr-ok">Arranque completo</option>
             </select>
         </div>
         @endif
@@ -307,15 +318,12 @@
     <table class="table mt-table">
         <thead>
             <tr>
-                <th>ID Colegio</th>
                 <th>Colegio</th>
+                <th>Arranque</th>
                 <th>Administrador</th>
-                <th>Usuario</th>
-                <th>Contraseña</th>
+                <th>Acceso</th>
                 <th>Capacitación</th>
-                <th>Fecha capacitación</th>
-                <th>Fecha aplicación</th>
-                <th>Notas</th>
+                <th>Fechas</th>
                 <th></th>
             </tr>
         </thead>
@@ -328,174 +336,94 @@
                     $fila['capacitacion_proxima'] ? 'cap' : null,
                     $fila['aplicacion_proxima'] ? 'apl' : null,
                     $fila['pendiente'] ? 'pend' : 'listo',
+                    $fila['completo'] ? 'arr-ok' : 'arr-pend',
                 ])->filter()->implode(' ');
                 $texto = mb_strtolower(implode(' ', [$c->nexus_id, $c->name, $m->administrador, $m->usuario, $m->capacitacion, $m->notas]));
-                $datos = [
-                    'id'                 => $c->id,
-                    'nombre'             => $c->name,
-                    'administrador'      => $m->administrador,
-                    'usuario'            => $m->usuario,
-                    'contrasena'         => $m->contrasena,
-                    'capacitacion'       => $m->capacitacion,
-                    'fecha_capacitacion' => $m->fecha_capacitacion?->format('Y-m-d'),
-                    'hora_capacitacion'  => $m->horaCorta(),
-                    'fecha_aplicacion'   => $m->fecha_aplicacion?->format('Y-m-d'),
-                    'notas'              => $m->notas,
-                    'action'             => route('seguimiento.guardar', [$slug, $c]),
-                    'editado'            => $m->updated_at ? 'Última edición: ' . $m->updated_at->format('d/m/Y H:i') : '',
-                ];
+                $gestionar = route('seguimiento.colegio', [$slug, $c]);
             @endphp
             <tr data-estado="{{ $estado }}" data-texto="{{ $texto }}">
-                <td style="white-space:nowrap">
-                    @if($c->nexus_id)<strong>{{ $c->nexus_id }}</strong>@else<span class="mt-vacio" title="Sin Nexus ID">—</span>@endif
-                </td>
-                <td style="min-width:160px">
+                <td style="min-width:170px; max-width:260px">
                     <a href="{{ route('schools.show', $c) }}" style="font-weight:600; color:var(--text); text-decoration:none">{{ $c->name }}</a>
-                    @if($c->state)<div style="font-size:12px; color:var(--text-muted)">{{ $c->state }}</div>@endif
+                    @if($m->notas)<span class="mt-nota-ico" title="Notas: {{ $m->notas }}">📝</span>@endif
+                    <div style="font-size:12px; color:var(--text-muted)">
+                        @if($c->nexus_id)<strong style="color:var(--text)">{{ $c->nexus_id }}</strong>@else<span title="Sin Nexus ID">Sin ID</span>@endif
+                        @if($c->state) · {{ $c->state }}@endif
+                    </div>
+                </td>
+                <td>
+                    <div class="mt-arr {{ $fila['completo'] ? 'ok' : '' }}" title="{{ $fila['completo'] ? 'Arranque completo' : 'Siguiente: ' . $fila['siguiente'] }}">
+                        <div class="top"><span>{{ $fila['hechas'] }}/{{ $totalAcciones }}</span><span>{{ $fila['pct'] }}%</span></div>
+                        <div class="barra"><div style="width:{{ $fila['pct'] }}%"></div></div>
+                        <div class="sig">{{ $fila['completo'] ? '✅ Completo' : '→ ' . $fila['siguiente'] }}</div>
+                    </div>
                 </td>
                 <td>{!! $m->administrador ? e($m->administrador) : '<span class="mt-vacio">—</span>' !!}</td>
-                <td style="font-family:ui-monospace,Consolas,monospace; font-size:12.5px">{!! $m->usuario ? e($m->usuario) : '<span class="mt-vacio" style="font-family:inherit">—</span>' !!}</td>
-                <td>
-                    @if($m->contrasena)
+                <td class="mt-acceso">
+                    @if($m->usuario || $m->contrasena)
+                        <div style="white-space:nowrap"><span class="lbl">Usr</span>{!! $m->usuario ? e($m->usuario) : '<span class="mt-vacio">—</span>' !!}</div>
+                        <div><span class="lbl">Pwd</span>
+                        @if($m->contrasena)
                         <span class="mt-pwd">
                             <span data-pwd="{{ $m->contrasena }}">••••••••</span>
                             <button type="button" onclick="mtTogglePwd(this)" title="Mostrar / ocultar" aria-label="Mostrar contraseña"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         </span>
+                        @else
+                            <span class="mt-vacio">—</span>
+                        @endif
+                        </div>
                     @else
-                        <span class="mt-vacio">—</span>
+                        <span class="mt-vacio" style="font-family:inherit">—</span>
                     @endif
                 </td>
                 <td>{!! $m->capacitacion ? e($m->capacitacion) : '<span class="mt-vacio">—</span>' !!}</td>
-                @foreach(['fecha_capacitacion', 'fecha_aplicacion'] as $campoFecha)
-                    @php $f = $m->{$campoFecha}; @endphp
-                    <td class="mt-fecha">
-                        @if($f)
-                            {{ $f->format('d/m/Y') }}
-                            @if($campoFecha === 'fecha_capacitacion' && $m->horaCorta())
-                                <span style="color:var(--text-muted); font-size:12.5px">· {{ $m->horaCorta() }} h</span>
+                <td class="mt-fecha">
+                    @foreach(['fecha_capacitacion' => 'azul', 'fecha_aplicacion' => 'naranja'] as $campoFecha => $colorFecha)
+                        @php $f = $m->{$campoFecha}; @endphp
+                        <div class="mt-fecha-linea" title="{{ $campoFecha === 'fecha_capacitacion' ? 'Capacitación' : 'Aplicación de examen' }}">
+                            <span class="mt-dot {{ $colorFecha }}"></span><span class="mt-fecha-lbl">{{ $campoFecha === 'fecha_capacitacion' ? 'Cap.' : 'Apl.' }}</span>
+                            @if($f)
+                                {{ $f->format('d/m/Y') }}
+                                @if($campoFecha === 'fecha_capacitacion' && $m->horaCorta())
+                                    <span style="color:var(--text-muted); font-size:12px">· {{ $m->horaCorta() }} h</span>
+                                @endif
+                                @if($f->isToday())
+                                    <span class="mt-chip hoy">Hoy</span>
+                                @elseif($f->isPast())
+                                    <span class="mt-chip pas">Realizada</span>
+                                @elseif($f->lte(today()->addDays(30)))
+                                    <span class="mt-chip prox">En {{ (int) today()->diffInDays($f) }} día{{ (int) today()->diffInDays($f) === 1 ? '' : 's' }}</span>
+                                @endif
+                            @else
+                                <span class="mt-chip pend">Pendiente</span>
                             @endif
-                            <br>
-                            @if($f->isToday())
-                                <span class="mt-chip hoy">Hoy</span>
-                            @elseif($f->isPast())
-                                <span class="mt-chip pas">Realizada</span>
-                            @elseif($f->lte(today()->addDays(30)))
-                                <span class="mt-chip prox">En {{ (int) today()->diffInDays($f) }} día{{ (int) today()->diffInDays($f) === 1 ? '' : 's' }}</span>
-                            @endif
-                        @else
-                            <span class="badge badge-warning">Pendiente</span>
-                        @endif
-                    </td>
-                @endforeach
-                <td><div class="mt-notas" title="{{ $m->notas }}">{{ $m->notas ?: '—' }}</div></td>
+                        </div>
+                    @endforeach
+                </td>
                 <td style="text-align:right">
                     <div class="mt-acc">
                         <a href="{{ route('schools.tickets.index', $c) }}" class="btn btn-secondary btn-sm" title="Tickets de {{ $c->name }}">🎫</a>
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
-                        <button type="button" class="btn btn-primary btn-sm" style="white-space:nowrap"
-                                data-colegio="{{ $c->id }}" data-meta="{{ json_encode($datos) }}" onclick="mtEditar(this)">✏️ Editar</button>
+                        <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">Gestionar →</a>
                     </div>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="10" style="text-align:center; color:var(--text-muted); padding:40px">
+                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay colegios con {{ $nombre }}. Agrega el servicio en la ficha del colegio (📦 Servicios adicionales).
                 </td>
             </tr>
             @endforelse
             <tr id="mt-sin-resultados" style="display:none">
-                <td colspan="10" style="text-align:center; color:var(--text-muted); padding:30px">Ningún colegio coincide con la búsqueda.</td>
+                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px">Ningún colegio coincide con la búsqueda.</td>
             </tr>
         </tbody>
     </table>
     </div>
 </div>
 
-{{-- Modal de edición (uno solo, se llena con los datos del colegio) --}}
-<div id="mt-modal" class="mt-overlay" role="dialog" aria-modal="true" aria-labelledby="mt-titulo">
-    <form method="POST" id="mt-form" class="mt-modal">
-        @csrf
-        <div class="mt-head">
-            <div>
-                <h3 id="mt-titulo">✏️ Editar Meta</h3>
-                <small id="mt-editado"></small>
-            </div>
-            <button type="button" class="mt-close" onclick="mtCerrar()" aria-label="Cerrar">✕</button>
-        </div>
-        <div class="mt-body">
-            @if($colegioConError)
-                <div class="mt-err">
-                    @foreach($errors->getBag('meta_' . $colegioConError->id)->all() as $error)
-                        <div>• {{ $error }}</div>
-                    @endforeach
-                </div>
-            @endif
-
-            <div class="mt-sec">🔐 Acceso a la plataforma</div>
-            <div class="full">
-                <label for="mt-administrador">Administrador</label>
-                <input type="text" name="administrador" id="mt-administrador" class="form-control" maxlength="255" placeholder="Nombre de quien administra Meta en el colegio">
-            </div>
-            <div>
-                <label for="mt-usuario">Usuario</label>
-                <input type="text" name="usuario" id="mt-usuario" class="form-control" maxlength="255" autocomplete="off">
-            </div>
-            <div>
-                <label for="mt-contrasena">Contraseña</label>
-                <input type="text" name="contrasena" id="mt-contrasena" class="form-control" maxlength="255" autocomplete="off">
-            </div>
-
-            <div class="mt-sec">📅 Capacitación y examen</div>
-            <div class="full">
-                <label for="mt-capacitacion">Capacitación</label>
-                <input type="text" name="capacitacion" id="mt-capacitacion" class="form-control" maxlength="255" placeholder="Ej. Capacitación a docentes de inglés">
-            </div>
-            <div>
-                <label for="mt-fecha_capacitacion"><span class="mt-dot azul"></span>Fecha de capacitación</label>
-                <input type="date" name="fecha_capacitacion" id="mt-fecha_capacitacion" class="form-control">
-            </div>
-            <div>
-                <label for="mt-hora_capacitacion">🕒 Horario de capacitación</label>
-                <input type="time" name="hora_capacitacion" id="mt-hora_capacitacion" class="form-control">
-            </div>
-            <div class="full">
-                <label for="mt-fecha_aplicacion"><span class="mt-dot naranja"></span>Fecha de aplicación del examen</label>
-                <input type="date" name="fecha_aplicacion" id="mt-fecha_aplicacion" class="form-control">
-            </div>
-            <div class="full">
-                <label for="mt-notas">Notas</label>
-                <textarea name="notas" id="mt-notas" class="form-control" rows="3" maxlength="2000"></textarea>
-            </div>
-        </div>
-        <div class="mt-foot">
-            <button type="button" class="btn btn-secondary" onclick="mtCerrar()">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Guardar</button>
-        </div>
-    </form>
-</div>
-
 <script>
 (function () {
-    const CAMPOS = @json(array_keys(\App\Models\SeguimientoMeta::CAMPOS));
-    const modal = document.getElementById('mt-modal');
-    const form  = document.getElementById('mt-form');
-
-    function abrir(d) {
-        form.action = d.action;
-        document.getElementById('mt-titulo').textContent = '✏️ ' + d.nombre;
-        document.getElementById('mt-editado').textContent = d.editado || 'Sin datos capturados todavía';
-        CAMPOS.forEach(c => { document.getElementById('mt-' + c).value = d[c] || ''; });
-        modal.classList.add('abierto');
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('mt-administrador').focus(), 50);
-    }
-
-    window.mtEditar = btn => abrir(JSON.parse(btn.dataset.meta));
-    window.mtCerrar = () => { modal.classList.remove('abierto'); document.body.style.overflow = ''; };
-    modal.addEventListener('click', e => { if (e.target === modal) mtCerrar(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.classList.contains('abierto')) mtCerrar(); });
-
     const MT_OJO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
     const MT_OJO_TACHADO = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-7-11-7a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 7 11 7a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
     window.mtTogglePwd = btn => {
@@ -564,7 +492,7 @@
         .filter(Boolean).join(' · ');
     // Capacitaciones primero y por hora; luego aplicaciones
     const orden = (a, b) => (a.tipo === b.tipo ? (a.hora || '99').localeCompare(b.hora || '99') : (a.tipo === 'cap' ? -1 : 1));
-    const editarColegio = id => document.querySelector('[data-colegio="' + id + '"]')?.click();
+    const gestionar = e => { window.location.href = e.url; };
 
     function botonEvento(e, extra) {
         const b = document.createElement('button');
@@ -573,7 +501,7 @@
         b.title = e.colegio + ' — ' + detalle(e);
         if (e.hora) { const h = document.createElement('span'); h.className = 'h'; h.textContent = e.hora; b.appendChild(h); }
         const n = document.createElement('span'); n.className = 'nom'; n.textContent = e.colegio; b.appendChild(n);
-        b.addEventListener('click', () => editarColegio(e.id));
+        b.addEventListener('click', () => gestionar(e));
         return b;
     }
 
@@ -633,7 +561,7 @@
                 + '<div class="info"><strong></strong><span></span></div>';
             li.querySelector('strong').textContent = e.colegio;
             li.querySelector('.info span').textContent = detalle(e);
-            li.addEventListener('click', () => editarColegio(e.id));
+            li.addEventListener('click', () => gestionar(e));
             lista.appendChild(li);
         });
     }
@@ -672,13 +600,6 @@
     try { vistaGuardada = localStorage.getItem('sic-meta-vista'); } catch (e) {}
     if (vistaGuardada === 'calendario') cambiarVista('calendario');
 
-    @if($colegioConError)
-        // Regresó con errores: reabrir con lo que se había escrito
-        abrir(Object.assign(
-            JSON.parse(document.querySelector('[data-colegio="{{ $colegioConError->id }}"]').dataset.meta),
-            {!! json_encode((object) collect(old())->only(array_keys(\App\Models\SeguimientoMeta::CAMPOS))->all(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}
-        ));
-    @endif
 })();
 </script>
 @endsection

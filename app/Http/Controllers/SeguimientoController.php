@@ -18,8 +18,16 @@ class SeguimientoController extends Controller
     // slug => datos de la plataforma. El slug es el de la URL (/seguimiento/{slug}) y el que se
     // guarda en school_service_types.plataforma. Sin 'acciones' la página queda "en construcción".
     public const PLATAFORMAS = [
-        // Meta no lleva acciones de arranque: usa su agenda de exámenes (tabla seguimiento_meta)
+        // Meta: agenda de exámenes (tabla seguimiento_meta) + sus propias acciones de arranque.
+        // Se gestiona por colegio en seguimiento/meta-colegio (datos y acciones en un solo formulario).
         'meta'          => ['nombre' => 'Meta',          'icono' => '🎯', 'agenda' => true,
+            'acciones' => [
+                'compartir-edgar'    => 'Compartir información a Edgar',
+                'capacitacion'       => 'Capacitación',
+                'fechas-aplicacion'  => 'Fechas de aplicación',
+                'info-administrador' => 'Información del administrador',
+                'carga-alumnos'      => 'Carga de alumnos en META',
+            ],
             // Responsable de Meta: botón "Contacto Responsable" con correo y WhatsApp
             'contacto' => [
                 'nombre'   => 'Celeste May',
@@ -96,17 +104,28 @@ class SeguimientoController extends Controller
     // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
     private function agendaMeta(array $datos)
     {
+        $acciones = self::PLATAFORMAS[$datos['slug']]['acciones'];
+        $totalAcciones = count($acciones);
+
         $colegios = $this->colegiosDe($datos['slug'])
             ->with('seguimientoMeta')
             ->orderBy('name')
             ->get();
 
+        $avance = SeguimientoAccion::where('plataforma', $datos['slug'])
+            ->whereIn('school_id', $colegios->pluck('id'))
+            ->whereIn('accion', array_keys($acciones))
+            ->get()
+            ->groupBy('school_id');
+
         $hoy = today();
         $limite = today()->addDays(30);
         $proxima = fn ($fecha) => $fecha && $fecha->between($hoy, $limite);
 
-        $filas = $colegios->map(function (School $colegio) use ($proxima) {
+        $filas = $colegios->map(function (School $colegio) use ($proxima, $avance, $acciones, $totalAcciones) {
             $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
+            $hechasPorClave = ($avance[$colegio->id] ?? collect())->keyBy('accion');
+            $hechas = $hechasPorClave->where('status', 'done')->count();
 
             return [
                 'colegio'              => $colegio,
@@ -114,19 +133,25 @@ class SeguimientoController extends Controller
                 'capacitacion_proxima' => $proxima($meta->fecha_capacitacion),
                 'aplicacion_proxima'   => $proxima($meta->fecha_aplicacion),
                 'pendiente'            => $meta->fechasPendientes(),
+                'hechas'               => $hechas,
+                'pct'                  => round($hechas / $totalAcciones * 100),
+                'completo'             => $hechas === $totalAcciones,
+                'siguiente'            => collect($acciones)
+                    ->first(fn ($etiqueta, $clave) => ($hechasPorClave[$clave]->status ?? 'pending') !== 'done'),
             ];
         });
 
         return view('seguimiento.meta', $datos + [
             'filas'          => $filas,
+            'totalAcciones'  => $totalAcciones,
             'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
             'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
         ]);
     }
 
-    private function guardarMeta(Request $request, School $school)
+    private function guardarMeta(Request $request, School $school, array $info)
     {
-        $datos = $request->validateWithBag('meta_' . $school->id, [
+        $datos = $request->validate([
             'administrador'      => 'nullable|string|max:255',
             'usuario'            => 'nullable|string|max:255',
             'contrasena'         => 'nullable|string|max:255',
@@ -135,7 +160,8 @@ class SeguimientoController extends Controller
             'hora_capacitacion'  => 'nullable|date_format:H:i,H:i:s',
             'fecha_aplicacion'   => 'nullable|date',
             'notas'              => 'nullable|string|max:2000',
-        ]);
+        ] + $this->reglasAcciones(false));
+        unset($datos['acciones']);
 
         // Se guarda siempre como HH:MM:SS para que reabrir y guardar sin tocar no cuente como cambio
         if (!empty($datos['hora_capacitacion'])) {
@@ -150,23 +176,34 @@ class SeguimientoController extends Controller
             ->intersect(array_keys(SeguimientoMeta::CAMPOS))
             ->map(fn ($campo) => SeguimientoMeta::CAMPOS[$campo]);
 
-        if ($cambiados->isEmpty()) {
-            return back()->with('success', 'Sin cambios en ' . $school->name . '.');
-        }
+        $cambiosAcciones = 0;
 
-        $meta->save();
-        ActivityLog::log('seguimiento', 'Meta: actualizó ' . $cambiados->implode(', '), $school->id, '🎯');
+        DB::transaction(function () use ($request, $school, $info, $meta, $cambiados, &$cambiosAcciones) {
+            if ($cambiados->isNotEmpty()) {
+                $meta->save();
+                ActivityLog::log('seguimiento', 'Meta: actualizó ' . $cambiados->implode(', '), $school->id, '🎯');
+            }
+            $cambiosAcciones = $this->guardarAcciones($request, 'meta', $school, $info);
+        });
 
-        return back()->with('success', 'Datos de Meta guardados para ' . $school->name . '.');
+        $mensaje = $cambiados->isEmpty() && $cambiosAcciones === 0
+            ? 'Cambios guardados.'
+            : 'Meta actualizado para ' . $school->name . '.';
+
+        return back()->with('success', $mensaje);
+    }
+
+    private function reglasAcciones(bool $obligatorias): array
+    {
+        return [
+            'acciones'          => ($obligatorias ? 'required' : 'nullable') . '|array',
+            'acciones.*.status' => ['required', Rule::in(array_keys(SeguimientoAccion::STATUS))],
+            'acciones.*.notes'  => 'nullable|string|max:2000',
+        ];
     }
 
     public function colegio(string $plataforma, School $school)
     {
-        if (!empty(self::PLATAFORMAS[$plataforma]['agenda'])) {
-            // Meta se edita directo desde su tabla
-            return redirect()->route('seguimiento.show', $plataforma);
-        }
-
         $info = $this->plataformaDelColegio($plataforma, $school);
 
         $guardadas = SeguimientoAccion::with('completedBy')
@@ -174,6 +211,20 @@ class SeguimientoController extends Controller
             ->where('plataforma', $plataforma)
             ->get()
             ->keyBy('accion');
+
+        if (!empty($info['agenda'])) {
+            return view('seguimiento.meta-colegio', [
+                'slug'      => $plataforma,
+                'nombre'    => $info['nombre'],
+                'icono'     => $info['icono'],
+                'school'    => $school->load('levels'),
+                'meta'      => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
+                'acciones'  => $info['acciones'],
+                'guardadas' => $guardadas,
+                'hechas'    => $guardadas->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+                'contacto'  => $info['contacto'] ?? null,
+            ]);
+        }
 
         return view('seguimiento.colegio', [
             'slug'     => $plataforma,
@@ -188,66 +239,69 @@ class SeguimientoController extends Controller
 
     public function guardar(Request $request, string $plataforma, School $school)
     {
-        if (!empty(self::PLATAFORMAS[$plataforma]['agenda'])) {
-            abort_unless($school->status !== 'inactivo' && $school->tienePlataforma($plataforma), 404);
-
-            return $this->guardarMeta($request, $school);
-        }
-
         $info = $this->plataformaDelColegio($plataforma, $school);
 
-        $request->validate([
-            'acciones'            => 'required|array',
-            'acciones.*.status'   => ['required', Rule::in(array_keys(SeguimientoAccion::STATUS))],
-            'acciones.*.notes'    => 'nullable|string|max:2000',
-        ]);
+        if (!empty($info['agenda'])) {
+            return $this->guardarMeta($request, $school, $info);
+        }
+
+        $request->validate($this->reglasAcciones(true));
 
         $cambios = 0;
-
         DB::transaction(function () use ($request, $plataforma, $school, $info, &$cambios) {
-            foreach ($info['acciones'] as $clave => $etiqueta) {
-                $enviado = $request->input("acciones.{$clave}");
-                if (!$enviado) {
-                    continue;
-                }
-
-                $accion = SeguimientoAccion::firstOrNew([
-                    'school_id'  => $school->id,
-                    'plataforma' => $plataforma,
-                    'accion'     => $clave,
-                ]);
-
-                $statusAnterior = $accion->status ?? 'pending';
-                $accion->status = $enviado['status'];
-                $accion->notes = $enviado['notes'] ?? null;
-
-                if ($accion->status === 'done' && $statusAnterior !== 'done') {
-                    $accion->completed_at = now();
-                    $accion->completed_by = auth()->id();
-                } elseif ($accion->status !== 'done') {
-                    $accion->completed_at = null;
-                    $accion->completed_by = null;
-                }
-
-                if (!$accion->exists && $accion->status === 'pending' && !$accion->notes) {
-                    continue; // nada que guardar: sigue pendiente y sin notas
-                }
-
-                $accion->save();
-
-                if ($statusAnterior !== $accion->status) {
-                    $cambios++;
-                    ActivityLog::log(
-                        'seguimiento',
-                        "{$info['nombre']}: \"{$etiqueta}\" → " . SeguimientoAccion::STATUS[$accion->status],
-                        $school->id,
-                        '🧭'
-                    );
-                }
-            }
+            $cambios = $this->guardarAcciones($request, $plataforma, $school, $info);
         });
 
         return back()->with('success', $cambios > 0 ? 'Seguimiento actualizado.' : 'Cambios guardados.');
+    }
+
+    // Guarda el estatus/notas de cada acción enviada; regresa cuántas cambiaron de estatus
+    private function guardarAcciones(Request $request, string $plataforma, School $school, array $info): int
+    {
+        $cambios = 0;
+
+        foreach ($info['acciones'] as $clave => $etiqueta) {
+            $enviado = $request->input("acciones.{$clave}");
+            if (!$enviado) {
+                continue;
+            }
+
+            $accion = SeguimientoAccion::firstOrNew([
+                'school_id'  => $school->id,
+                'plataforma' => $plataforma,
+                'accion'     => $clave,
+            ]);
+
+            $statusAnterior = $accion->status ?? 'pending';
+            $accion->status = $enviado['status'];
+            $accion->notes = $enviado['notes'] ?? null;
+
+            if ($accion->status === 'done' && $statusAnterior !== 'done') {
+                $accion->completed_at = now();
+                $accion->completed_by = auth()->id();
+            } elseif ($accion->status !== 'done') {
+                $accion->completed_at = null;
+                $accion->completed_by = null;
+            }
+
+            if (!$accion->exists && $accion->status === 'pending' && !$accion->notes) {
+                continue; // nada que guardar: sigue pendiente y sin notas
+            }
+
+            $accion->save();
+
+            if ($statusAnterior !== $accion->status) {
+                $cambios++;
+                ActivityLog::log(
+                    'seguimiento',
+                    "{$info['nombre']}: \"{$etiqueta}\" → " . SeguimientoAccion::STATUS[$accion->status],
+                    $school->id,
+                    '🧭'
+                );
+            }
+        }
+
+        return $cambios;
     }
 
     // Colegios que llevan la plataforma: sin inactivos y, para consultor digital, solo los suyos

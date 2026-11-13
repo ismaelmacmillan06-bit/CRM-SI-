@@ -30,19 +30,23 @@
               color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:6px; margin-top:4px; }
     .mg-dot { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
 
-    .mg-accion { display:grid; grid-template-columns:28px minmax(0, 1fr) 170px; gap:6px 12px; align-items:center;
+    /* Izquierda: número, título y estatus · derecha: todo el espacio para notas */
+    .mg-accion { display:grid; grid-template-columns:minmax(200px, 5fr) minmax(0, 6fr); gap:14px;
                  padding:14px 22px; border-bottom:1px solid var(--border); }
+    .mg-accion .izq { display:flex; flex-direction:column; gap:8px; min-width:0; }
+    .mg-accion .cab { display:flex; align-items:flex-start; gap:10px; }
     .mg-accion:last-child { border-bottom:none; }
-    .mg-accion .n { width:26px; height:26px; border-radius:50%; background:var(--surface2); color:var(--text-muted);
+    .mg-accion .n { flex:none; width:26px; height:26px; border-radius:50%; background:var(--surface2); color:var(--text-muted);
                     display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; }
     .mg-accion.done .n { background:#dcfce7; color:#15803d; }
     .mg-accion.in_progress .n { background:#fef3c7; color:#b45309; }
     .mg-accion .titulo { font-weight:600; font-size:14px; }
     .mg-accion .quien { font-size:11.5px; color:var(--text-muted); margin-top:2px; }
-    .mg-accion .notas { grid-column:2 / -1; }
+    .mg-accion .notas { display:flex; }
+    .mg-accion .notas textarea { flex:1; height:100%; min-height:76px; }
     .mg-accion select, .mg-accion textarea { font-size:13px; }
     .mg-accion select { padding:6px 8px; }
-    .mg-accion textarea { min-height:36px; resize:vertical; font-size:12.5px; }
+    .mg-accion textarea { resize:vertical; font-size:12.5px; }
 
     .mg-guardar { position:sticky; bottom:0; z-index:5; display:flex; justify-content:flex-end; align-items:center; gap:12px;
                   margin-top:18px; padding:12px 16px; background:var(--surface); border:1px solid var(--border);
@@ -52,8 +56,8 @@
     @media (max-width: 1100px) { .mg-grid { grid-template-columns:1fr; } }
     @media (max-width: 600px) {
         .mg-campos { grid-template-columns:1fr; }
-        .mg-accion { grid-template-columns:28px minmax(0, 1fr); padding:12px 16px; }
-        .mg-accion select { grid-column:2; }
+        .mg-accion { grid-template-columns:1fr; gap:10px; padding:12px 16px; }
+        .mg-accion .notas textarea { min-height:56px; }
         .mg-card-body, .mg-head { padding:16px; }
         .mg-guardar .btn { flex:1; justify-content:center; }
         .mg-guardar small { display:none; }
@@ -162,21 +166,25 @@
                     $status = old("acciones.$clave.status", $guardada->status ?? 'pending');
                 @endphp
                 <div class="mg-accion {{ $status }}">
-                    <div class="n">{{ $status === 'done' ? '✓' : $loop->iteration }}</div>
-                    <div style="min-width:0">
-                        <div class="titulo">{{ $etiqueta }}</div>
-                        @if($guardada?->completed_at)
-                            <div class="quien">Completado el {{ $guardada->completed_at->format('d/m/Y') }} · {{ $guardada->completedBy->name ?? '—' }}</div>
-                        @endif
+                    <div class="izq">
+                        <div class="cab">
+                            <div class="n">{{ $status === 'done' ? '✓' : $loop->iteration }}</div>
+                            <div style="min-width:0">
+                                <div class="titulo">{{ $etiqueta }}</div>
+                                @if($guardada?->completed_at)
+                                    <div class="quien">Completado el {{ $guardada->completed_at->format('d/m/Y') }} · {{ $guardada->completedBy->name ?? '—' }}</div>
+                                @endif
+                            </div>
+                        </div>
+                        <select name="acciones[{{ $clave }}][status]" class="form-control" aria-label="Estatus de {{ $etiqueta }}"
+                                onchange="this.closest('.mg-accion').className = 'mg-accion ' + this.value">
+                            @foreach(\App\Models\SeguimientoAccion::STATUS as $valor => $texto)
+                                <option value="{{ $valor }}" @selected($status === $valor)>{{ $texto }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <select name="acciones[{{ $clave }}][status]" class="form-control" aria-label="Estatus de {{ $etiqueta }}"
-                            onchange="this.closest('.mg-accion').className = 'mg-accion ' + this.value">
-                        @foreach(\App\Models\SeguimientoAccion::STATUS as $valor => $texto)
-                            <option value="{{ $valor }}" @selected($status === $valor)>{{ $texto }}</option>
-                        @endforeach
-                    </select>
                     <div class="notas">
-                        <textarea name="acciones[{{ $clave }}][notes]" rows="1" maxlength="2000" placeholder="Notas (opcional)..."
+                        <textarea name="acciones[{{ $clave }}][notes]" rows="3" maxlength="2000" placeholder="Notas (opcional)..."
                                   class="form-control" aria-label="Notas de {{ $etiqueta }}">{{ old("acciones.$clave.notes", $guardada->notes ?? '') }}</textarea>
                     </div>
                 </div>

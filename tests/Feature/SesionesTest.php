@@ -203,7 +203,7 @@ class SesionesTest extends TestCase
             ->assertSee('Sesiones — Colegio de prueba')
             ->assertSee('Lego')
             ->assertSee('Alta');
-
+        $this->get(route('schools.visits.create', $school))->assertOk()->assertSee('value="Meta"', false);
         $this->get(route('schools.visits.create', $school))->assertOk();
         $this->get(route('visits.edit', $visit))
             ->assertOk()
@@ -213,14 +213,14 @@ class SesionesTest extends TestCase
         // Actualizar
         $payload['status'] = 'terminada';
         $payload['visit_date'] = '2026-11-01';
-        $payload['productos'] = ['Global Educa'];
+        $payload['productos'] = ['Global Educa', 'Meta'];
         $this->put(route('visits.update', $visit), $payload)
             ->assertRedirect(route('schools.visits.index', $school))
             ->assertSessionHas('success', 'Sesión actualizada correctamente.');
 
         $visit->refresh();
         $this->assertSame('terminada', $visit->status);
-        $this->assertSame(['Global Educa'], $visit->productos);
+        $this->assertSame(['Global Educa', 'Meta'], $visit->productos);
 
         $logCambio = ActivityLog::where('school_id', $school->id)->latest()->first();
         $this->assertStringContainsString('Sesión cambió de Pendiente → Terminada', $logCambio->descripcion);

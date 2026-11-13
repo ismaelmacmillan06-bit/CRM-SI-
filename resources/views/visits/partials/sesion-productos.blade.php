@@ -1,12 +1,6 @@
 @php
     $productosSel = (array) old('productos', $visit->productos ?? []);
-    $iconosProducto = [
-        'MEE'           => ['📘', '#0ea5e9'],
-        'Red Roo Reads' => ['🦘', '#f59e0b'],
-        'Lego'          => ['🧱', '#dc2626'],
-        'Equipamiento'  => ['🖥️', '#64748b'],
-        'Global Educa'  => ['🌎', '#16a34a'],
-    ];
+    $iconosProducto = \App\Models\Visit::PRODUCTO_ESTILOS;
 @endphp
 
 <style>

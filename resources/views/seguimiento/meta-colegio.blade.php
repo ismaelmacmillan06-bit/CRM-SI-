@@ -70,13 +70,24 @@
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
 </div>
 
+@unless($puedeEditar)
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    👁️ <strong>Modo consulta:</strong> puedes ver la información, pero no editarla.
+</div>
+<style>
+    fieldset:disabled .form-control { background:var(--surface2); color:var(--text); opacity:1; cursor:default; resize:none; }
+    fieldset:disabled .form-control::placeholder { color:transparent; }
+</style>
+@endunless
 <form method="POST" action="{{ route('seguimiento.guardar', [$slug, $school]) }}">
     @csrf
+    {{-- Solo consulta: todos los campos quedan deshabilitados y sin botón de guardar --}}
+    <fieldset @disabled(!$puedeEditar) style="border:0; padding:0; margin:0; min-width:0">
 
     <div class="card" style="padding:0">
         <div class="mg-head">
             <div style="min-width:0">
-                <h1>{{ $icono }} Gestionar {{ $nombre }} — {{ $school->name }}</h1>
+                <h1>{{ $icono }} {{ $puedeEditar ? 'Gestionar' : 'Consultar' }} {{ $nombre }} — {{ $school->name }}</h1>
                 <div class="mg-sub">
                     @if($school->nexus_id)<span><strong>ID:</strong> {{ $school->nexus_id }}</span>@endif
                     @if($school->state)<span>📍 {{ $school->state }}</span>@endif
@@ -192,10 +203,14 @@
         </div>
     </div>
 
+    </fieldset>
+
+    @if($puedeEditar)
     <div class="mg-guardar">
         <small>Se guardan los datos de {{ $nombre }} y las acciones de arranque juntos.</small>
         <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary">Cancelar</a>
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
     </div>
+    @endif
 </form>
 @endsection

@@ -52,10 +52,19 @@ class SeguimientoController extends Controller
         'equipamiento'  => ['nombre' => 'Equipamiento',  'icono' => '🖥️'],
     ];
 
+    // Quién puede capturar en Seguimiento; el resto de los roles con acceso (ECA, ELT, ventas,
+    // coordinador) solo consulta. El middleware VerificarAccesoRol también bloquea sus POST.
+    public const ROLES_EDICION = ['admin', 'consultor_digital'];
+
+    public static function puedeEditar(): bool
+    {
+        return (bool) auth()->user()?->hasAnyRole(self::ROLES_EDICION);
+    }
+
     public function show(string $plataforma)
     {
         $info = self::PLATAFORMAS[$plataforma];
-        $datos = ['slug' => $plataforma, 'nombre' => $info['nombre'], 'icono' => $info['icono']];
+        $datos = ['slug' => $plataforma, 'nombre' => $info['nombre'], 'icono' => $info['icono'], 'puedeEditar' => self::puedeEditar()];
 
         if (!empty($info['agenda'])) {
             return $this->agendaMeta($datos);
@@ -279,6 +288,7 @@ class SeguimientoController extends Controller
                 'guardadas' => $guardadas,
                 'hechas'    => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
                 'contacto'  => $info['contacto'] ?? null,
+                'puedeEditar' => self::puedeEditar(),
             ]);
         }
 
@@ -290,11 +300,14 @@ class SeguimientoController extends Controller
             'acciones' => $info['acciones'],
             'guardadas' => $guardadas,
             'hechas'   => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+            'puedeEditar' => self::puedeEditar(),
         ]);
     }
 
     public function guardar(Request $request, string $plataforma, School $school)
     {
+        abort_unless(self::puedeEditar(), 403, 'Seguimiento es solo de consulta para tu rol.');
+
         $info = $this->plataformaDelColegio($plataforma, $school);
 
         if (!empty($info['agenda'])) {

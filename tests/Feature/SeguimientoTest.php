@@ -172,17 +172,46 @@ class SeguimientoTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_other_roles_cannot_enter(): void
+    public function test_read_only_roles_can_view_but_not_save(): void
     {
-        $school = $this->colegio('Colegio');
+        $school = $this->colegio('Colegio consulta');
 
         foreach (['consultor_eca', 'consultor_elt', 'coordinador', 'representante_ventas'] as $rol) {
             $this->actingAs($this->usuario($rol));
-            $this->get(route('seguimiento.show', 'global-educa'))->assertRedirect();
+            $this->get(route('seguimiento.show', 'global-educa'))
+                ->assertOk()
+                ->assertSee('Colegio consulta')
+                ->assertSee('Ver →')
+                ->assertDontSee('Gestionar →');
+            $this->get(route('seguimiento.colegio', ['global-educa', $school]))
+                ->assertOk()
+                ->assertSee('Modo consulta')
+                ->assertSee('<fieldset disabled', false)
+                ->assertDontSee('Guardar cambios');
+            $this->get(route('seguimiento.show', 'frances'))->assertOk();
             $this->post(route('seguimiento.guardar', ['global-educa', $school]), ['acciones' => $this->todasCompletas()])
                 ->assertRedirect();
         }
 
+        $this->assertSame(0, SeguimientoAccion::count());
+    }
+
+    public function test_read_only_roles_see_seguimiento_in_the_menu(): void
+    {
+        $this->actingAs($this->usuario('consultor_eca'))
+            ->get(route('seguimiento.show', 'meta'))
+            ->assertSee(route('seguimiento.show', 'global-educa'), false);
+    }
+
+    public function test_save_is_forbidden_in_controller_for_read_only_roles(): void
+    {
+        $school = $this->colegio('Colegio');
+        $this->actingAs($this->usuario('consultor_eca'));
+
+        // Aunque el middleware se saltara, el controlador también lo impide
+        $this->withoutMiddleware(\App\Http\Middleware\VerificarAccesoRol::class)
+            ->post(route('seguimiento.guardar', ['global-educa', $school]), ['acciones' => $this->todasCompletas()])
+            ->assertForbidden();
         $this->assertSame(0, SeguimientoAccion::count());
     }
 

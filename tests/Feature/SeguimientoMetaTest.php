@@ -261,7 +261,6 @@ class SeguimientoMetaTest extends TestCase
         $this->assertSame('Colegio propio', $hoja->getCell('B5')->getValue());
         $this->assertNull($hoja->getCell('B6')->getValue());
 
-        $this->actingAs($this->usuario('consultor_eca'))->get(route('seguimiento.excel', 'meta'))->assertRedirect();
         $this->actingAs($this->usuario('admin'))->get(route('seguimiento.excel', 'global-educa'))->assertNotFound();
     }
 
@@ -294,13 +293,23 @@ class SeguimientoMetaTest extends TestCase
         $this->assertSame([$propio->id], SeguimientoMeta::pluck('school_id')->all());
     }
 
-    public function test_other_roles_cannot_enter(): void
+    public function test_read_only_roles_can_view_and_download_but_not_save(): void
     {
-        $school = $this->colegio('Colegio');
+        $school = $this->colegio('Colegio consulta');
 
         foreach (['consultor_eca', 'consultor_elt', 'coordinador', 'representante_ventas'] as $rol) {
             $this->actingAs($this->usuario($rol));
-            $this->get(route('seguimiento.show', 'meta'))->assertRedirect();
+            $this->get(route('seguimiento.show', 'meta'))
+                ->assertOk()
+                ->assertSee('Colegio consulta')
+                ->assertSee('Ver →')
+                ->assertDontSee('Gestionar →');
+            $this->get(route('seguimiento.colegio', ['meta', $school]))
+                ->assertOk()
+                ->assertSee('Consultar Meta')
+                ->assertSee('<fieldset disabled', false)
+                ->assertDontSee('Guardar cambios');
+            $this->get(route('seguimiento.excel', 'meta'))->assertOk();
             $this->post(route('seguimiento.guardar', ['meta', $school]), $this->datos())->assertRedirect();
         }
 

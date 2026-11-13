@@ -103,7 +103,7 @@
                         <a href="{{ route('schools.visits.index', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
                            style="white-space:nowrap" title="Sesiones de {{ $fila['colegio']->name }}">📅 Sesiones</a>
                         <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn btn-secondary btn-sm"
-                           style="white-space:nowrap">Gestionar →</a>
+                           style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
                     </div>
                 </td>
             </tr>

@@ -11,8 +11,18 @@
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
 </div>
 
+@unless($puedeEditar)
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    👁️ <strong>Modo consulta:</strong> puedes ver la información, pero no editarla.
+</div>
+<style>
+    fieldset:disabled .form-control { background:var(--surface2); color:var(--text); opacity:1; cursor:default; resize:none; }
+    fieldset:disabled .form-control::placeholder { color:transparent; }
+</style>
+@endunless
 <form method="POST" action="{{ route('seguimiento.guardar', [$slug, $school]) }}">
     @csrf
+    <fieldset @disabled(!$puedeEditar) style="border:0; padding:0; margin:0; min-width:0">
     <div class="card">
         <div class="card-header">
             <span class="card-title">{{ $icono }} {{ $nombre }} — {{ $school->name }}</span>
@@ -77,9 +87,12 @@
         </table>
         </div>
 
+        @if($puedeEditar)
         <div style="display:flex; justify-content:flex-end; padding:16px 24px">
             <button type="submit" class="btn btn-primary">Guardar cambios</button>
         </div>
+        @endif
     </div>
+    </fieldset>
 </form>
 @endsection

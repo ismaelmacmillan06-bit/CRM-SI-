@@ -598,7 +598,7 @@
         @endhasanyrole
             </div>
         </details>
-        @hasanyrole('admin|consultor_digital')
+        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador')
         <details class="nav-section" data-menu="plataformas" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión Plataformas

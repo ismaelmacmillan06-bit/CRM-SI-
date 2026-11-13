@@ -426,7 +426,7 @@
                     <div class="mt-acc">
                         <a href="{{ route('schools.tickets.index', $c) }}" class="btn btn-secondary btn-sm" title="Tickets de {{ $c->name }}">🎫</a>
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
-                        <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">Gestionar →</a>
+                        <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
                     </div>
                 </td>
             </tr>

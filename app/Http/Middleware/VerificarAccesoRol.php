@@ -60,10 +60,16 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads): solo admin y consultor_digital
-        if ($request->routeIs('seguimiento.*') && !$user->hasRole('consultor_digital')) {
-            return redirect()->route('dashboard')
-                ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
+        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads, Equipamiento): admin y consultor_digital
+        // capturan; ECA, ELT, ventas y coordinador solo consultan (ver y descargar Excel, nada de guardar)
+        if ($request->routeIs('seguimiento.*')) {
+            if (!$user->hasAnyRole(['consultor_digital', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'coordinador'])) {
+                return redirect()->route('dashboard')
+                    ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
+            }
+            if (!$user->hasRole('consultor_digital') && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                return back()->with('error_acceso', 'Seguimiento es solo de consulta para tu rol.');
+            }
         }
 
         // Reporte Semanal: admin, consultor_digital y coordinador (este último solo
@@ -82,7 +88,8 @@ class VerificarAccesoRol
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }
-            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index'];
+            $rutasPermitidas = ['dashboard', 'schools.*', 'tareas.index', 'alumnos-docentes.*', 'avance-colegios.*', 'produccion.index',
+                'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel'];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('ssa.index')
                     ->with('error_acceso', 'No tienes acceso a esta sección.');
@@ -125,6 +132,7 @@ class VerificarAccesoRol
                 'bundles.index',
                 'produccion.index',
                 'tablero.index',
+                'seguimiento.show', 'seguimiento.colegio', 'seguimiento.excel',
             ];
             if (!$request->routeIs($rutasPermitidas)) {
                 return redirect()->route('dashboard')

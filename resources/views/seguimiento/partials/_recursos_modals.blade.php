@@ -116,7 +116,7 @@
         max-height:90vh; display:flex; flex-direction:column; overflow:hidden;
         box-shadow:0 24px 64px -12px rgba(24,19,17,.35); position:relative;
     }
-    .sr-modal.sr-modal-lg { max-width:860px; }
+    .sr-modal.sr-modal-lg { max-width:920px; }
     .sr-modal-head {
         display:flex; align-items:center; justify-content:space-between; gap:12px;
         padding:18px 22px; border-bottom:1px solid var(--border);
@@ -188,6 +188,100 @@
     .sr-pv-sheet tr:first-child td { background:var(--surface2); font-weight:700; }
     .sr-pv-fallback {
         text-align:center; padding:36px 20px; background:#fff; border:1px solid var(--border); border-radius:12px;
+    }
+
+    .sr-pv-loading { padding:34px 20px; text-align:center; color:var(--text-muted); font-size:13.5px; }
+    .sr-pv-status { font-size:12px; color:var(--text-muted); margin-bottom:8px; }
+    .sr-pv-notice {
+        font-size:12.5px; color:#1e40af; background:#eff6ff; border:1px solid #bfdbfe;
+        border-radius:9px; padding:9px 13px; margin-bottom:12px;
+    }
+    .sr-pv-notice.warn { color:#92400e; background:#fffbeb; border-color:#fde68a; margin-top:12px; margin-bottom:0; }
+
+    .sr-pv-tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+    .sr-pv-tab {
+        border:1px solid var(--border); background:var(--surface2); color:var(--text-muted);
+        border-radius:8px; padding:5px 12px; font-size:12.5px; font-weight:600; cursor:pointer;
+        transition:background .15s, color .15s, border-color .15s;
+    }
+    .sr-pv-tab:hover { background:#fff; color:var(--text); }
+    .sr-pv-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    /* Reader de documentos Word / ODT / DOC */
+    .sr-pv-doc-tray {
+        background:#f1efeb; border:1px solid var(--border); border-radius:12px;
+        padding:18px; max-height:62vh; overflow-y:auto;
+    }
+    .sr-pv-doc {
+        background:#fff; border:1px solid #e7e2da; border-radius:10px;
+        padding:26px 32px; max-width:740px; margin:0 auto;
+        box-shadow:0 2px 10px rgba(24,19,17,.06);
+        color:var(--text); line-height:1.65; font-size:14px;
+    }
+    .sr-pv-doc h1, .sr-pv-doc h2, .sr-pv-doc h3 {
+        font-family:'Bricolage Grotesque',sans-serif; color:var(--text);
+        margin:16px 0 8px; line-height:1.25;
+    }
+    .sr-pv-doc h1 { font-size:21px; }
+    .sr-pv-doc h2 { font-size:17.5px; }
+    .sr-pv-doc h3 { font-size:15.5px; }
+    .sr-pv-doc > :first-child { margin-top:0; }
+    .sr-pv-doc p { margin:0 0 10px; white-space:pre-wrap; word-break:break-word; }
+    .sr-pv-doc ul { margin:0 0 12px; padding-left:22px; }
+    .sr-pv-doc li { margin-bottom:4px; white-space:pre-wrap; word-break:break-word; }
+    .sr-pv-doc-img {
+        max-width:100%; max-height:360px; display:block; margin:12px auto;
+        border-radius:8px; border:1px solid var(--border);
+    }
+    .sr-pv-doc-table-wrap { overflow-x:auto; margin:12px 0; border:1px solid var(--border); border-radius:8px; }
+    .sr-pv-doc-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .sr-pv-doc-table td {
+        border:1px solid var(--border); padding:6px 10px; vertical-align:top;
+        white-space:pre-wrap; word-break:break-word;
+    }
+    .sr-pv-doc-table tr:first-child td { background:var(--surface2); font-weight:700; }
+
+    /* Diapositivas PPTX / ODP / PPT */
+    .sr-pv-slides {
+        display:flex; flex-direction:column; gap:14px;
+        max-height:60vh; overflow-y:auto; padding:2px;
+    }
+    .sr-pv-slide {
+        background:#fff; border:1px solid var(--border); border-radius:12px;
+        overflow:hidden; box-shadow:0 2px 8px rgba(24,19,17,.05);
+    }
+    .sr-pv-slide-head {
+        background:var(--surface2); border-bottom:1px solid var(--border);
+        padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    }
+    .sr-pv-slide-num {
+        font-size:11px; font-weight:700; padding:2px 9px; border-radius:99px;
+        background:var(--accent); color:#fff; white-space:nowrap;
+    }
+    .sr-pv-slide-title {
+        font-family:'Bricolage Grotesque',sans-serif; font-size:15.5px; font-weight:700;
+        color:var(--text); word-break:break-word;
+    }
+    .sr-pv-slide-body { padding:16px 18px; display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:var(--text); }
+    .sr-pv-slide-item { position:relative; padding-left:14px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+    .sr-pv-slide-item::before {
+        content:'•'; position:absolute; left:0; top:0; color:var(--accent); font-weight:700;
+    }
+    .sr-pv-slide-item.lvl-1 { margin-left:18px; }
+    .sr-pv-slide-item.lvl-2 { margin-left:36px; }
+    .sr-pv-slide-item.lvl-3 { margin-left:54px; }
+    .sr-pv-slide-item.lvl-4 { margin-left:72px; }
+    .sr-pv-slide-empty { font-size:12.5px; color:var(--text-muted); font-style:italic; }
+
+    /* Archivo comprimido ZIP */
+    .sr-pv-archive-wrap { overflow:auto; max-height:58vh; border:1px solid var(--border); border-radius:10px; background:#fff; }
+    .sr-pv-archive { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .sr-pv-archive th, .sr-pv-archive td { border-bottom:1px solid var(--border); padding:8px 12px; text-align:left; }
+    .sr-pv-archive th { background:var(--surface2); font-weight:700; color:var(--text); position:sticky; top:0; }
+    .sr-pv-archive td.num, .sr-pv-archive th.num { text-align:right; white-space:nowrap; color:var(--text-muted); }
+
+    @media (max-width:600px) {
+        .sr-pv-doc { padding:16px; }
     }
 
     @media (max-width:600px) {
@@ -452,8 +546,357 @@
     };
 
     // Modal Vista Previa
+    let srPreviewSeq = 0;
+
+    function srIsSafeImageUri(src) {
+        return typeof src === 'string' && /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(src);
+    }
+
+    function srCreateNotice(msg, isWarn) {
+        const div = document.createElement('div');
+        div.className = 'sr-pv-notice' + (isWarn ? ' warn' : '');
+        div.textContent = msg;
+        return div;
+    }
+
+    function srCreateFallback(msg, downloadUrl, extraTitle, extraExt) {
+        const box = document.createElement('div');
+        box.className = 'sr-pv-fallback';
+        const ico = document.createElement('div');
+        ico.style.cssText = 'font-size:36px; margin-bottom:8px';
+        ico.textContent = '📄';
+        box.appendChild(ico);
+
+        if (extraTitle) {
+            const strong = document.createElement('div');
+            strong.style.cssText = 'font-weight:700; margin-bottom:4px';
+            strong.textContent = extraTitle;
+            box.appendChild(strong);
+        }
+
+        const p = document.createElement('p');
+        p.style.cssText = 'margin:0 0 16px; color:var(--text-muted); font-size:13px';
+        p.textContent = msg || ('Los archivos ' + (extraExt || '') + ' no permiten vista previa directa. Descárgalo para abrirlo completo.');
+        box.appendChild(p);
+
+        const a = document.createElement('a');
+        a.href = downloadUrl || '#';
+        a.className = 'btn btn-primary';
+        a.textContent = '📥 Descargar archivo';
+        box.appendChild(a);
+        return box;
+    }
+
+    function srCreateLoading(msg) {
+        const div = document.createElement('div');
+        div.className = 'sr-pv-loading';
+        div.textContent = msg;
+        return div;
+    }
+
+    function srRenderRuns(parent, runs, fallbackText) {
+        if (!Array.isArray(runs) || !runs.length) {
+            parent.textContent = fallbackText || '';
+            return;
+        }
+        runs.forEach(run => {
+            const txt = String(run.text ?? '');
+            if (!txt) return;
+            let el = document.createTextNode(txt);
+            if (run.bold && run.italic) {
+                const strong = document.createElement('strong');
+                const em = document.createElement('em');
+                em.textContent = txt;
+                strong.appendChild(em);
+                el = strong;
+            } else if (run.bold) {
+                const strong = document.createElement('strong');
+                strong.textContent = txt;
+                el = strong;
+            } else if (run.italic) {
+                const em = document.createElement('em');
+                em.textContent = txt;
+                el = em;
+            }
+            parent.appendChild(el);
+        });
+    }
+
+    function srBuildTable(rows, wrapClass, tableClass) {
+        const wrap = document.createElement('div');
+        wrap.className = wrapClass;
+        const table = document.createElement('table');
+        table.className = tableClass;
+        (rows || []).forEach(row => {
+            const tr = document.createElement('tr');
+            (row || []).forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell ?? '';
+                tr.appendChild(td);
+            });
+            table.appendChild(tr);
+        });
+        wrap.appendChild(table);
+        return wrap;
+    }
+
+    function srRenderSpreadsheetPreview(body, json, downloadUrl) {
+        const sheets = Array.isArray(json.sheets) && json.sheets.length
+            ? json.sheets
+            : [{ title: json.sheetTitle || 'Principal', totalRows: json.totalRows || 0, rows: json.rows || [], truncatedRows: false }];
+
+        let currentIndex = Number.isInteger(json.activeIndex) && sheets[json.activeIndex] ? json.activeIndex : 0;
+        const status = document.createElement('div');
+        status.className = 'sr-pv-status';
+        const container = document.createElement('div');
+
+        const drawSheet = idx => {
+            currentIndex = idx;
+            const sh = sheets[idx] || sheets[0];
+            const shownRows = (sh.rows || []).length;
+            const totalRows = sh.totalRows || shownRows;
+            status.textContent = '';
+            status.appendChild(document.createTextNode('Hoja: '));
+            const stTitle = document.createElement('strong');
+            stTitle.textContent = sh.title || 'Principal';
+            status.appendChild(stTitle);
+            status.appendChild(document.createTextNode(' · Mostrando ' + shownRows + ' de ' + totalRows + ' filas'));
+
+            container.innerHTML = '';
+            if (!shownRows) {
+                const empty = document.createElement('div');
+                empty.className = 'sr-pv-loading';
+                empty.textContent = 'Esta hoja está vacía.';
+                container.appendChild(empty);
+            } else {
+                container.appendChild(srBuildTable(sh.rows, 'sr-pv-sheet-wrap', 'sr-pv-sheet'));
+            }
+            if (sh.truncatedRows) {
+                container.appendChild(srCreateNotice('Mostrando las primeras ' + shownRows + ' filas. Descarga el archivo para ver la hoja completa.', true));
+            }
+        };
+
+        body.innerHTML = '';
+        if (sheets.length > 1) {
+            const tabs = document.createElement('div');
+            tabs.className = 'sr-pv-tabs';
+            sheets.forEach((sh, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'sr-pv-tab' + (idx === currentIndex ? ' active' : '');
+                btn.textContent = sh.title || ('Hoja ' + (idx + 1));
+                btn.addEventListener('click', () => {
+                    tabs.querySelectorAll('.sr-pv-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+                    drawSheet(idx);
+                });
+                tabs.appendChild(btn);
+            });
+            body.appendChild(tabs);
+        }
+
+        if (!sheets.some(s => (s.rows || []).length > 0)) {
+            body.appendChild(srCreateFallback('Esta hoja de cálculo no contiene filas visibles para previsualizar.', downloadUrl));
+            return;
+        }
+
+        body.appendChild(status);
+        body.appendChild(container);
+        drawSheet(currentIndex);
+    }
+
+    function srRenderDocumentPreview(body, json) {
+        body.innerHTML = '';
+        if (json.notice) {
+            body.appendChild(srCreateNotice(json.notice, false));
+        }
+
+        const tray = document.createElement('div');
+        tray.className = 'sr-pv-doc-tray';
+        const doc = document.createElement('div');
+        doc.className = 'sr-pv-doc';
+
+        let currentUl = null;
+        const flushList = () => {
+            if (currentUl) {
+                doc.appendChild(currentUl);
+                currentUl = null;
+            }
+        };
+
+        (json.blocks || []).forEach(block => {
+            if (block.type === 'list_item') {
+                if (!currentUl) currentUl = document.createElement('ul');
+                const li = document.createElement('li');
+                srRenderRuns(li, block.runs, block.text);
+                currentUl.appendChild(li);
+                return;
+            }
+            flushList();
+
+            if (block.type === 'heading') {
+                const lvl = Math.min(3, Math.max(1, parseInt(block.level || 1, 10)));
+                const h = document.createElement('h' + lvl);
+                srRenderRuns(h, block.runs, block.text);
+                doc.appendChild(h);
+            } else if (block.type === 'paragraph') {
+                const p = document.createElement('p');
+                srRenderRuns(p, block.runs, block.text);
+                doc.appendChild(p);
+            } else if (block.type === 'table' && Array.isArray(block.rows)) {
+                doc.appendChild(srBuildTable(block.rows, 'sr-pv-doc-table-wrap', 'sr-pv-doc-table'));
+            } else if (block.type === 'image' && srIsSafeImageUri(block.src)) {
+                const img = document.createElement('img');
+                img.src = block.src;
+                img.alt = 'Imagen del documento';
+                img.className = 'sr-pv-doc-img';
+                doc.appendChild(img);
+            }
+        });
+        flushList();
+
+        tray.appendChild(doc);
+        body.appendChild(tray);
+
+        if (json.truncated) {
+            body.appendChild(srCreateNotice('Este documento es extenso; mostrando los primeros bloques. Descárgalo para leerlo completo.', true));
+        }
+    }
+
+    function srRenderSlidesPreview(body, json) {
+        body.innerHTML = '';
+        const slides = json.slides || [];
+        const total = json.totalSlides || slides.length;
+
+        const status = document.createElement('div');
+        status.className = 'sr-pv-status';
+        status.textContent = 'Presentación ' + (json.format || '') + ' · Mostrando ' + slides.length + ' de ' + total + (total === 1 ? ' diapositiva' : ' diapositivas');
+        body.appendChild(status);
+
+        if (json.notice) {
+            body.appendChild(srCreateNotice(json.notice, false));
+        }
+
+        const list = document.createElement('div');
+        list.className = 'sr-pv-slides';
+
+        slides.forEach(slide => {
+            const card = document.createElement('div');
+            card.className = 'sr-pv-slide';
+
+            const head = document.createElement('div');
+            head.className = 'sr-pv-slide-head';
+            const num = document.createElement('span');
+            num.className = 'sr-pv-slide-num';
+            num.textContent = 'Diapositiva ' + slide.number;
+            head.appendChild(num);
+
+            const title = document.createElement('div');
+            title.className = 'sr-pv-slide-title';
+            title.textContent = slide.title || 'Sin título';
+            head.appendChild(title);
+            card.appendChild(head);
+
+            const sBody = document.createElement('div');
+            sBody.className = 'sr-pv-slide-body';
+            const hasContent = (slide.items && slide.items.length) || (slide.tables && slide.tables.length) || (slide.images && slide.images.length);
+
+            if (!hasContent) {
+                const empty = document.createElement('div');
+                empty.className = 'sr-pv-slide-empty';
+                empty.textContent = '(Diapositiva sin texto visible)';
+                sBody.appendChild(empty);
+            } else {
+                (slide.items || []).forEach(item => {
+                    const div = document.createElement('div');
+                    const lvl = Math.min(4, Math.max(0, parseInt(item.level || 0, 10)));
+                    div.className = 'sr-pv-slide-item' + (lvl > 0 ? ' lvl-' + lvl : '');
+                    div.textContent = item.text || '';
+                    sBody.appendChild(div);
+                });
+                (slide.tables || []).forEach(rows => {
+                    sBody.appendChild(srBuildTable(rows, 'sr-pv-doc-table-wrap', 'sr-pv-doc-table'));
+                });
+                (slide.images || []).forEach(src => {
+                    if (!srIsSafeImageUri(src)) return;
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.alt = 'Imagen de diapositiva';
+                    img.className = 'sr-pv-doc-img';
+                    sBody.appendChild(img);
+                });
+            }
+
+            card.appendChild(sBody);
+            list.appendChild(card);
+        });
+
+        body.appendChild(list);
+        if (json.truncated) {
+            body.appendChild(srCreateNotice('Mostrando las primeras ' + slides.length + ' diapositivas. Descarga la presentación para ver todas.', true));
+        }
+    }
+
+    function srRenderArchivePreview(body, json, downloadUrl, d) {
+        body.innerHTML = '';
+        if (json.unsupportedListing) {
+            body.appendChild(srCreateFallback(json.message, downloadUrl, d.nombreArchivo || d.titulo, d.ext));
+            return;
+        }
+
+        const status = document.createElement('div');
+        status.className = 'sr-pv-status';
+        status.textContent = 'Contenido del archivo ZIP · ' + (json.totalFiles ?? 0) + ' archivos (' + (json.totalSizeFormatted || '0 B') + ' sin comprimir)';
+        body.appendChild(status);
+
+        if (!(json.entries || []).length) {
+            body.appendChild(srCreateFallback('Este archivo ZIP está vacío.', downloadUrl, d.nombreArchivo || d.titulo, d.ext));
+            return;
+        }
+
+        const wrap = document.createElement('div');
+        wrap.className = 'sr-pv-archive-wrap';
+        const table = document.createElement('table');
+        table.className = 'sr-pv-archive';
+
+        const thead = document.createElement('thead');
+        const headTr = document.createElement('tr');
+        ['Elemento', 'Tipo', 'Tamaño'].forEach((label, idx) => {
+            const th = document.createElement('th');
+            if (idx === 2) th.className = 'num';
+            th.textContent = label;
+            headTr.appendChild(th);
+        });
+        thead.appendChild(headTr);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        (json.entries || []).forEach(entry => {
+            const tr = document.createElement('tr');
+            const tdName = document.createElement('td');
+            tdName.textContent = (entry.isDir ? '📁 ' : '📄 ') + (entry.name || '');
+            const tdExt = document.createElement('td');
+            tdExt.textContent = entry.ext || '';
+            const tdSize = document.createElement('td');
+            tdSize.className = 'num';
+            tdSize.textContent = entry.sizeFormatted || '';
+            tr.appendChild(tdName);
+            tr.appendChild(tdExt);
+            tr.appendChild(tdSize);
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        body.appendChild(wrap);
+
+        if (json.truncated) {
+            body.appendChild(srCreateNotice('Mostrando los primeros elementos del ZIP de un total de ' + json.totalEntries + '. Descarga el archivo para verlo completo.', true));
+        }
+    }
+
     window.srAbrirPreview = btn => {
         const d = btn.dataset;
+        const seq = ++srPreviewSeq;
+
         document.getElementById('sr-pv-titulo').textContent = d.titulo || 'Vista previa';
         const extEl = document.getElementById('sr-pv-ext');
         extEl.textContent = d.ext || '';
@@ -474,6 +917,13 @@
         const body = document.getElementById('sr-pv-body');
         body.innerHTML = '';
 
+        const asyncModes = {
+            excel: { mode: 'sheet', msg: 'Cargando vista previa de hoja de cálculo...', render: j => srRenderSpreadsheetPreview(body, j, d.downloadUrl) },
+            word: { mode: 'doc', msg: 'Cargando vista previa de documento...', render: j => srRenderDocumentPreview(body, j) },
+            ppt: { mode: 'slides', msg: 'Cargando vista previa de presentación...', render: j => srRenderSlidesPreview(body, j) },
+            archive: { mode: 'archive', msg: 'Leyendo contenido del archivo comprimido...', render: j => srRenderArchivePreview(body, j, d.downloadUrl, d) },
+        };
+
         if (d.tipo === 'image') {
             const img = document.createElement('img');
             img.src = d.previewUrl;
@@ -486,37 +936,30 @@
             iframe.className = 'sr-pv-frame';
             iframe.title = d.titulo;
             body.appendChild(iframe);
-        } else if (d.tipo === 'excel') {
-            body.innerHTML = '<div style="padding:30px; text-align:center; color:var(--text-muted)">Cargando vista previa de hoja de cálculo...</div>';
-            fetch(d.previewUrl + '?mode=sheet')
-                .then(r => r.json())
+        } else if (asyncModes[d.tipo]) {
+            const cfg = asyncModes[d.tipo];
+            body.appendChild(srCreateLoading(cfg.msg));
+            fetch(d.previewUrl + '?mode=' + cfg.mode, { headers: { Accept: 'application/json' } })
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(json => {
-                    if (!json.ok || !json.rows || !json.rows.length) {
-                        body.innerHTML = '<div class="sr-pv-fallback"><p style="margin:0 0 12px; color:var(--text-muted)">' + srEsc(json.message || 'Vista previa no disponible.') + '</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
+                    if (seq !== srPreviewSeq) return;
+                    if (!json || !json.ok) {
+                        body.innerHTML = '';
+                        body.appendChild(srCreateFallback((json && json.message) || 'Vista previa no disponible.', d.downloadUrl, d.nombreArchivo || d.titulo, d.ext));
                         return;
                     }
-                    const wrap = document.createElement('div');
-                    wrap.className = 'sr-pv-sheet-wrap';
-                    const table = document.createElement('table');
-                    table.className = 'sr-pv-sheet';
-                    json.rows.forEach(row => {
-                        const tr = document.createElement('tr');
-                        row.forEach(cell => {
-                            const td = document.createElement('td');
-                            td.textContent = cell;
-                            tr.appendChild(td);
-                        });
-                        table.appendChild(tr);
-                    });
-                    wrap.appendChild(table);
-                    body.innerHTML = '<div style="font-size:12px; color:var(--text-muted); margin-bottom:8px">Hoja: <strong>' + srEsc(json.sheetTitle || 'Principal') + '</strong> · Mostrando primeras ' + json.rows.length + ' de ' + json.totalRows + ' filas</div>';
-                    body.appendChild(wrap);
+                    cfg.render(json);
                 })
                 .catch(() => {
-                    body.innerHTML = '<div class="sr-pv-fallback"><p style="margin:0 0 12px; color:var(--text-muted)">No se pudo cargar la vista previa.</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
+                    if (seq !== srPreviewSeq) return;
+                    body.innerHTML = '';
+                    body.appendChild(srCreateFallback('No se pudo cargar la vista previa.', d.downloadUrl, d.nombreArchivo || d.titulo, d.ext));
                 });
         } else {
-            body.innerHTML = '<div class="sr-pv-fallback"><div style="font-size:36px; margin-bottom:8px">📄</div><div style="font-weight:700; margin-bottom:4px">' + srEsc(d.nombreArchivo || d.titulo) + '</div><p style="color:var(--text-muted); font-size:13px; margin:0 0 16px">Los archivos ' + srEsc(d.ext) + ' no se renderizan directamente en el navegador. Descárgalo para abrirlo completo.</p><a href="' + d.downloadUrl + '" class="btn btn-primary">📥 Descargar archivo</a></div>';
+            body.appendChild(srCreateFallback('', d.downloadUrl, d.nombreArchivo || d.titulo, d.ext));
         }
 
         document.getElementById('sr-preview-backdrop').classList.add('open');
@@ -524,6 +967,7 @@
     };
 
     window.srCerrarPreview = () => {
+        srPreviewSeq++;
         document.getElementById('sr-preview-backdrop')?.classList.remove('open');
         const body = document.getElementById('sr-pv-body');
         if (body) body.innerHTML = '';
@@ -539,7 +983,8 @@
     });
 
     @if($esAdmin && ($errors->has('titulo') || $errors->has('archivo') || $errors->has('audiencia')))
-        srAbrirUpload(@json(old('categoria', $categoriaDefault ?? 'manuales')));
+        @php $oldCat = old('categoria', $categoriaDefault ?? 'manuales'); @endphp
+        srAbrirUpload(@json($oldCat), @json($oldCat === 'formatos' ? 'formato' : 'manual'));
     @endif
 })();
 </script>

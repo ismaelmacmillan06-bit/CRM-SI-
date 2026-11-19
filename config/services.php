@@ -33,6 +33,11 @@ return [
         'access_url' => env('GLOBAL_EDUCA_ACCESS_URL'),
     ],
 
+    // Liga de acceso impresa en las tarjetas de Espace Virtuel (Francés).
+    'espace_virtuel' => [
+        'access_url' => env('ESPACE_VIRTUEL_ACCESS_URL', 'https://espacevirtuel.com/macmillaneducationmexico'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

@@ -17,7 +17,7 @@ class Visit extends Model
         'productos' => 'array',
     ];
 
-    public const PRODUCTOS = ['MEE', 'Red Roo Reads', 'Lego', 'Equipamiento', 'Global Educa', 'Meta'];
+    public const PRODUCTOS = ['MEE', 'Red Roo Reads', 'Lego', 'Equipamiento', 'Global Educa', 'Meta', 'Francés'];
 
     // Icono y color por producto, para tablas y dashboard
     public const PRODUCTO_ESTILOS = [
@@ -27,6 +27,7 @@ class Visit extends Model
         'Equipamiento'  => ['🖥️', '#64748b'],
         'Global Educa'  => ['🌎', '#16a34a'],
         'Meta'          => ['🎯', '#7c3aed'],
+        'Francés'       => ['🗼', '#db2777'],
     ];
 
     public const MODALIDADES = ['presencial' => '🏫 Presencial', 'virtual' => '💻 Virtual'];

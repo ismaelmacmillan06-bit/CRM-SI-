@@ -261,7 +261,7 @@ class SeguimientoMetaTest extends TestCase
         $this->assertSame('Colegio propio', $hoja->getCell('B5')->getValue());
         $this->assertNull($hoja->getCell('B6')->getValue());
 
-        $this->actingAs($this->usuario('admin'))->get(route('seguimiento.excel', 'frances'))->assertNotFound();
+        $this->actingAs($this->usuario('admin'))->get('/seguimiento/inexistente/excel')->assertNotFound();
     }
 
     public function test_school_without_meta_cannot_be_edited(): void

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\Niveles;
 use App\Models\ActivityLog;
 use App\Models\Consultant;
 use App\Models\School;
@@ -48,9 +49,17 @@ class SeguimientoController extends Controller
             'liberacion'                => 'Liberación',
             'seguimiento'               => 'Seguimiento',
         ]],
-        'frances'       => ['nombre' => 'Francés',       'icono' => '🗼'],
-        'red-roo-reads' => ['nombre' => 'Red Roo Reads', 'icono' => '📖'],
-        'equipamiento'  => ['nombre' => 'Equipamiento',  'icono' => '🖥️'],
+        'frances'       => ['nombre' => 'Francés',       'icono' => '🗼', 'por_nivel' => true, 'acciones' => [
+            'alta-docentes'     => 'Alta de docentes en Espace Virtuel',
+            'alta-alumnos'      => 'Alta de alumnos en Espace Virtuel',
+            'creacion-clases'   => 'Creación de clases en Espace Virtuel',
+            'asignar-docentes'  => 'Asignar docentes a clases en Espace Virtuel',
+            'asignar-alumnos'   => 'Asignar alumnos a clases en Espace Virtuel',
+            'correo-activacion' => 'Envío de correo para activación de materiales',
+            'entregar-colegio'  => 'Entregar colegio de Francés (entregar cuentas)',
+        ]],
+        'red-roo-reads' => ['nombre' => 'Red Roo Reads', 'icono' => '📖', 'acciones' => []],
+        'equipamiento'  => ['nombre' => 'Equipamiento',  'icono' => '🖥️', 'acciones' => []],
     ];
 
     // Quién puede capturar en Seguimiento; el resto de los roles con acceso (ECA, ELT, ventas,
@@ -71,36 +80,68 @@ class SeguimientoController extends Controller
             return $this->agendaMeta($datos);
         }
 
-        if (empty($info['acciones'])) {
+        if (!array_key_exists('acciones', $info)) {
             return view('seguimiento.show', $datos);
         }
 
+        $tieneAcciones = !empty($info['acciones']);
         $filas = $this->filasPlataforma($plataforma);
+        $schoolIds = $filas->pluck('colegio.id');
 
         $resumenFormato = [];
-        $formatos = collect();
-        if ($plataforma === 'global-educa') {
+        if (in_array($plataforma, ['global-educa', 'frances'], true)) {
             $formatoController = app(FormatoEntregaController::class);
             foreach ($filas as $fila) {
                 $colegio = $fila['colegio'];
-                $resumenFormato[$colegio->id] = $formatoController->summaryForSchool($colegio);
+                $resumenFormato[$colegio->id] = $formatoController->summaryForSchool($colegio, $plataforma);
             }
-            $formatos = SeguimientoRecurso::where('plataforma', 'global-educa')
-                ->where('categoria', 'formatos')
+        }
+
+        $categoriasRecursos = SeguimientoRecursoController::CATEGORIAS_POR_PLATAFORMA[$plataforma] ?? [];
+        $cargarRecursos = fn (string $categoria) => in_array($categoria, $categoriasRecursos, true)
+            ? SeguimientoRecurso::where('plataforma', $plataforma)
+                ->where('categoria', $categoria)
                 ->visiblePara(auth()->user())
                 ->with(['user', 'audiencias'])
                 ->latest()
-                ->get();
-        }
+                ->get()
+            : collect();
+        $formatos = $cargarRecursos('formatos');
+        $manuales = $cargarRecursos('manuales');
+
+        $ticketsLista = $this->ticketsDelProducto($info['nombre'], $schoolIds)
+            ->with(['school', 'consultant.user'])
+            ->latest()
+            ->get();
+        $sesionesLista = $this->sesionesDelProducto($info['nombre'], $schoolIds)
+            ->with(['school', 'consultant.user'])
+            ->orderByDesc('scheduled_date')
+            ->orderByDesc('visit_date')
+            ->get();
 
         return view('seguimiento.dashboard', $datos + [
-            'filas'          => $filas,
-            'totalAcciones'  => count($info['acciones']),
-            'completos'      => $filas->where('completo', true)->count(),
-            'servicioLigado' => SchoolServiceType::where('plataforma', $plataforma)->exists(),
-            'resumenFormato' => $resumenFormato,
-            'formatos'       => $formatos,
-        ] + $this->actividad($info['nombre'], $filas->pluck('colegio.id')));
+            'filas'              => $filas,
+            'tieneAcciones'      => $tieneAcciones,
+            'totalAcciones'      => count($info['acciones']),
+            'completos'          => $tieneAcciones ? $filas->where('completo', true)->count() : 0,
+            'servicioLigado'     => SchoolServiceType::where('plataforma', $plataforma)->exists(),
+            'resumenFormato'     => $resumenFormato,
+            'categoriasRecursos' => $categoriasRecursos,
+            'formatos'           => $formatos,
+            'manuales'           => $manuales,
+            'ticketsLista'       => $ticketsLista,
+            'sesionesLista'      => $sesionesLista,
+            'tickets'            => [
+                'total'    => $ticketsLista->count(),
+                'abiertos' => $ticketsLista->where('status', '!=', 'closed')->count(),
+                'cerrados' => $ticketsLista->where('status', 'closed')->count(),
+            ],
+            'sesiones'           => [
+                'total'      => $sesionesLista->count(),
+                'realizadas' => $sesionesLista->where('status', 'terminada')->count(),
+                'pendientes' => $sesionesLista->where('status', '!=', 'terminada')->count(),
+            ],
+        ]);
     }
 
     // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
@@ -147,7 +188,7 @@ class SeguimientoController extends Controller
     public function excel(string $plataforma)
     {
         $info = self::PLATAFORMAS[$plataforma];
-        abort_if(empty($info['acciones']), 404);
+        abort_if(!array_key_exists('acciones', $info), 404);
 
         $filas = $this->filasPlataforma($plataforma);
         $ids = $filas->pluck('colegio.id');
@@ -166,55 +207,133 @@ class SeguimientoController extends Controller
     }
 
     // Tickets y sesiones marcados con el producto (Tickets/Sesiones → Producto) de esos colegios.
-    // productos es JSON: se busca la cadena exacta entre comillas para no confundir nombres parecidos.
     private function ticketsDelProducto(string $producto, $schoolIds)
     {
-        return Ticket::whereIn('school_id', $schoolIds)->where('productos', 'like', '%' . json_encode($producto) . '%');
+        return Ticket::whereIn('school_id', $schoolIds)
+            ->whereNotNull('productos')
+            ->whereJsonContains('productos', $producto);
     }
 
     private function sesionesDelProducto(string $producto, $schoolIds)
     {
-        return Visit::whereIn('school_id', $schoolIds)->where('productos', 'like', '%' . json_encode($producto) . '%');
+        return Visit::whereIn('school_id', $schoolIds)
+            ->whereNotNull('productos')
+            ->whereJsonContains('productos', $producto);
     }
 
     // Un renglón por colegio con su avance de arranque (y, en plataformas con agenda, sus datos de Meta)
     private function filasPlataforma(string $slug)
     {
         $agenda = !empty(self::PLATAFORMAS[$slug]['agenda']);
+        $porNivel = !empty(self::PLATAFORMAS[$slug]['por_nivel']);
         $acciones = self::PLATAFORMAS[$slug]['acciones'];
         $totalAcciones = count($acciones);
 
         $colegios = $this->colegiosDe($slug)
             ->with(array_merge(
-                ['levels', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')],
+                ['levels', 'services', 'schoolConsultants' => fn ($q) => $q->where('role', 'digital')->with('consultant.user')],
                 $agenda ? ['seguimientoMeta'] : []
             ))
             ->orderBy('name')
             ->get();
 
-        $avance = SeguimientoAccion::where('plataforma', $slug)
-            ->whereIn('school_id', $colegios->pluck('id'))
-            ->whereIn('accion', array_keys($acciones))
-            ->get()
-            ->groupBy('school_id');
+        $avance = $totalAcciones > 0
+            ? SeguimientoAccion::where('plataforma', $slug)
+                ->whereIn('school_id', $colegios->pluck('id'))
+                ->whereIn('accion', array_keys($acciones))
+                ->get()
+                ->groupBy('school_id')
+            : collect();
 
         $hoy = today();
         $limite = today()->addDays(30);
         $proxima = fn ($fecha) => $fecha && $fecha->between($hoy, $limite);
 
-        return $colegios->map(function (School $colegio) use ($agenda, $proxima, $avance, $acciones, $totalAcciones) {
-            $hechasPorClave = ($avance[$colegio->id] ?? collect())->keyBy('accion');
+        return $colegios->map(function (School $colegio) use ($slug, $agenda, $porNivel, $proxima, $avance, $acciones, $totalAcciones) {
+            $registrosColegio = $avance[$colegio->id] ?? collect();
+            $consultor = $colegio->schoolConsultants->first()?->consultant?->user?->name;
+
+            if ($totalAcciones === 0) {
+                return [
+                    'colegio'   => $colegio,
+                    'hechas'    => 0,
+                    'total'     => 0,
+                    'pct'       => 0,
+                    'completo'  => false,
+                    'siguiente' => null,
+                    'acciones'  => collect(),
+                    'consultor' => $consultor,
+                ];
+            }
+
+            if ($porNivel) {
+                $niveles = $this->ordenarNiveles($colegio->nivelesDePlataforma($slug));
+                $nivelIds = $niveles->pluck('id')->all();
+                $porNivelMap = $registrosColegio
+                    ->whereIn('level_id', $nivelIds)
+                    ->groupBy('level_id');
+
+                $resumenNiveles = $niveles->map(function ($nivel) use ($porNivelMap, $acciones, $totalAcciones) {
+                    $accionesNivel = ($porNivelMap[$nivel->id] ?? collect())->keyBy('accion');
+                    $hechasNivel = $accionesNivel->where('status', 'done')->count();
+
+                    return [
+                        'nivel'    => $nivel,
+                        'hechas'   => $hechasNivel,
+                        'total'    => $totalAcciones,
+                        'pct'      => $totalAcciones > 0 ? round($hechasNivel / $totalAcciones * 100) : 0,
+                        'completo' => $totalAcciones > 0 && $hechasNivel === $totalAcciones,
+                        'acciones' => $accionesNivel,
+                    ];
+                });
+
+                $totalColegio = $niveles->count() * $totalAcciones;
+                $hechas = $resumenNiveles->sum('hechas');
+                $pct = $totalColegio > 0 ? round($hechas / $totalColegio * 100) : 0;
+                $completo = $totalColegio > 0 && $hechas === $totalColegio;
+
+                $siguiente = null;
+                if ($niveles->isEmpty()) {
+                    $siguiente = $colegio->levels->isEmpty()
+                        ? 'Sin niveles registrados'
+                        : 'Sin niveles con ' . self::PLATAFORMAS[$slug]['nombre'];
+                } elseif (!$completo) {
+                    foreach ($resumenNiveles as $nr) {
+                        $pendiente = collect($acciones)
+                            ->first(fn ($etiqueta, $clave) => ($nr['acciones'][$clave]->status ?? 'pending') !== 'done');
+                        if ($pendiente !== null) {
+                            $siguiente = $nr['nivel']->name . ': ' . $pendiente;
+                            break;
+                        }
+                    }
+                }
+
+                return [
+                    'colegio'   => $colegio,
+                    'hechas'    => $hechas,
+                    'total'     => $totalColegio,
+                    'pct'       => $pct,
+                    'completo'  => $completo,
+                    'siguiente' => $siguiente,
+                    'acciones'  => collect(),
+                    'niveles'   => $resumenNiveles,
+                    'consultor' => $consultor,
+                ];
+            }
+
+            $hechasPorClave = $registrosColegio->whereNull('level_id')->keyBy('accion');
             $hechas = $hechasPorClave->where('status', 'done')->count();
 
             $fila = [
                 'colegio'              => $colegio,
                 'hechas'               => $hechas,
+                'total'                => $totalAcciones,
                 'pct'                  => round($hechas / $totalAcciones * 100),
                 'completo'             => $hechas === $totalAcciones,
                 'siguiente'            => collect($acciones)
                     ->first(fn ($etiqueta, $clave) => ($hechasPorClave[$clave]->status ?? 'pending') !== 'done'),
                 'acciones'             => $hechasPorClave,
-                'consultor'            => $colegio->schoolConsultants->first()?->consultant?->user?->name,
+                'consultor'            => $consultor,
             ];
 
             if ($agenda) {
@@ -229,6 +348,18 @@ class SeguimientoController extends Controller
 
             return $fila;
         });
+    }
+
+    private function ordenarNiveles($niveles)
+    {
+        $orden = array_flip(Niveles::nombres());
+
+        return $niveles->sortBy(function ($nivel) use ($orden) {
+            $canonico = Niveles::canonico($nivel->name);
+            $pos = $canonico !== null && isset($orden[$canonico]) ? $orden[$canonico] : 999;
+
+            return sprintf('%04d-%06d', $pos, $nivel->id);
+        })->values();
     }
 
     private function guardarMeta(Request $request, School $school, array $info)
@@ -287,37 +418,85 @@ class SeguimientoController extends Controller
     public function colegio(string $plataforma, School $school)
     {
         $info = $this->plataformaDelColegio($plataforma, $school);
-
-        $guardadas = SeguimientoAccion::with('completedBy')
-            ->where('school_id', $school->id)
-            ->where('plataforma', $plataforma)
-            ->get()
-            ->keyBy('accion');
+        $school->load('levels', 'services');
 
         if (!empty($info['agenda'])) {
+            $guardadas = SeguimientoAccion::with('completedBy')
+                ->where('school_id', $school->id)
+                ->where('plataforma', $plataforma)
+                ->whereNull('level_id')
+                ->get()
+                ->keyBy('accion');
+
             return view('seguimiento.meta-colegio', [
-                'slug'      => $plataforma,
-                'nombre'    => $info['nombre'],
-                'icono'     => $info['icono'],
-                'school'    => $school->load('levels'),
-                'meta'      => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
-                'acciones'  => $info['acciones'],
-                'guardadas' => $guardadas,
-                'hechas'    => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
-                'contacto'  => $info['contacto'] ?? null,
+                'slug'        => $plataforma,
+                'nombre'      => $info['nombre'],
+                'icono'       => $info['icono'],
+                'school'      => $school,
+                'meta'        => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
+                'acciones'    => $info['acciones'],
+                'guardadas'   => $guardadas,
+                'hechas'      => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+                'contacto'    => $info['contacto'] ?? null,
                 'puedeEditar' => self::puedeEditar(),
             ]);
         }
 
+        if (!empty($info['por_nivel'])) {
+            $nivelesColegio = $this->ordenarNiveles($school->levels);
+            $niveles = $this->ordenarNiveles($school->nivelesDePlataforma($plataforma));
+            $accionKeys = array_keys($info['acciones']);
+            $guardadasPorNivel = SeguimientoAccion::with('completedBy')
+                ->where('school_id', $school->id)
+                ->where('plataforma', $plataforma)
+                ->whereIn('level_id', $niveles->pluck('id'))
+                ->get()
+                ->groupBy('level_id')
+                ->map->keyBy('accion');
+
+            $hechas = $niveles->sum(
+                fn ($nivel) => ($guardadasPorNivel[$nivel->id] ?? collect())
+                    ->toBase()
+                    ->only($accionKeys)
+                    ->where('status', 'done')
+                    ->count()
+            );
+
+            return view('seguimiento.colegio', [
+                'slug'              => $plataforma,
+                'nombre'            => $info['nombre'],
+                'icono'             => $info['icono'],
+                'school'            => $school,
+                'porNivel'          => true,
+                'nivelesColegio'    => $nivelesColegio,
+                'niveles'           => $niveles,
+                'acciones'          => $info['acciones'],
+                'guardadasPorNivel' => $guardadasPorNivel,
+                'guardadas'         => collect(),
+                'hechas'            => $hechas,
+                'totalAcciones'     => $niveles->count() * count($info['acciones']),
+                'puedeEditar'       => self::puedeEditar(),
+            ]);
+        }
+
+        $guardadas = SeguimientoAccion::with('completedBy')
+            ->where('school_id', $school->id)
+            ->where('plataforma', $plataforma)
+            ->whereNull('level_id')
+            ->get()
+            ->keyBy('accion');
+
         return view('seguimiento.colegio', [
-            'slug'     => $plataforma,
-            'nombre'   => $info['nombre'],
-            'icono'    => $info['icono'],
-            'school'   => $school,
-            'acciones' => $info['acciones'],
-            'guardadas' => $guardadas,
-            'hechas'   => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
-            'puedeEditar' => self::puedeEditar(),
+            'slug'          => $plataforma,
+            'nombre'        => $info['nombre'],
+            'icono'         => $info['icono'],
+            'school'        => $school,
+            'porNivel'      => false,
+            'acciones'      => $info['acciones'],
+            'guardadas'     => $guardadas,
+            'hechas'        => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+            'totalAcciones' => count($info['acciones']),
+            'puedeEditar'   => self::puedeEditar(),
         ]);
     }
 
@@ -329,6 +508,22 @@ class SeguimientoController extends Controller
 
         if (!empty($info['agenda'])) {
             return $this->guardarMeta($request, $school, $info);
+        }
+
+        if (!empty($info['por_nivel'])) {
+            $request->validate([
+                'acciones'            => 'required|array',
+                'acciones.*'          => 'array',
+                'acciones.*.*.status' => ['required', Rule::in(array_keys(SeguimientoAccion::STATUS))],
+                'acciones.*.*.notes'  => 'nullable|string|max:2000',
+            ]);
+
+            $cambios = 0;
+            DB::transaction(function () use ($request, $plataforma, $school, $info, &$cambios) {
+                $cambios = $this->guardarAccionesPorNivel($request, $plataforma, $school, $info);
+            });
+
+            return back()->with('success', $cambios > 0 ? 'Seguimiento actualizado.' : 'Cambios guardados.');
         }
 
         $request->validate($this->reglasAcciones(true));
@@ -348,46 +543,121 @@ class SeguimientoController extends Controller
 
         foreach ($info['acciones'] as $clave => $etiqueta) {
             $enviado = $request->input("acciones.{$clave}");
-            if (!$enviado) {
+            if (!is_array($enviado)) {
                 continue;
             }
 
             $accion = SeguimientoAccion::firstOrNew([
                 'school_id'  => $school->id,
                 'plataforma' => $plataforma,
+                'level_id'   => null,
                 'accion'     => $clave,
             ]);
 
-            $statusAnterior = $accion->status ?? 'pending';
-            $accion->status = $enviado['status'];
-            $accion->notes = $enviado['notes'] ?? null;
-
-            if ($accion->status === 'done' && $statusAnterior !== 'done') {
-                $accion->completed_at = now();
-                $accion->completed_by = auth()->id();
-            } elseif ($accion->status !== 'done') {
-                $accion->completed_at = null;
-                $accion->completed_by = null;
-            }
-
-            if (!$accion->exists && $accion->status === 'pending' && !$accion->notes) {
-                continue; // nada que guardar: sigue pendiente y sin notas
-            }
-
-            $accion->save();
-
-            if ($statusAnterior !== $accion->status) {
+            if ($this->actualizarAccion($accion, $enviado, $info['nombre'], $etiqueta, $school->id)) {
                 $cambios++;
-                ActivityLog::log(
-                    'seguimiento',
-                    "{$info['nombre']}: \"{$etiqueta}\" → " . SeguimientoAccion::STATUS[$accion->status],
-                    $school->id,
-                    '🧭'
-                );
             }
         }
 
         return $cambios;
+    }
+
+    public function guardarNiveles(Request $request, string $plataforma, School $school)
+    {
+        abort_unless(self::puedeEditar(), 403, 'Seguimiento es solo de consulta para tu rol.');
+
+        $info = $this->plataformaDelColegio($plataforma, $school);
+        abort_if(empty($info['por_nivel']), 404);
+
+        $request->validate([
+            'niveles'   => 'nullable|array',
+            'niveles.*' => 'integer',
+        ]);
+
+        $school->load('levels', 'services');
+        $validos = $school->levels->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $seleccionados = array_values(array_unique(array_intersect(
+            array_map('intval', $request->input('niveles', [])),
+            $validos
+        )));
+
+        $service = $school->services->firstWhere('plataforma', $plataforma);
+        if ($service) {
+            $school->services()->updateExistingPivot($service->id, [
+                'niveles' => json_encode($seleccionados),
+            ]);
+        }
+
+        $nombres = $this->ordenarNiveles($school->levels->whereIn('id', $seleccionados))
+            ->pluck('name')
+            ->implode(', ') ?: 'ninguno';
+        ActivityLog::log('seguimiento', "{$info['nombre']}: actualizó niveles activos ({$nombres})", $school->id, '🧭');
+
+        return back()->with('success', 'Niveles de ' . $info['nombre'] . ' actualizados.');
+    }
+
+    // Guarda acciones independientes por cada nivel activo para esta plataforma en el colegio
+    private function guardarAccionesPorNivel(Request $request, string $plataforma, School $school, array $info): int
+    {
+        $cambios = 0;
+        $school->load('levels', 'services');
+        $niveles = $this->ordenarNiveles($school->nivelesDePlataforma($plataforma));
+
+        foreach ($niveles as $nivel) {
+            foreach ($info['acciones'] as $clave => $etiqueta) {
+                $enviado = $request->input("acciones.{$nivel->id}.{$clave}");
+                if (!is_array($enviado)) {
+                    continue;
+                }
+
+                $accion = SeguimientoAccion::firstOrNew([
+                    'school_id'  => $school->id,
+                    'plataforma' => $plataforma,
+                    'level_id'   => $nivel->id,
+                    'accion'     => $clave,
+                ]);
+
+                if ($this->actualizarAccion($accion, $enviado, "{$info['nombre']} ({$nivel->name})", $etiqueta, $school->id)) {
+                    $cambios++;
+                }
+            }
+        }
+
+        return $cambios;
+    }
+
+    private function actualizarAccion(SeguimientoAccion $accion, array $enviado, string $logPrefijo, string $etiqueta, int $schoolId): bool
+    {
+        $statusAnterior = $accion->status ?? 'pending';
+        $accion->status = $enviado['status'];
+        $accion->notes = $enviado['notes'] ?? null;
+
+        if ($accion->status === 'done' && $statusAnterior !== 'done') {
+            $accion->completed_at = now();
+            $accion->completed_by = auth()->id();
+        } elseif ($accion->status !== 'done') {
+            $accion->completed_at = null;
+            $accion->completed_by = null;
+        }
+
+        if (!$accion->exists && $accion->status === 'pending' && !$accion->notes) {
+            return false; // nada que guardar: sigue pendiente y sin notas
+        }
+
+        $accion->save();
+
+        if ($statusAnterior !== $accion->status) {
+            ActivityLog::log(
+                'seguimiento',
+                "{$logPrefijo}: \"{$etiqueta}\" → " . SeguimientoAccion::STATUS[$accion->status],
+                $schoolId,
+                '🧭'
+            );
+
+            return true;
+        }
+
+        return false;
     }
 
     // Colegios que llevan la plataforma: sin inactivos y, para consultor digital, solo los suyos

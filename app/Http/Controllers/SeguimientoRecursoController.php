@@ -5,17 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\SeguimientoRecurso;
 use App\Models\SeguimientoRecursoAudiencia;
+use App\Services\SeguimientoRecursoPreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SeguimientoRecursoController extends Controller
 {
-    private const CATEGORIAS_POR_PLATAFORMA = [
-        'meta'         => ['manuales'],
-        'global-educa' => ['formatos'],
+    public const CATEGORIAS_POR_PLATAFORMA = [
+        'meta'          => ['manuales'],
+        'global-educa'  => ['formatos', 'manuales'],
+        'frances'       => ['formatos', 'manuales'],
+        'red-roo-reads' => ['formatos', 'manuales'],
+        'equipamiento'  => ['formatos', 'manuales'],
     ];
 
     public function store(Request $request, string $plataforma)
@@ -190,22 +193,36 @@ class SeguimientoRecursoController extends Controller
             ->with('tab', $categoria);
     }
 
-    public function preview(Request $request, SeguimientoRecurso $recurso)
+    public function preview(Request $request, SeguimientoRecurso $recurso, SeguimientoRecursoPreviewService $previewService)
     {
         abort_unless($recurso->esVisiblePara(auth()->user()), 403);
         abort_unless(Storage::disk('local')->exists($recurso->archivo), 404);
 
         $fullPath = Storage::disk('local')->path($recurso->archivo);
+        $ext = strtolower((string) $recurso->extension);
+        $mode = $request->query('mode');
 
-        if ($request->query('mode') === 'sheet' && in_array($recurso->extension, ['xlsx', 'xls', 'csv'], true)) {
-            return $this->previewSpreadsheet($fullPath);
+        if ($mode === 'sheet' && in_array($ext, ['xlsx', 'xls', 'csv', 'ods'], true)) {
+            return response()->json($previewService->previewSpreadsheet($fullPath, $ext));
+        }
+
+        if ($mode === 'doc' && in_array($ext, ['docx', 'doc', 'odt'], true)) {
+            return response()->json($previewService->previewDocument($fullPath, $ext));
+        }
+
+        if ($mode === 'slides' && in_array($ext, ['pptx', 'ppt', 'odp'], true)) {
+            return response()->json($previewService->previewPresentation($fullPath, $ext));
+        }
+
+        if ($mode === 'archive' && in_array($ext, ['zip', 'rar', '7z'], true)) {
+            return response()->json($previewService->previewArchive($fullPath, $ext));
         }
 
         $safeName = $this->nombreDescarga($recurso);
-        $mime = $recurso->mime_type ?: 'application/octet-stream';
+        $mime = $this->mimeInlinePara($ext, $recurso->mime_type);
         // Un .txt con HTML adentro se detecta como text/html y se ejecutaría en el
         // iframe de la vista previa: siempre se muestra como texto plano
-        if ($recurso->extension === 'txt' || str_contains($mime, 'html') || str_contains($mime, 'xml')) {
+        if ($ext === 'txt' || str_contains($mime, 'html') || str_contains($mime, 'xml')) {
             $mime = 'text/plain; charset=UTF-8';
         }
 
@@ -232,44 +249,16 @@ class SeguimientoRecursoController extends Controller
         return response()->download($fullPath, $this->nombreDescarga($recurso));
     }
 
-    private function previewSpreadsheet(string $fullPath)
+    private function mimeInlinePara(string $ext, ?string $storedMime): string
     {
-        try {
-            $reader = IOFactory::createReaderForFile($fullPath);
-            $reader->setReadDataOnly(true);
-            $spreadsheet = $reader->load($fullPath);
-            $sheet = $spreadsheet->getActiveSheet();
-            $sheetTitle = $sheet->getTitle();
-
-            $highestRow = min((int) $sheet->getHighestRow(), 25);
-            $highestColIndex = min(
-                \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($sheet->getHighestColumn()),
-                12
-            );
-
-            $rows = [];
-            for ($r = 1; $r <= $highestRow; $r++) {
-                $row = [];
-                for ($c = 1; $c <= $highestColIndex; $c++) {
-                    $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($c);
-                    $val = $sheet->getCell($colLetter . $r)->getFormattedValue();
-                    $row[] = is_scalar($val) ? (string) $val : '';
-                }
-                $rows[] = $row;
-            }
-
-            return response()->json([
-                'ok'         => true,
-                'sheetTitle' => $sheetTitle,
-                'totalRows'  => (int) $sheet->getHighestRow(),
-                'rows'       => $rows,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'ok'      => false,
-                'message' => 'No se pudo generar la vista previa de esta hoja de cálculo. Puedes descargarlo directamente.',
-            ], 200);
-        }
+        return match ($ext) {
+            'pdf'         => 'application/pdf',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png'         => 'image/png',
+            'webp'        => 'image/webp',
+            'gif'         => 'image/gif',
+            default       => $storedMime ?: 'application/octet-stream',
+        };
     }
 
     private function guardarAudiencia(SeguimientoRecurso $recurso, array $roles): void

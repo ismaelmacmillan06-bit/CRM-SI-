@@ -13,8 +13,8 @@
         <header class="formato-modal-header">
             <div>
                 <span class="formato-modal-kicker">{{ $schoolName ?? '' }}</span>
-                <h2 id="formato-entrega-titulo">Formato de entrega Global Educa</h2>
-                <span class="formato-modal-badge">🌐 Exclusivo para colegios Global Educa</span>
+                <h2 id="formato-entrega-titulo">{{ $modalTitle ?? 'Formato de entrega Global Educa' }}</h2>
+                <span class="formato-modal-badge">{{ $modalBadge ?? '🌐 Exclusivo para colegios Global Educa' }}</span>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" data-formato-cancel aria-label="Cerrar">✕</button>
         </header>

@@ -127,7 +127,7 @@
 <script>
     // Filtro por producto (la tabla ya está completa en la página)
     const filtroProducto = document.getElementById('filtro-producto');
-    filtroProducto.addEventListener('change', () => {
+    function aplicarFiltroProductoSesiones() {
         let visibles = 0;
         document.querySelectorAll('.fila-sesion').forEach(fila => {
             const productos = JSON.parse(fila.dataset.productos || '[]');
@@ -136,6 +136,13 @@
             if (mostrar) visibles++;
         });
         document.getElementById('contador-sesiones').textContent = visibles;
-    });
+    }
+    filtroProducto.addEventListener('change', aplicarFiltroProductoSesiones);
+
+    const productoParam = new URLSearchParams(window.location.search).get('producto');
+    if (productoParam && Array.from(filtroProducto.options).some(o => o.value === productoParam)) {
+        filtroProducto.value = productoParam;
+        aplicarFiltroProductoSesiones();
+    }
 </script>
 @endsection

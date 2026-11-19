@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Editar Colegio')
 
@@ -100,6 +100,7 @@
                                       border-radius:8px; font-size:14px;
                                       {{ in_array($level->id, $selectedLevels) ? 'border-color:var(--accent); background:#fff5f6;' : '' }}">
                             <input type="checkbox" name="levels[]" value="{{ $level->id }}"
+                                   data-school-level-checkbox
                                    {{ in_array($level->id, old('levels', $selectedLevels)) ? 'checked' : '' }}
                                    style="accent-color:var(--accent)">
                             {{ $level->name }}
@@ -127,6 +128,7 @@
                                       transition:all 0.15s;
                                       {{ $checked ? 'border-color:'.$stype->color.'; background:'.$stype->color.'18;' : '' }}">
                             <input type="checkbox" name="services[]" value="{{ $stype->id }}"
+                                   data-plataforma="{{ $stype->plataforma ?? '' }}"
                                    {{ $checked ? 'checked' : '' }}
                                    style="accent-color:{{ $stype->color }}; width:15px; height:15px">
                             <span style="font-size:16px">{{ $stype->icon }}</span>
@@ -134,6 +136,43 @@
                         </label>
                         @endforeach
                     </div>
+                    @if($francesServiceId)
+                    @php
+                        $francesCheckedInicial = in_array($francesServiceId, old('services', $selectedServices));
+                        $francesNivelesSel = array_map('intval', old('frances_niveles', $selectedFrancesLevels));
+                    @endphp
+                    <div id="frances-niveles-box"
+                         style="margin-top:12px; padding:14px 16px; border:1px solid #db277755; border-radius:10px; background:#fdf2f8; display:{{ $francesCheckedInicial ? 'block' : 'none' }}">
+                        <input type="hidden" name="frances_niveles_enviado" id="frances-niveles-enviado" value="1" {{ $francesCheckedInicial ? '' : 'disabled' }}>
+                        <div style="font-size:13px; font-weight:700; color:#9d174d; margin-bottom:4px">
+                            🗼 Niveles que llevan Francés
+                        </div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px">
+                            Selecciona cuáles de los niveles del colegio llevan Francés. Solo aparecerán las acciones de arranque de los niveles marcados.
+                        </div>
+                        <div id="frances-niveles-lista" style="display:flex; gap:10px; flex-wrap:wrap">
+                            @foreach($levels as $level)
+                                @php
+                                    $nivelEnColegio = in_array($level->id, old('levels', $selectedLevels));
+                                    $nivelEnFrances = $nivelEnColegio && in_array((int) $level->id, $francesNivelesSel, true);
+                                @endphp
+                                <label data-frances-nivel-wrap="{{ $level->id }}"
+                                       style="display:{{ $nivelEnColegio ? 'inline-flex' : 'none' }}; align-items:center; gap:7px; cursor:pointer;
+                                              padding:7px 12px; border:1px solid #f9a8d4; border-radius:8px; background:#fff; font-size:13px">
+                                    <input type="checkbox" name="frances_niveles[]" value="{{ $level->id }}"
+                                           data-frances-nivel-checkbox="{{ $level->id }}"
+                                           {{ $nivelEnFrances ? 'checked' : '' }}
+                                           {{ ($francesCheckedInicial && $nivelEnColegio) ? '' : 'disabled' }}
+                                           style="accent-color:#db2777">
+                                    {{ $level->name }}
+                                </label>
+                            @endforeach
+                        </div>
+                        <div id="frances-niveles-vacio" style="display:none; font-size:12.5px; color:#9d174d; margin-top:4px">
+                            Marca primero al menos un nivel educativo arriba para elegir cuáles llevan Francés.
+                        </div>
+                    </div>
+                    @endif
                     @if(auth()->user()->hasRole('admin'))
                     <div style="margin-top:8px">
                         <a href="{{ route('configuracion.servicios.index') }}"
@@ -271,5 +310,55 @@ function addMeeAdmin() {
     `;
     container.appendChild(row);
 }
+
+(function () {
+    const francesChk = document.querySelector('input[name="services[]"][data-plataforma="frances"]');
+    const box = document.getElementById('frances-niveles-box');
+    const enviado = document.getElementById('frances-niveles-enviado');
+    const vacio = document.getElementById('frances-niveles-vacio');
+    if (!francesChk || !box || !enviado) return;
+
+    const schoolLevelChks = Array.from(document.querySelectorAll('input[data-school-level-checkbox]'));
+    let wasFrancesChecked = francesChk.checked;
+
+    function syncFrancesLevels(autoSelectAllIfFresh) {
+        const francesActivo = francesChk.checked;
+        box.style.display = francesActivo ? 'block' : 'none';
+        enviado.disabled = !francesActivo;
+
+        let visibleCount = 0;
+        const checkedSchoolIds = new Set(schoolLevelChks.filter(c => c.checked).map(c => String(c.value)));
+
+        box.querySelectorAll('[data-frances-nivel-wrap]').forEach(wrap => {
+            const id = String(wrap.dataset.francesNivelWrap);
+            const inSchool = checkedSchoolIds.has(id);
+            const chk = wrap.querySelector('[data-frances-nivel-checkbox]');
+            wrap.style.display = inSchool ? 'inline-flex' : 'none';
+            if (chk) {
+                chk.disabled = !(francesActivo && inSchool);
+                if (!inSchool) {
+                    chk.checked = false;
+                } else if (autoSelectAllIfFresh) {
+                    chk.checked = true;
+                }
+            }
+            if (inSchool) visibleCount++;
+        });
+
+        if (vacio) {
+            vacio.style.display = francesActivo && visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+
+    francesChk.addEventListener('change', () => {
+        const justEnabled = !wasFrancesChecked && francesChk.checked;
+        wasFrancesChecked = francesChk.checked;
+        const anyChecked = Array.from(box.querySelectorAll('[data-frances-nivel-checkbox]')).some(c => c.checked);
+        syncFrancesLevels(justEnabled && !anyChecked);
+    });
+
+    schoolLevelChks.forEach(c => c.addEventListener('change', () => syncFrancesLevels(false)));
+    syncFrancesLevels(false);
+})();
 </script>
 @endsection

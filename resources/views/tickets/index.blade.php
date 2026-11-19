@@ -254,7 +254,15 @@ function ejecutarReporteTickets(e) {
 <div class="card">
     <div class="card-header">
         <span class="card-title">🎫 Tickets — {{ $school->name }}</span>
-        <span style="font-size:13px; color:var(--text-muted)">{{ $tickets->count() }} registrados</span>
+        <div style="display:flex; align-items:center; gap:12px">
+            <select id="filtro-producto-tickets" class="form-control" style="width:auto; padding:5px 10px; font-size:13px">
+                <option value="">Todos los productos</option>
+                @foreach(\App\Models\Visit::PRODUCTOS as $producto)
+                    <option value="{{ $producto }}">{{ $producto }}</option>
+                @endforeach
+            </select>
+            <span style="font-size:13px; color:var(--text-muted)"><span id="contador-tickets">{{ $tickets->count() }}</span> registrados</span>
+        </div>
     </div>
     <table class="table">
         <thead>
@@ -274,7 +282,7 @@ function ejecutarReporteTickets(e) {
 
         <tbody>
             @forelse($tickets as $ticket)
-            <tr>
+            <tr class="fila-ticket" data-productos="{{ json_encode($ticket->productos ?? []) }}">
                 <td>
                     <strong>{{ $ticket->title }}</strong>
                     <br>
@@ -364,4 +372,24 @@ function ejecutarReporteTickets(e) {
         </tbody>
     </table>
 </div>
+<script>
+    const filtroProductoTickets = document.getElementById('filtro-producto-tickets');
+    function aplicarFiltroProductoTickets() {
+        let visibles = 0;
+        document.querySelectorAll('.fila-ticket').forEach(fila => {
+            const productos = JSON.parse(fila.dataset.productos || '[]');
+            const mostrar = !filtroProductoTickets.value || productos.includes(filtroProductoTickets.value);
+            fila.style.display = mostrar ? '' : 'none';
+            if (mostrar) visibles++;
+        });
+        document.getElementById('contador-tickets').textContent = visibles;
+    }
+    filtroProductoTickets.addEventListener('change', aplicarFiltroProductoTickets);
+
+    const productoTicketParam = new URLSearchParams(window.location.search).get('producto');
+    if (productoTicketParam && Array.from(filtroProductoTickets.options).some(o => o.value === productoTicketParam)) {
+        filtroProductoTickets.value = productoTicketParam;
+        aplicarFiltroProductoTickets();
+    }
+</script>
 @endsection

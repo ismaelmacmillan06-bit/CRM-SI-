@@ -12,7 +12,38 @@
     <a href="{{ route('schools.teachers.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🏫 Docentes</a>
     <a href="{{ route('schools.students.index', $school) }}" class="btn btn-secondary btn-sm">👨‍🎓 Alumnos</a>
     @if($school->tieneGlobalEduca())
-    <a href="{{ route('schools.formato-entrega', $school) }}" class="btn btn-secondary btn-sm" data-formato-entrega>🌐 Formato Global Educa</a>
+    <a href="{{ route('schools.formato-entrega', $school) }}"
+       class="btn btn-secondary btn-sm"
+       data-formato-entrega
+       data-school-name="{{ $school->name }}"
+       data-modal-title="Formato de entrega Global Educa"
+       data-modal-badge="🌐 Exclusivo para colegios Global Educa"
+       data-logo-url="{{ asset('images/logo-global-educa.png') }}"
+       data-accesos-url="{{ route('schools.formato-entrega.accesos', $school) }}"
+       data-student-review-count="{{ $formatoResumen['studentReviewCount'] ?? 0 }}"
+       data-student-class-count="{{ $formatoResumen['studentClassCount'] ?? 0 }}"
+       data-teacher-review-count="{{ $formatoResumen['teacherReviewCount'] ?? 0 }}"
+       data-teacher-class-count="{{ $formatoResumen['teacherClassCount'] ?? 0 }}"
+       data-student-count="{{ $formatoResumen['studentCount'] ?? 0 }}"
+       data-teacher-count="{{ $formatoResumen['teacherCount'] ?? 0 }}">🌐 Formato Global Educa</a>
+    @endif
+    @if($school->tieneFrances())
+    <a href="{{ route('schools.formato-entrega', ['school' => $school, 'plataforma' => 'frances']) }}"
+       class="btn btn-secondary btn-sm"
+       data-formato-entrega
+       data-school-name="{{ $school->name }}"
+       data-modal-title="Formato de entrega Espace Virtuel"
+       data-modal-badge="🗼 Exclusivo para colegios con Francés"
+       data-logo-url="{{ asset('images/logo-espace-virtuel.png') }}"
+       data-accesos-url="{{ route('schools.formato-entrega.accesos', ['school' => $school, 'plataforma' => 'frances']) }}"
+       data-pdf-suffix=" Espace Virtuel"
+       data-sin-genero="1"
+       data-student-review-count="{{ $formatoResumenFrances['studentReviewCount'] ?? 0 }}"
+       data-student-class-count="{{ $formatoResumenFrances['studentClassCount'] ?? 0 }}"
+       data-teacher-review-count="{{ $formatoResumenFrances['teacherReviewCount'] ?? 0 }}"
+       data-teacher-class-count="{{ $formatoResumenFrances['teacherClassCount'] ?? 0 }}"
+       data-student-count="{{ $formatoResumenFrances['studentCount'] ?? 0 }}"
+       data-teacher-count="{{ $formatoResumenFrances['teacherCount'] ?? 0 }}">🗼 Formato Espace Virtuel</a>
     @endif
     <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm">🎫 Tickets</a>
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
@@ -26,12 +57,25 @@
     </a>
     @endhasanyrole
 </div>
+@if($school->tieneGlobalEduca() || $school->tieneFrances())
 @if($school->tieneGlobalEduca())
 @include('partials.formato-entrega-modal', ['schoolName' => $school->name, 'formatoResumen' => $formatoResumen])
 <script src="{{ asset('js/accesos-pdf.js') }}" defer></script>
 <script src="{{ route('schools.formato-entrega.script', $school) }}" defer
     data-accesos-url="{{ route('schools.formato-entrega.accesos', $school) }}"
     data-logo-url="{{ asset('images/logo-global-educa.png') }}"></script>
+@else
+@include('partials.formato-entrega-modal', [
+    'schoolName' => $school->name,
+    'formatoResumen' => $formatoResumenFrances,
+    'modalTitle' => 'Formato de entrega Espace Virtuel',
+    'modalBadge' => '🗼 Exclusivo para colegios con Francés',
+])
+<script src="{{ asset('js/accesos-pdf.js') }}" defer></script>
+<script src="{{ route('schools.formato-entrega.script', ['school' => $school, 'plataforma' => 'frances']) }}" defer
+    data-accesos-url="{{ route('schools.formato-entrega.accesos', ['school' => $school, 'plataforma' => 'frances']) }}"
+    data-logo-url="{{ asset('images/logo-espace-virtuel.png') }}"></script>
+@endif
 @endif
 
 <div class="grid-2" style="margin-bottom:24px">
@@ -140,13 +184,23 @@
             @else
             <div class="servicios-grid">
                 @foreach($serviceTypes as $stype)
-                    @php $tiene = in_array($stype->id, $contratados); @endphp
+                    @php
+                        $tiene = in_array($stype->id, $contratados);
+                        $francesNivelesTexto = ($tiene && $stype->plataforma === 'frances')
+                            ? $school->nivelesDePlataforma('frances')->pluck('name')->implode(', ')
+                            : '';
+                    @endphp
                     <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px;
                                 border:1px solid {{ $tiene ? $stype->color : 'var(--border)' }};
                                 background:{{ $tiene ? $stype->color.'18' : 'transparent' }};
                                 {{ $tiene ? '' : 'opacity:.45' }}">
                         <span style="font-size:16px">{{ $stype->icon }}</span>
-                        <span style="font-weight:600; font-size:13.5px; flex:1">{{ $stype->name }}</span>
+                        <div style="flex:1; min-width:0">
+                            <div style="font-weight:600; font-size:13.5px">{{ $stype->name }}</div>
+                            @if($francesNivelesTexto !== '')
+                                <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px">{{ $francesNivelesTexto }}</div>
+                            @endif
+                        </div>
                         <span style="font-size:12px; font-weight:600; color:{{ $tiene ? $stype->color : 'var(--text-muted)' }}">
                             {{ $tiene ? '✓' : '—' }}
                         </span>

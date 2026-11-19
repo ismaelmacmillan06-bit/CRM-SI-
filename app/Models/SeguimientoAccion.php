@@ -8,7 +8,7 @@ class SeguimientoAccion extends Model
 {
     protected $table = 'seguimiento_acciones';
 
-    protected $fillable = ['school_id', 'plataforma', 'accion', 'status', 'completed_at', 'completed_by', 'notes'];
+    protected $fillable = ['school_id', 'plataforma', 'level_id', 'accion', 'status', 'completed_at', 'completed_by', 'notes'];
 
     protected $casts = ['completed_at' => 'datetime'];
 
@@ -17,6 +17,11 @@ class SeguimientoAccion extends Model
         'in_progress' => '🔄 En proceso',
         'done'        => '✅ Completado',
     ];
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
+    }
 
     public function completedBy()
     {

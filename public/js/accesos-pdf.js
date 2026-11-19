@@ -1,4 +1,4 @@
-// Tarjetas de acceso recortables (Global Educa). Dibujo vectorial con jsPDF.
+// Tarjetas de acceso recortables (Global Educa / Espace Virtuel). Dibujo vectorial con jsPDF.
 (function () {
     const VENDOR = new URL('../vendor/', document.currentScript.src).href;
 
@@ -79,7 +79,7 @@
     }
 
     function drawCard(doc, x, y, h, p, clase, ctx) {
-        const { logo, link, qr } = ctx;
+        const { logo, link, qr, brand } = ctx;
         const w = L.cardW;
         doc.setLineDashPattern([1, 1], 0);
         doc.setDrawColor(...LINE);
@@ -94,23 +94,6 @@
         const content = fixed + hField * 2;
         let cy = y + (h - content) / 2 + L.pad;
 
-        const logoMaxW = qr ? iw - L.qr - 4 : iw * 0.6;
-        if (logo) {
-            const maxH = L.hHeader - 2;
-            let dh = maxH;
-            let dw = dh * (logo.w / logo.h);
-            if (dw > logoMaxW) { dw = logoMaxW; dh = dw / (logo.w / logo.h); }
-            try { doc.addImage(logo.dataURL, 'PNG', ix, cy + (L.hHeader - 2 - dh) / 2, dw, dh, 'ge-logo', 'FAST'); } catch { /* logo inválido */ }
-        } else {
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.setTextColor(...NAVY);
-            doc.text('GLOBAL', ix, cy + 5);
-            doc.setTextColor(...GREEN);
-            doc.text('EDUCA', ix + doc.getTextWidth('GLOBAL '), cy + 5);
-        }
-        if (qr) drawQr(doc, qr, ix + iw - L.qr, cy - 1, L.qr);
-
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(7);
         const pillText = 'DATOS DE ACCESO';
@@ -118,6 +101,33 @@
         const pillH = 5.4;
         const pillX = ix + iw - (qr ? L.qr + 3 : 0) - pillW;
         const pillY = cy + (L.hHeader - 2 - pillH) / 2;
+
+        const logoMaxW = Math.max(20, pillX - ix - 2.5);
+        if (logo) {
+            const maxH = L.hHeader - 2;
+            let dh = maxH;
+            let dw = dh * (logo.w / logo.h);
+            if (dw > logoMaxW) { dw = logoMaxW; dh = dw / (logo.w / logo.h); }
+            try { doc.addImage(logo.dataURL, 'PNG', ix, cy + (L.hHeader - 2 - dh) / 2, dw, dh, 'brand-logo', 'FAST'); } catch { /* logo inválido */ }
+        } else {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            if (brand === 'frances') {
+                doc.setTextColor(...NAVY);
+                doc.text('espace', ix, cy + 5);
+                doc.setTextColor(...GREEN);
+                doc.text('virtuel', ix + doc.getTextWidth('espace'), cy + 5);
+            } else {
+                doc.setTextColor(...NAVY);
+                doc.text('GLOBAL', ix, cy + 5);
+                doc.setTextColor(...GREEN);
+                doc.text('EDUCA', ix + doc.getTextWidth('GLOBAL '), cy + 5);
+            }
+        }
+        if (qr) drawQr(doc, qr, ix + iw - L.qr, cy - 1, L.qr);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7);
         doc.setFillColor(...GREEN);
         doc.roundedRect(pillX, pillY, pillW, pillH, pillH / 2, pillH / 2, 'F');
         doc.setTextColor(255, 255, 255);
@@ -176,7 +186,7 @@
         await Promise.all([loadScript('jspdf.umd.min.js'), data.link ? loadScript('qrcode.js') : null]);
         const logo = await loadLogo(logoUrl);
         const qr = qrMatrix(data.link);
-        const ctx = { logo, link: data.link, qr };
+        const ctx = { logo, link: data.link, qr, brand: data.brand };
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
         const h = L.cardH;

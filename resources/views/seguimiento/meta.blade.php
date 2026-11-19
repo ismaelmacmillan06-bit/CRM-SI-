@@ -500,7 +500,7 @@
         aplicar();
     }));
 
-    // ── Vista tabla / calendario (se recuerda por usuario en este navegador) ──
+    // ── Vista tabla / calendario / manuales ──
     const EVENTOS = {!! json_encode($eventos->values(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -513,7 +513,6 @@
         document.getElementById('mt-vista-calendario').style.display = v === 'calendario' ? '' : 'none';
         document.getElementById('mt-vista-manuales').style.display = v === 'manuales' ? '' : 'none';
         document.querySelectorAll('.mt-vista-btn').forEach(b => b.classList.toggle('activa', b.dataset.vista === v));
-        try { localStorage.setItem('sic-meta-vista', v); } catch (e) {}
         if (v === 'calendario') pintarCalendario();
     }
     document.querySelectorAll('.mt-vista-btn').forEach(b => b.addEventListener('click', () => cambiarVista(b.dataset.vista)));
@@ -638,12 +637,8 @@
 
     const tabFlash = @json(session('tab'));
     const tieneErrorRecurso = @json($errors->has('titulo') || $errors->has('archivo') || $errors->has('audiencia'));
-    let vistaGuardada = null;
-    try { vistaGuardada = localStorage.getItem('sic-meta-vista'); } catch (e) {}
     if (tabFlash === 'manuales' || tieneErrorRecurso) {
         cambiarVista('manuales');
-    } else if (vistaGuardada === 'calendario' || vistaGuardada === 'manuales') {
-        cambiarVista(vistaGuardada);
     }
 
 })();

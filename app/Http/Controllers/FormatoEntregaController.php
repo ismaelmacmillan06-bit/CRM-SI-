@@ -28,15 +28,26 @@ class FormatoEntregaController extends Controller
         'Contraseña', 'Grado', 'Grupo', 'Género',
     ];
 
+    private const FRANCES_HEADERS = [
+        'Nombre', 'Apellido paterno', 'Apellido materno', 'Usuario',
+        'Contraseña', 'Nivel', 'Grado', 'Grupo',
+    ];
+
+    private const FRANCES_TEACHER_HEADERS = [
+        'Nombre', 'Apellido paterno', 'Apellido materno', 'Usuario',
+        'Contraseña', 'Grado', 'Grupo',
+    ];
+
     public function download(School $school, Request $request)
     {
-        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
+        $plataforma = $this->resolvePlatform($request, $school);
+        $includeGender = $plataforma !== 'frances';
         set_time_limit(120);
 
         $tipo = $request->query('tipo', 'alumnos');
         abort_unless(in_array($tipo, ['alumnos', 'docentes'], true), 422);
-        $alumnos = $tipo === 'alumnos' ? $this->studentData($school) : null;
-        $docentes = $tipo === 'docentes' ? $this->teacherData($school) : null;
+        $alumnos = $tipo === 'alumnos' ? $this->studentData($school, true, $includeGender) : null;
+        $docentes = $tipo === 'docentes' ? $this->teacherData($school, $includeGender) : null;
 
         if (($alumnos !== null && $alumnos['rows'] === []) || ($docentes !== null && $docentes['rows'] === [])) {
             return response()->json([
@@ -49,17 +60,43 @@ class FormatoEntregaController extends Controller
         $spreadsheet = new Spreadsheet();
         $usedTitles = [];
         if ($alumnos !== null) {
+            $studentHeaders = $includeGender ? self::HEADERS : self::FRANCES_HEADERS;
+            $studentReviewColumn = $includeGender ? 9 : null;
+            $studentCenteredColumns = $includeGender ? [6, 7, 8, 9] : [6, 7, 8];
+
             $summary = $spreadsheet->getActiveSheet();
             $summary->setTitle($this->uniqueSheetTitle('Todos los alumnos', $usedTitles));
-            $this->drawSheet($summary, $school, 'Concentrado general', $this->countLabel(count($alumnos['rows']), 'alumno', 'alumnos'), $alumnos['rows']);
+            $this->drawSheet(
+                $summary,
+                $school,
+                'Concentrado general',
+                $this->countLabel(count($alumnos['rows']), 'alumno', 'alumnos'),
+                $alumnos['rows'],
+                $studentHeaders,
+                $studentReviewColumn,
+                $studentCenteredColumns,
+            );
             foreach ($alumnos['classes'] as $class => $rows) {
                 $sheet = $spreadsheet->createSheet();
                 $sheet->setTitle($this->uniqueSheetTitle($class, $usedTitles));
-                $this->drawSheet($sheet, $school, 'Listado de alumnos', $class . '   |   ' . $this->countLabel(count($rows), 'alumno', 'alumnos'), $rows);
+                $this->drawSheet(
+                    $sheet,
+                    $school,
+                    'Listado de alumnos',
+                    $class . '   |   ' . $this->countLabel(count($rows), 'alumno', 'alumnos'),
+                    $rows,
+                    $studentHeaders,
+                    $studentReviewColumn,
+                    $studentCenteredColumns,
+                );
             }
         }
 
         if ($docentes !== null) {
+            $teacherHeaders = $includeGender ? self::TEACHER_HEADERS : self::FRANCES_TEACHER_HEADERS;
+            $teacherReviewColumn = $includeGender ? 8 : null;
+            $teacherCenteredColumns = $includeGender ? [6, 7, 8] : [6, 7];
+
             $summary = $spreadsheet->getActiveSheet();
             $summary->setTitle($this->uniqueSheetTitle('Todos los docentes', $usedTitles));
             $this->drawSheet(
@@ -68,9 +105,9 @@ class FormatoEntregaController extends Controller
                 'Concentrado de docentes',
                 $this->countLabel(count($docentes['rows']), 'docente', 'docentes'),
                 $docentes['rows'],
-                self::TEACHER_HEADERS,
-                8,
-                [6, 7, 8],
+                $teacherHeaders,
+                $teacherReviewColumn,
+                $teacherCenteredColumns,
             );
 
             foreach ($docentes['classes'] as $grade => $rows) {
@@ -82,15 +119,16 @@ class FormatoEntregaController extends Controller
                     'Listado de docentes',
                     'Grado ' . $grade . '   |   ' . $this->countLabel(count($rows), 'docente', 'docentes'),
                     $rows,
-                    self::TEACHER_HEADERS,
-                    8,
-                    [6, 7, 8],
+                    $teacherHeaders,
+                    $teacherReviewColumn,
+                    $teacherCenteredColumns,
                 );
             }
         }
 
         $spreadsheet->setActiveSheetIndex(0);
-        ActivityLog::log('formato_entrega', "Formato de entrega (Excel) de {$tipo} descargado para \"{$school->name}\"", $school->id, '📥');
+        $logLabel = $plataforma === 'frances' ? 'Formato de entrega Espace Virtuel (Excel)' : 'Formato de entrega (Excel)';
+        ActivityLog::log('formato_entrega', "{$logLabel} de {$tipo} descargado para \"{$school->name}\"", $school->id, '📥');
         $tempFile = tempnam(sys_get_temp_dir(), 'formato_entrega_');
         (new Xlsx($spreadsheet))->save($tempFile);
         $spreadsheet->disconnectWorksheets();
@@ -101,7 +139,12 @@ class FormatoEntregaController extends Controller
         $schoolIdentifier = $school->nexus_id ?: $school->id;
         $safeSchoolIdentifier = str_replace(['<', '>', ':', '"', '/', '\\', '|', '?', '*'], '-', (string) $schoolIdentifier);
         $safeSchoolIdentifier = trim($safeSchoolIdentifier, " .");
-        $filenamePrefix = $tipo === 'docentes' ? 'Cuentas de Docentes' : 'Cuentas de Alumno';
+        $filenamePrefix = match (true) {
+            $plataforma === 'frances' && $tipo === 'docentes' => 'Cuentas de Docentes Espace Virtuel',
+            $plataforma === 'frances' => 'Cuentas de Alumno Espace Virtuel',
+            $tipo === 'docentes' => 'Cuentas de Docentes',
+            default => 'Cuentas de Alumno',
+        };
         $filename = $filenamePrefix . '_' . $safeSchoolName . '_' . $safeSchoolIdentifier . '.xlsx';
 
         return response()->download($tempFile, $filename, [
@@ -115,10 +158,11 @@ class FormatoEntregaController extends Controller
 
     public function accesos(School $school, Request $request)
     {
-        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
+        $plataforma = $this->resolvePlatform($request, $school);
+        $includeGender = $plataforma !== 'frances';
         $tipo = $request->query('tipo', 'alumnos');
         abort_unless(in_array($tipo, ['alumnos', 'docentes'], true), 422);
-        $data = $tipo === 'alumnos' ? $this->studentData($school) : $this->teacherData($school);
+        $data = $tipo === 'alumnos' ? $this->studentData($school, true, $includeGender) : $this->teacherData($school, $includeGender);
 
         if ($data['rows'] === []) {
             return response()->json(['message' => 'No hay registros para generar las tarjetas.'], 422);
@@ -151,20 +195,27 @@ class FormatoEntregaController extends Controller
             return response()->json(['message' => 'Ningún registro tiene usuario y contraseña para generar tarjetas.'], 422);
         }
 
-        ActivityLog::log('formato_entrega', "Tarjetas de acceso de {$tipo} generadas para \"{$school->name}\"", $school->id, '🪪');
+        $logLabel = $plataforma === 'frances' ? 'Tarjetas de acceso Espace Virtuel' : 'Tarjetas de acceso';
+        ActivityLog::log('formato_entrega', "{$logLabel} de {$tipo} generadas para \"{$school->name}\"", $school->id, '🪪');
+
+        $accessUrl = $plataforma === 'frances'
+            ? (config('services.espace_virtuel.access_url') ?: null)
+            : (config('services.global_educa.access_url') ?: null);
 
         return response()->json([
             'school' => $school->name,
-            'link' => config('services.global_educa.access_url') ?: null,
+            'link' => $accessUrl,
+            'brand' => $plataforma,
             'omitidos' => $omitidos,
             'groups' => $groups,
         ]);
     }
 
-    public function summaryForSchool(School $school): array
+    public function summaryForSchool(School $school, string $plataforma = 'global-educa'): array
     {
-        $alumnos = $this->studentData($school, false);
-        $docentes = $this->teacherData($school);
+        $includeGender = $plataforma !== 'frances';
+        $alumnos = $this->studentData($school, false, $includeGender);
+        $docentes = $this->teacherData($school, $includeGender);
 
         return [
             'reviewCount' => $alumnos['reviewCount'],
@@ -178,9 +229,9 @@ class FormatoEntregaController extends Controller
         ];
     }
 
-    private function studentData(School $school, bool $includeCredentials = true): array
+    private function studentData(School $school, bool $includeCredentials = true, bool $includeGender = true): array
     {
-        $columns = $includeCredentials
+        $columns = ($includeCredentials || !$includeGender)
             ? ['name', 'last_name', 'mee_username', 'mee_password', 'level', 'grade']
             : ['name', 'level', 'grade'];
         $students = $school->students()
@@ -200,24 +251,35 @@ class FormatoEntregaController extends Controller
             $classes[$class] ??= [];
 
             if (!$includeCredentials) {
-                if ($this->inferGender((string) $student->name) === 'Revisar') {
+                if ($includeGender) {
+                    if ($this->inferGender((string) $student->name) === 'Revisar') {
+                        $reviewCount++;
+                    }
+                } elseif (trim((string) $student->mee_username) === '' || trim((string) $student->mee_password) === '') {
                     $reviewCount++;
                 }
                 continue;
             }
 
+            $username = trim((string) $student->mee_username);
+            $password = trim((string) $student->mee_password);
             $row = [
                 trim((string) $student->name),
                 ...$this->splitSurnames((string) $student->last_name),
-                trim((string) $student->mee_username),
-                trim((string) $student->mee_password),
+                $username,
+                $password,
                 $level,
                 $grade,
                 $group,
-                $this->inferGender((string) $student->name),
             ];
 
-            if ($row[8] === 'Revisar') {
+            if ($includeGender) {
+                $gender = $this->inferGender((string) $student->name);
+                $row[] = $gender;
+                if ($gender === 'Revisar') {
+                    $reviewCount++;
+                }
+            } elseif ($username === '' || $password === '') {
                 $reviewCount++;
             }
 
@@ -236,7 +298,7 @@ class FormatoEntregaController extends Controller
         ];
     }
 
-    private function teacherData(School $school): array
+    private function teacherData(School $school, bool $includeGender = true): array
     {
         $teachers = $school->teachers()
             ->orderBy('grade')->orderBy('last_name')->orderBy('name')
@@ -249,7 +311,6 @@ class FormatoEntregaController extends Controller
             [$grade, $group] = $this->splitGradeAndGroup((string) $teacher->grade);
             $grade = $grade !== '' ? $grade : 'Sin grado';
             $class = $grade . ($group !== '' ? '°' . $group : '');
-            $gender = $this->inferGender((string) $teacher->name);
             $credentialsReview = trim((string) $teacher->email) === ''
                 || trim((string) $teacher->mee_password) === '';
             $row = [
@@ -259,10 +320,15 @@ class FormatoEntregaController extends Controller
                 trim((string) $teacher->mee_password),
                 $grade,
                 $group,
-                $gender,
             ];
 
-            if ($credentialsReview || $gender === 'Revisar') {
+            if ($includeGender) {
+                $gender = $this->inferGender((string) $teacher->name);
+                $row[] = $gender;
+                if ($credentialsReview || $gender === 'Revisar') {
+                    $reviewCount++;
+                }
+            } elseif ($credentialsReview) {
                 $reviewCount++;
             }
             $classes[$class][] = $row;
@@ -280,13 +346,27 @@ class FormatoEntregaController extends Controller
         ];
     }
 
-    public function script(School $school)
+    public function script(School $school, ?Request $request = null)
     {
-        abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
+        $this->resolvePlatform($request ?? request(), $school);
         return response(file_get_contents(public_path('js/formato-entrega.js')), 200, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
             'Cache-Control' => 'no-store',
         ]);
+    }
+
+    private function resolvePlatform(Request $request, School $school): string
+    {
+        $plataforma = (string) $request->query('plataforma', 'global-educa');
+        abort_unless(in_array($plataforma, ['global-educa', 'frances'], true), 422);
+
+        if ($plataforma === 'frances') {
+            abort_unless($school->tieneFrances(), 403, 'El formato de entrega Espace Virtuel es exclusivo para colegios con Francés.');
+        } else {
+            abort_unless($school->tieneGlobalEduca(), 403, 'El formato de entrega es exclusivo para colegios Global Educa.');
+        }
+
+        return $plataforma;
     }
 
     private function drawSheet(

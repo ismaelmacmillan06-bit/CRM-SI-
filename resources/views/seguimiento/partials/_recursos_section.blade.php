@@ -136,8 +136,14 @@
                                     Documento PDF · Vista previa interactiva disponible
                                 @elseif($fmt['tipo'] === 'excel')
                                     Hoja de cálculo · Vista previa de tabla disponible
+                                @elseif($fmt['tipo'] === 'word')
+                                    Documento {{ $fmt['etiqueta'] }} · Vista previa de contenido disponible
+                                @elseif($fmt['tipo'] === 'ppt')
+                                    Presentación {{ $fmt['etiqueta'] }} · Vista previa de diapositivas disponible
                                 @elseif($fmt['tipo'] === 'text')
                                     Archivo de texto · Vista previa disponible
+                                @elseif($fmt['tipo'] === 'archive' && $fmt['previsualizable'])
+                                    Archivo ZIP · Vista previa de contenido disponible
                                 @else
                                     Archivo {{ $fmt['etiqueta'] }} · Listo para descargar
                                 @endif

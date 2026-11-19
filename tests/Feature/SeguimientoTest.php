@@ -55,12 +55,12 @@ class SeguimientoTest extends TestCase
         $this->assertSame('frances', SchoolServiceType::where('name', 'Francés')->value('plataforma'));
     }
 
-    public function test_equipamiento_appears_in_menu_as_under_construction(): void
+    public function test_equipamiento_appears_in_menu_and_renders_panel(): void
     {
         $this->actingAs($this->usuario('admin'))
             ->get(route('seguimiento.show', 'equipamiento'))
             ->assertOk()
-            ->assertSee('Sección en construcción')
+            ->assertSee('Seguimiento Equipamiento')
             ->assertSee(route('seguimiento.show', 'equipamiento'), false);
     }
 

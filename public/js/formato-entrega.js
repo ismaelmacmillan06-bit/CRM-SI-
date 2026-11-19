@@ -1,7 +1,7 @@
 const formatoScript = document.currentScript;
 const formatoButtons = document.querySelectorAll('[data-formato-entrega]');
 if (formatoButtons.length > 0) {
-    const logoUrl = formatoScript?.dataset.logoUrl;
+    const defaultLogoUrl = formatoScript?.dataset.logoUrl;
     const tabs = document.querySelector('[data-formato-tabs]');
     const loadingTitle = document.querySelector('#formato-entrega-overlay .formato-loading-title');
     let mode = 'excel';
@@ -9,6 +9,10 @@ if (formatoButtons.length > 0) {
     const dialog = document.getElementById('formato-entrega-dialog');
     const kicker = dialog?.querySelector('.formato-modal-kicker');
     const defaultKicker = kicker?.textContent || '';
+    const modalTitleEl = dialog?.querySelector('#formato-entrega-titulo');
+    const defaultModalTitle = modalTitleEl?.textContent || '';
+    const modalBadgeEl = dialog?.querySelector('.formato-modal-badge');
+    const defaultModalBadge = modalBadgeEl?.textContent || '';
     const status = document.getElementById('formato-entrega-resultado');
     const loadingOverlay = document.getElementById('formato-entrega-overlay');
     const dots = loadingOverlay?.querySelector('[data-formato-dots]');
@@ -88,6 +92,8 @@ if (formatoButtons.length > 0) {
             event.preventDefault();
             activeButton = button;
             if (kicker) kicker.textContent = button.dataset.schoolName || defaultKicker;
+            if (modalTitleEl) modalTitleEl.textContent = button.dataset.modalTitle || defaultModalTitle;
+            if (modalBadgeEl) modalBadgeEl.textContent = button.dataset.modalBadge || defaultModalBadge;
             if (status && button.dataset.studentCount !== undefined) {
                 status.dataset.studentReviewCount = button.dataset.studentReviewCount || '0';
                 status.dataset.studentClassCount = button.dataset.studentClassCount || '0';
@@ -139,6 +145,9 @@ if (formatoButtons.length > 0) {
         if (!status || !activeButton || activeButton.dataset.loading) return;
         const button = activeButton;
         const accesosUrl = button.dataset.accesosUrl || formatoScript?.dataset.accesosUrl;
+        const logoUrl = button.dataset.logoUrl || defaultLogoUrl;
+        const sinGenero = button.dataset.sinGenero === '1';
+        const pdfSuffix = button.dataset.pdfSuffix || '';
 
         const tipo = dialog.querySelector('input[name="formato-tipo"]:checked')?.value || 'alumnos';
         const studentCount = Number(status.dataset.studentCount || 0);
@@ -181,12 +190,28 @@ if (formatoButtons.length > 0) {
             if (tipo === 'alumnos' || tipo === 'ambos') {
                 const studentsNoun = counts.studentReviewCount === 1 ? 'alumno' : 'alumnos';
                 const classesNoun = counts.studentClassCount === 1 ? 'clase' : 'clases';
-                lines.push(`Alumnos: ${counts.studentReviewCount} ${studentsNoun} por revisar; ${counts.studentClassCount} ${classesNoun}.`);
+                if (sinGenero) {
+                    lines.push(
+                        counts.studentReviewCount > 0
+                            ? `Alumnos: ${counts.studentReviewCount} ${studentsNoun} con datos incompletos; ${counts.studentClassCount} ${classesNoun}.`
+                            : `Alumnos: ${counts.studentClassCount} ${classesNoun}.`
+                    );
+                } else {
+                    lines.push(`Alumnos: ${counts.studentReviewCount} ${studentsNoun} por revisar; ${counts.studentClassCount} ${classesNoun}.`);
+                }
             }
             if (tipo === 'docentes' || tipo === 'ambos') {
                 const teachersNoun = counts.teacherReviewCount === 1 ? 'docente' : 'docentes';
                 const gradesNoun = counts.teacherClassCount === 1 ? 'grado/hoja' : 'grados/hojas';
-                lines.push(`Docentes: ${counts.teacherReviewCount} ${teachersNoun} por revisar (datos incompletos o género por confirmar); ${counts.teacherClassCount} ${gradesNoun}.`);
+                if (sinGenero) {
+                    lines.push(
+                        counts.teacherReviewCount > 0
+                            ? `Docentes: ${counts.teacherReviewCount} ${teachersNoun} con datos incompletos; ${counts.teacherClassCount} ${gradesNoun}.`
+                            : `Docentes: ${counts.teacherClassCount} ${gradesNoun}.`
+                    );
+                } else {
+                    lines.push(`Docentes: ${counts.teacherReviewCount} ${teachersNoun} por revisar (datos incompletos o género por confirmar); ${counts.teacherClassCount} ${gradesNoun}.`);
+                }
             }
             status.textContent = `${prefix}\n${lines.join('\n')}`;
         };
@@ -216,7 +241,7 @@ if (formatoButtons.length > 0) {
             const downloadUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
-            link.download = `Tarjetas de acceso ${label}_${safeName}.pdf`;
+            link.download = `Tarjetas de acceso${pdfSuffix} ${label}_${safeName}.pdf`;
             document.body.append(link);
             link.click();
             link.remove();

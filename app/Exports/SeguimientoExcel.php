@@ -17,11 +17,19 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 // marcados con el producto de la plataforma. Las plataformas con agenda (Meta) agregan sus datos de examen.
 class SeguimientoExcel
 {
-    private const COLORES = ['meta' => '7C3AED', 'global-educa' => '16A34A'];
+    private const COLORES = [
+        'meta'          => '7C3AED',
+        'global-educa'  => '16A34A',
+        'frances'       => 'DB2777',
+        'red-roo-reads' => '10B981',
+        'equipamiento'  => '475569',
+    ];
     private const COLOR_DEFAULT = '4F46E5';
 
     private string $color;
     private bool $agenda;
+    private bool $porNivel;
+    private bool $tieneAcciones;
 
     private const TICKET_STATUS = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
     private const TICKET_PRIORIDAD = ['low' => 'Baja', 'medium' => 'Media', 'high' => 'Alta'];
@@ -40,6 +48,8 @@ class SeguimientoExcel
         $this->generado = now()->format('d/m/Y H:i');
         $this->color = self::COLORES[$slug] ?? self::COLOR_DEFAULT;
         $this->agenda = !empty($info['agenda']);
+        $this->porNivel = !empty($info['por_nivel']);
+        $this->tieneAcciones = !empty($info['acciones']);
     }
 
     // Guarda el archivo en un temporal y regresa la ruta
@@ -50,7 +60,9 @@ class SeguimientoExcel
 
         $this->hojaResumen($libro->getActiveSheet());
         $this->hojaColegios($libro->createSheet());
-        $this->hojaAcciones($libro->createSheet());
+        if ($this->tieneAcciones) {
+            $this->hojaAcciones($libro->createSheet());
+        }
         $this->hojaTickets($libro->createSheet());
         $this->hojaSesiones($libro->createSheet());
         $libro->setActiveSheetIndex(0);
@@ -70,8 +82,15 @@ class SeguimientoExcel
 
         $datos = [
             ['Colegios con ' . $nombre, $this->filas->count()],
-            [($this->agenda ? 'Arranque completo' : 'Implementación completa') . ' (' . $total . '/' . $total . ')', $this->filas->where('completo', true)->count()],
         ];
+        if ($this->tieneAcciones) {
+            $etiquetaCompletos = match (true) {
+                $this->agenda   => 'Arranque completo (' . $total . '/' . $total . ')',
+                $this->porNivel => 'Implementación completa (todos los niveles)',
+                default         => 'Implementación completa (' . $total . '/' . $total . ')',
+            };
+            $datos[] = [$etiquetaCompletos, $this->filas->where('completo', true)->count()];
+        }
         if ($this->agenda) {
             $datos[] = ['Capacitaciones próximas (30 días)', $this->filas->where('capacitacion_proxima', true)->count()];
             $datos[] = ['Aplicaciones próximas (30 días)', $this->filas->where('aplicacion_proxima', true)->count()];
@@ -90,19 +109,37 @@ class SeguimientoExcel
         $ws->fromArray($datos, null, 'A5');
         $ws->getStyle('B5:B' . (4 + count($datos)))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $ws->getStyle('A5:B' . (4 + count($datos)))->getFont()->setSize(11);
-        foreach ([5, 6, $filaTickets, $filaTickets + 3] as $fila) {
+        $negritas = $this->tieneAcciones
+            ? [5, 6, $filaTickets, $filaTickets + 3]
+            : [5, $filaTickets, $filaTickets + 3];
+        foreach ($negritas as $fila) {
             $ws->getStyle("A{$fila}:B{$fila}")->getFont()->setBold(true);
         }
 
         // Avance por acción de arranque
-        $fila = 6 + count($datos);
-        $this->encabezados($ws, $fila, ['Acción de arranque', 'Colegios completados'], false);
-        foreach ($this->info['acciones'] as $clave => $etiqueta) {
-            $fila++;
-            $hechas = $this->filas->filter(fn ($f) => ($f['acciones'][$clave]->status ?? null) === 'done')->count();
-            $ws->setCellValue("A{$fila}", $etiqueta);
-            $ws->setCellValue("B{$fila}", $hechas . ' / ' . $this->filas->count());
-            $ws->getStyle("B{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        if ($this->tieneAcciones) {
+            $fila = 6 + count($datos);
+            if ($this->porNivel) {
+                $nivelesPlanos = $this->filas->flatMap(fn ($f) => $f['niveles'] ?? collect());
+                $totalNiveles = $nivelesPlanos->count();
+                $this->encabezados($ws, $fila, ['Acción de arranque', 'Niveles completados'], false);
+                foreach ($this->info['acciones'] as $clave => $etiqueta) {
+                    $fila++;
+                    $hechas = $nivelesPlanos->filter(fn ($n) => ($n['acciones'][$clave]->status ?? null) === 'done')->count();
+                    $ws->setCellValue("A{$fila}", $etiqueta);
+                    $ws->setCellValue("B{$fila}", $hechas . ' / ' . $totalNiveles);
+                    $ws->getStyle("B{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+            } else {
+                $this->encabezados($ws, $fila, ['Acción de arranque', 'Colegios completados'], false);
+                foreach ($this->info['acciones'] as $clave => $etiqueta) {
+                    $fila++;
+                    $hechas = $this->filas->filter(fn ($f) => ($f['acciones'][$clave]->status ?? null) === 'done')->count();
+                    $ws->setCellValue("A{$fila}", $etiqueta);
+                    $ws->setCellValue("B{$fila}", $hechas . ' / ' . $this->filas->count());
+                    $ws->getStyle("B{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                }
+            }
         }
 
         $this->anchos($ws, [42, 22]);
@@ -111,7 +148,9 @@ class SeguimientoExcel
     private function hojaColegios(Worksheet $ws): void
     {
         $ws->setTitle('Colegios');
-        $cab = ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Niveles', 'Arranque', 'Siguiente acción'];
+        $cab = $this->tieneAcciones
+            ? ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Niveles', 'Arranque', 'Siguiente acción']
+            : ['ID Colegio', 'Colegio', 'Estado', 'Consultor digital', 'Niveles'];
         if ($this->agenda) {
             array_push($cab, 'Administrador', 'Usuario', 'Contraseña', 'Capacitación', 'Fecha capacitación', 'Horario', 'Fecha aplicación', 'Notas');
         }
@@ -122,11 +161,19 @@ class SeguimientoExcel
         $fila = 5;
         foreach ($this->filas as $i => $f) {
             $c = $f['colegio'];
+            $nivelesTexto = !empty($f['niveles'])
+                ? $f['niveles']->pluck('nivel.name')->implode(', ')
+                : $c->levels->pluck('name')->implode(', ');
             $valores = [
                 $c->nexus_id ?: '—', $c->name, $c->state ?: '—', $f['consultor'] ?: '—',
-                $c->levels->pluck('name')->implode(', ') ?: '—',
-                "{$f['hechas']}/{$total} ({$f['pct']}%)", $f['completo'] ? 'Completo' : $f['siguiente'],
+                $nivelesTexto ?: '—',
             ];
+            if ($this->tieneAcciones) {
+                $totalColegio = $f['total'] ?? $total;
+                $avanceTexto = $totalColegio > 0 ? "{$f['hechas']}/{$totalColegio} ({$f['pct']}%)" : 'Sin niveles';
+                $valores[] = $avanceTexto;
+                $valores[] = $f['completo'] ? 'Completo' : ($f['siguiente'] ?: '—');
+            }
             if ($this->agenda) {
                 $m = $f['meta'];
                 array_push($valores,
@@ -138,13 +185,17 @@ class SeguimientoExcel
             $this->renglon($ws, $fila, count($cab), $i);
             $fila++;
         }
-        $this->anchos($ws, [15, 34, 18, 22, 30, 13, 34, 22, 28, 16, 26, 16, 10, 16, 40]);
+        $this->anchos($ws, $this->tieneAcciones
+            ? [15, 34, 18, 22, 30, 13, 34, 22, 28, 16, 26, 16, 10, 16, 40]
+            : [15, 34, 18, 22, 34]);
     }
 
     private function hojaAcciones(Worksheet $ws): void
     {
         $ws->setTitle('Acciones de arranque');
-        $cab = array_merge(['ID Colegio', 'Colegio'], array_values($this->info['acciones']), ['Avance']);
+        $cab = $this->porNivel
+            ? array_merge(['ID Colegio', 'Colegio', 'Nivel'], array_values($this->info['acciones']), ['Avance'])
+            : array_merge(['ID Colegio', 'Colegio'], array_values($this->info['acciones']), ['Avance']);
         $this->titulo($ws, 'Acciones de arranque — ' . $this->info['nombre'], count($cab));
         $this->encabezados($ws, 4, $cab);
         $ws->getStyle('A4:' . $this->col(count($cab)) . '4')->getAlignment()->setWrapText(true);
@@ -152,6 +203,51 @@ class SeguimientoExcel
 
         $colores = ['done' => 'DCFCE7', 'in_progress' => 'FEF3C7'];
         $fila = 5;
+
+        if ($this->porNivel) {
+            $totalPorNivel = count($this->info['acciones']);
+            $indiceFila = 0;
+
+            foreach ($this->filas as $f) {
+                $niveles = $f['niveles'] ?? collect();
+                if ($niveles->isEmpty()) {
+                    $valores = array_merge(
+                        [$f['colegio']->nexus_id ?: '—', $f['colegio']->name, 'Sin niveles'],
+                        array_fill(0, $totalPorNivel, '—'),
+                        ['—']
+                    );
+                    $ws->fromArray([$valores], null, "A{$fila}", true);
+                    $this->renglon($ws, $fila, count($cab), $indiceFila++);
+                    $fila++;
+                    continue;
+                }
+
+                foreach ($niveles as $n) {
+                    $valores = [$f['colegio']->nexus_id ?: '—', $f['colegio']->name, $n['nivel']->name];
+                    foreach (array_keys($this->info['acciones']) as $clave) {
+                        $status = $n['acciones'][$clave]->status ?? 'pending';
+                        $valores[] = trim(preg_replace('/^\S+\s/u', '', SeguimientoAccion::STATUS[$status]));
+                    }
+                    $valores[] = "{$n['hechas']}/{$totalPorNivel}";
+                    $ws->fromArray([$valores], null, "A{$fila}", true);
+                    $this->renglon($ws, $fila, count($cab), $indiceFila++);
+
+                    foreach (array_keys($this->info['acciones']) as $idx => $clave) {
+                        $status = $n['acciones'][$clave]->status ?? 'pending';
+                        $celda = $this->col(4 + $idx) . $fila;
+                        $ws->getStyle($celda)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        if (isset($colores[$status])) {
+                            $ws->getStyle($celda)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($colores[$status]);
+                        }
+                    }
+                    $fila++;
+                }
+            }
+
+            $this->anchos($ws, array_merge([15, 34, 18], array_fill(0, $totalPorNivel, 20), [10]));
+            return;
+        }
+
         foreach ($this->filas as $i => $f) {
             $valores = [$f['colegio']->nexus_id ?: '—', $f['colegio']->name];
             foreach (array_keys($this->info['acciones']) as $clave) {

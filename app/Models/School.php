@@ -100,15 +100,36 @@ public function tieneGlobalEduca(): bool
     return $this->tienePlataforma('global-educa');
 }
 
+public function tieneFrances(): bool
+{
+    return $this->tienePlataforma('frances');
+}
+
 // La plataforma se identifica por la clave del servicio, nunca por su nombre o ID
 public function tienePlataforma(string $plataforma): bool
 {
     return $this->services->contains(fn ($s) => $s->plataforma === $plataforma);
 }
 
+public function nivelesDePlataforma(string $plataforma): \Illuminate\Support\Collection
+{
+    $service = $this->services->firstWhere('plataforma', $plataforma);
+    $raw = $service?->pivot?->niveles;
+
+    if ($raw === null) {
+        return $this->levels;
+    }
+
+    $ids = is_array($raw) ? $raw : (json_decode((string) $raw, true) ?? []);
+    $ids = array_map('intval', $ids);
+
+    return $this->levels->filter(fn ($level) => in_array((int) $level->id, $ids, true))->values();
+}
+
 public function services()
 {
     return $this->belongsToMany(SchoolServiceType::class, 'school_service', 'school_id', 'school_service_type_id')
+                ->withPivot('niveles')
                 ->withTimestamps();
 }
 

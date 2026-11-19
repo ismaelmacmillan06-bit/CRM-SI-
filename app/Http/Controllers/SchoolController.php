@@ -139,12 +139,16 @@ foreach ($roles as $role => $consultantId) {
         $formatoResumen = $school->tieneGlobalEduca()
             ? $formatoEntrega->summaryForSchool($school)
             : [];
+        $formatoResumenFrances = $school->tieneFrances()
+            ? $formatoEntrega->summaryForSchool($school, 'frances')
+            : [];
         $serviceTypes = SchoolServiceType::active()->get();
-        return view('schools.show', compact('school', 'formatoResumen', 'serviceTypes'));
+        return view('schools.show', compact('school', 'formatoResumen', 'formatoResumenFrances', 'serviceTypes'));
     }
 
     public function edit(School $school)
 {
+    $school->load('levels', 'services', 'schoolConsultants', 'meeAdmins');
     $consultants = Consultant::with('user')->get();
     $levels = Level::all();
     $selectedLevels = $school->levels->pluck('id')->toArray();
@@ -158,11 +162,15 @@ foreach ($roles as $role => $consultantId) {
 
     $serviceTypes    = SchoolServiceType::active()->get();
     $selectedServices = $school->services->pluck('id')->toArray();
+    $francesServiceId = $serviceTypes->firstWhere('plataforma', 'frances')?->id;
+    $selectedFrancesLevels = $school->tieneFrances()
+        ? $school->nivelesDePlataforma('frances')->pluck('id')->map(fn ($id) => (int) $id)->all()
+        : array_map('intval', $selectedLevels);
 
     return view('schools.edit', compact(
         'school', 'consultants', 'levels', 'selectedLevels',
         'digitales', 'ecas', 'elts', 'representantes', 'responsables',
-        'serviceTypes', 'selectedServices'
+        'serviceTypes', 'selectedServices', 'francesServiceId', 'selectedFrancesLevels'
     ));
 }
 
@@ -173,13 +181,17 @@ foreach ($roles as $role => $consultantId) {
         }
 
         $request->validate([
-            'name'    => 'required|string|max:255',
-            'status'  => 'required|in:prospecto,activo,inactivo',
+            'name'              => 'required|string|max:255',
+            'status'            => 'required|in:prospecto,activo,inactivo',
             // Excluir el propio colegio del chequeo de unicidad
-            'nexus_id'=> ['nullable', "unique:schools,nexus_id,{$school->id}"],
+            'nexus_id'          => ['nullable', "unique:schools,nexus_id,{$school->id}"],
+            'frances_niveles'   => 'nullable|array',
+            'frances_niveles.*' => 'integer|exists:levels,id',
         ], [
             'nexus_id.unique' => 'Este Nexus ID ya está registrado en otro colegio.',
         ]);
+
+        $school->load('services');
 
         // state reemplaza a city como campo canónico de ubicación geográfica
         $school->update(array_merge(
@@ -250,8 +262,35 @@ foreach ($roles as $role => $consultantId) {
             }
         }
 
-        // Sincronizar servicios contables
-        $school->services()->sync($request->input('services', []));
+        // Sincronizar servicios contables (y niveles activos para Francés)
+        $francesService = $school->services->firstWhere('plataforma', 'frances');
+        $francesTypeId = SchoolServiceType::where('plataforma', 'frances')->value('id');
+        $francesNivelesEnviado = $request->boolean('frances_niveles_enviado');
+        $francesNiveles = array_values(array_unique(array_intersect(
+            array_map('intval', $request->input('frances_niveles', [])),
+            $newLevelIds
+        )));
+
+        $syncData = [];
+        foreach ($request->input('services', []) as $serviceId) {
+            $sid = (int) $serviceId;
+            if ($francesTypeId && $sid === (int) $francesTypeId) {
+                if ($francesNivelesEnviado) {
+                    $syncData[$sid] = ['niveles' => json_encode($francesNiveles)];
+                } elseif ($francesService?->pivot?->niveles !== null) {
+                    $prev = is_array($francesService->pivot->niveles)
+                        ? $francesService->pivot->niveles
+                        : (json_decode((string) $francesService->pivot->niveles, true) ?? []);
+                    $filtered = array_values(array_unique(array_intersect(array_map('intval', $prev), $newLevelIds)));
+                    $syncData[$sid] = ['niveles' => json_encode($filtered)];
+                } else {
+                    $syncData[$sid] = [];
+                }
+            } else {
+                $syncData[$sid] = [];
+            }
+        }
+        $school->services()->sync($syncData);
 
         ActivityLog::log('colegio', "Colegio \"{$school->name}\" actualizado", $school->id, '✏️');
 

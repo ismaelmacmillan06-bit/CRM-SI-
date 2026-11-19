@@ -100,7 +100,7 @@ class SeguimientoRecurso extends Model
                 'color' => '#15803d',
                 'bg' => '#f0fdf4',
                 'border' => '#bbf7d0',
-                'previsualizable' => in_array($ext, ['xls', 'xlsx', 'csv'], true),
+                'previsualizable' => true,
             ],
             in_array($ext, ['doc', 'docx', 'odt'], true) => [
                 'tipo' => 'word',
@@ -108,7 +108,7 @@ class SeguimientoRecurso extends Model
                 'color' => '#1d4ed8',
                 'bg' => '#eff6ff',
                 'border' => '#bfdbfe',
-                'previsualizable' => false,
+                'previsualizable' => true,
             ],
             in_array($ext, ['ppt', 'pptx', 'odp'], true) => [
                 'tipo' => 'ppt',
@@ -116,7 +116,7 @@ class SeguimientoRecurso extends Model
                 'color' => '#c2410c',
                 'bg' => '#fff7ed',
                 'border' => '#fed7aa',
-                'previsualizable' => false,
+                'previsualizable' => true,
             ],
             in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) => [
                 'tipo' => 'image',
@@ -140,7 +140,7 @@ class SeguimientoRecurso extends Model
                 'color' => '#a16207',
                 'bg' => '#fefce8',
                 'border' => '#fde047',
-                'previsualizable' => false,
+                'previsualizable' => $ext === 'zip',
             ],
             default => [
                 'tipo' => 'file',

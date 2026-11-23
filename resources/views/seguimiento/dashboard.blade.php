@@ -129,7 +129,7 @@
     <span>
         ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Por ahora puedes consultar los colegios, tickets, sesiones, formatos y manuales.
     </span>
-    @if($puedeEditar)
+    @if($puedeConfigurar)
         <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">
             ⚙️ Configurar acciones de arranque
         </button>
@@ -144,7 +144,7 @@
                 <input type="search" id="buscador-colegios" class="form-control" autocomplete="off"
                        placeholder="🔍 Buscar colegio..." style="flex:1 1 200px; max-width:260px">
             @endif
-            @if($puedeEditar)
+            @if($puedeConfigurar)
         <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
             ⚙️ Personalizar acciones
             <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $totalAcciones ?? 0 }}</span>
@@ -658,7 +658,7 @@
     });
 </script>
 
-@if($puedeEditar)
+@if($puedeConfigurar)
     @include('seguimiento.partials._catalogo_acciones_modal')
 @endif
 @endsection

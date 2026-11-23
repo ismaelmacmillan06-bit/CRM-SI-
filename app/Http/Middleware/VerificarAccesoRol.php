@@ -65,15 +65,21 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads, Equipamiento): solo admin edita o
-        // personaliza acciones de arranque; el resto de roles con acceso solo consulta y exporta Excel.
+        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads, Equipamiento): admin y consultor_digital
+        // capturan avances; personalizar el catálogo de acciones es solo del admin. ECA, ELT, ventas y
+        // coordinador solo consultan (ver y descargar Excel, nada de guardar).
         if ($request->routeIs('seguimiento.*')) {
             if (!$user->hasAnyRole(['consultor_digital', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'coordinador'])) {
                 return redirect()->route('dashboard')
                     ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
             }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
-                return back()->with('error_acceso', 'Solo un administrador puede modificar o configurar las acciones de arranque.');
+                if ($request->routeIs('seguimiento.acciones.*')) {
+                    abort(403, 'Solo un administrador puede personalizar las acciones de arranque.');
+                }
+                if (!$user->hasRole('consultor_digital')) {
+                    return back()->with('error_acceso', 'Seguimiento es solo de consulta para tu rol.');
+                }
             }
         }
 
@@ -174,9 +180,6 @@ class VerificarAccesoRol
         if ($user->hasRole('consultor_digital')) {
             if ($request->routeIs('processes.catalog.*')) {
                 abort(403, 'Solo un administrador puede personalizar las acciones de arranque.');
-            }
-            if ($request->routeIs('schools.processes.*') && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
-                abort(403, 'Solo un administrador puede modificar las acciones de arranque del colegio.');
             }
 
             $schoolParam = $request->route('school');

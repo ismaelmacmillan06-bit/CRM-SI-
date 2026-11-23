@@ -67,11 +67,18 @@ class SeguimientoController extends Controller
 
     // Quién puede capturar en Seguimiento; el resto de los roles con acceso (ECA, ELT, ventas,
     // coordinador) solo consulta. El middleware VerificarAccesoRol también bloquea sus POST.
-    public const ROLES_EDICION = ['admin'];
+    public const ROLES_EDICION = ['admin', 'consultor_digital'];
 
     public static function puedeEditar(): bool
     {
         return (bool) auth()->user()?->hasAnyRole(self::ROLES_EDICION);
+    }
+
+    // Personalizar el catálogo de acciones de arranque (agregar, renombrar, ordenar, eliminar)
+    // es solo del administrador; capturar avances lo hacen admin y consultores digitales.
+    public static function puedeConfigurar(): bool
+    {
+        return (bool) auth()->user()?->hasRole('admin');
     }
 
     private function catalogoAcciones(string $plataforma)
@@ -106,6 +113,7 @@ class SeguimientoController extends Controller
             'nombre'           => $info['nombre'],
             'icono'            => $info['icono'],
             'puedeEditar'      => self::puedeEditar(),
+            'puedeConfigurar'  => self::puedeConfigurar(),
             'catalogoAcciones' => $this->catalogoAcciones($plataforma),
         ];
 
@@ -486,6 +494,7 @@ class SeguimientoController extends Controller
                 'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
                 'contacto'         => $info['contacto'] ?? null,
                 'puedeEditar'      => self::puedeEditar(),
+                'puedeConfigurar'  => self::puedeConfigurar(),
             ]);
         }
 
@@ -524,6 +533,7 @@ class SeguimientoController extends Controller
                 'hechas'            => $hechas,
                 'totalAcciones'     => $niveles->count() * count($info['acciones']),
                 'puedeEditar'       => self::puedeEditar(),
+                'puedeConfigurar'   => self::puedeConfigurar(),
             ]);
         }
 
@@ -546,6 +556,7 @@ class SeguimientoController extends Controller
             'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
             'totalAcciones'    => count($info['acciones']),
             'puedeEditar'      => self::puedeEditar(),
+            'puedeConfigurar'  => self::puedeConfigurar(),
         ]);
     }
 
@@ -737,7 +748,7 @@ class SeguimientoController extends Controller
 
     public function storeCatalogAccion(Request $request, string $plataforma)
     {
-        abort_unless(self::puedeEditar(), 403);
+        abort_unless(self::puedeConfigurar(), 403);
         abort_unless(array_key_exists($plataforma, self::PLATAFORMAS), 404);
 
         $request->validate([
@@ -782,7 +793,7 @@ class SeguimientoController extends Controller
 
     public function updateCatalogAccion(Request $request, string $plataforma, SeguimientoDefinicionAccion $accionDef)
     {
-        abort_unless(self::puedeEditar(), 403);
+        abort_unless(self::puedeConfigurar(), 403);
         abort_unless($accionDef->plataforma === $plataforma, 404);
 
         $request->validate([
@@ -813,7 +824,7 @@ class SeguimientoController extends Controller
 
     public function reorderCatalogAcciones(Request $request, string $plataforma)
     {
-        abort_unless(self::puedeEditar(), 403);
+        abort_unless(self::puedeConfigurar(), 403);
         abort_unless(array_key_exists($plataforma, self::PLATAFORMAS), 404);
 
         $data = $request->validate([
@@ -849,7 +860,7 @@ class SeguimientoController extends Controller
 
     public function destroyCatalogAccion(string $plataforma, SeguimientoDefinicionAccion $accionDef)
     {
-        abort_unless(self::puedeEditar(), 403);
+        abort_unless(self::puedeConfigurar(), 403);
         abort_unless($accionDef->plataforma === $plataforma, 404);
 
         $deletedId = $accionDef->id;

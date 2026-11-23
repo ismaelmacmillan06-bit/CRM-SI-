@@ -21,13 +21,13 @@
     @endrole
 </div>
 
-@unless(auth()->user()->hasRole('admin'))
+@unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']))
 <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:13.5px">
-    👁️ <strong>Modo consulta:</strong> solo el administrador puede editar o personalizar las acciones de arranque.
+    👁️ <strong>Modo consulta:</strong> solo el administrador y los consultores digitales pueden capturar las acciones de arranque.
 </div>
 @endunless
 
-@role('admin')
+@hasanyrole('admin|consultor_digital')
 @if($school->status !== 'inactivo')
 <div class="card" style="margin-bottom:24px">
     <div class="card-body" style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:14px 20px">
@@ -54,7 +54,7 @@
     </div>
 </div>
 @endif
-@endrole
+@endhasanyrole
 
 @forelse($school->schoolLevels as $schoolLevel)
 <div class="card" style="margin-bottom:24px">
@@ -134,7 +134,7 @@
                               form="form-slp-{{ $slp->id }}"
                               rows="2"
                               placeholder="Sin notas..."
-                              @disabled($school->status === 'inactivo' || !auth()->user()->hasRole('admin'))
+                              @disabled($school->status === 'inactivo' || !auth()->user()->hasAnyRole(['admin', 'consultor_digital']))
                               style="width:100%; font-size:12px; padding:5px 8px; border-radius:6px;
                                      background:var(--surface2); border:1px solid var(--border);
                                      color:var(--text); resize:vertical; min-height:36px;
@@ -149,7 +149,7 @@
                                  style="width:40px; height:40px; object-fit:cover; border-radius:6px;
                                         border:2px solid #22c55e; display:block; margin:0 auto">
                         </a>
-                        @role('admin')
+                        @hasanyrole('admin|consultor_digital')
                         <form method="POST"
                               action="{{ route('schools.processes.evidence.destroy', [$school, $slp]) }}"
                               id="form-del-ev-{{ $slp->id }}"
@@ -161,7 +161,7 @@
                                 🗑
                             </button>
                         </form>
-                        @endrole
+                        @endhasanyrole
                     @else
                         <span id="ev-placeholder-{{ $slp->id }}" style="color:var(--text-muted); font-size:12px">—</span>
                     @endif
@@ -173,7 +173,7 @@
                         <div style="color:#e55; font-size:11px; margin-bottom:4px">{{ $message }}</div>
                     @enderror
 
-                    @role('admin')
+                    @hasanyrole('admin|consultor_digital')
                     @if($school->status === 'inactivo')
                         <span style="font-size:11px; color:var(--text-muted)">Colegio inactivo</span>
                     @else
@@ -225,7 +225,7 @@
                         </button>
                     </form>
                     @endif
-                    @endrole
+                    @endhasanyrole
                 </td>
             </tr>
             @endforeach

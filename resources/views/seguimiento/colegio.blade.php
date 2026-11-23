@@ -40,7 +40,7 @@
 
 <div style="margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap">
     <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @if($puedeEditar)
+    @if($puedeConfigurar)
         <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
             ⚙️ Personalizar acciones
             <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ count($acciones) }}</span>
@@ -296,7 +296,7 @@
     <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles para capturar.</span>
     <div style="display:flex; gap:8px; flex-wrap:wrap">
         <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
-        @if($puedeEditar)
+        @if($puedeConfigurar)
             <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
         @endif
     </div>
@@ -400,7 +400,7 @@
                 <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles para capturar.</span>
                 <div style="display:flex; gap:8px; flex-wrap:wrap">
                     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
-                    @if($puedeEditar)
+                    @if($puedeConfigurar)
                         <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
                     @endif
                 </div>
@@ -464,7 +464,7 @@
 </form>
 @endif
 
-@if($puedeEditar)
+@if($puedeConfigurar)
     @include('seguimiento.partials._catalogo_acciones_modal')
 @endif
 @endsection

@@ -235,7 +235,7 @@
         </button>
     </div>
     <div class="mt-barra-der">
-    @if($puedeEditar)
+    @if($puedeConfigurar)
         <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
             ⚙️ Personalizar acciones
             <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $totalAcciones ?? 0 }}</span>
@@ -350,7 +350,7 @@
     <span>
         ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Por ahora puedes consultar los colegios, agenda, tickets, sesiones y manuales.
     </span>
-    @if($puedeEditar)
+    @if($puedeConfigurar)
         <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">
             ⚙️ Configurar acciones de arranque
         </button>
@@ -685,7 +685,7 @@
 })();
 </script>
 @include('seguimiento.partials._recursos_modals', ['slug' => $slug, 'categoriaDefault' => 'manuales'])
-@if($puedeEditar)
+@if($puedeConfigurar)
     @include('seguimiento.partials._catalogo_acciones_modal')
 @endif
 @endsection

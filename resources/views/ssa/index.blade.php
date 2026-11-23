@@ -358,7 +358,10 @@
                 </tr>
             </thead>
             <tbody>
-                @php $hoy = today(); @endphp
+                @php
+                    $hoy = today();
+                    $novedadSsaSchoolIds = $sectionNovedades['highlight_ids']['schools'] ?? [];
+                @endphp
                 @foreach($schools as $school)
                 @php
                     $capsEca = $school->ssaCapacitaciones->where('tipo', 'eca')->sortBy('fecha');
@@ -368,8 +371,10 @@
                                                ->where('fecha', '>=', $hoy)->isNotEmpty();
                     $tieneEltProxima = $capsElt->whereIn('estatus', ['pendiente','confirmado'])
                                                ->where('fecha', '>=', $hoy)->isNotEmpty();
+                    $esNovedadSsa   = in_array($school->id, $novedadSsaSchoolIds, true);
                 @endphp
-                <tr class="ssa-fila"
+                <tr id="ssa-school-{{ $school->id }}"
+                    class="ssa-fila {{ $esNovedadSsa ? 'sic-novedad-row' : '' }}"
                     data-name="{{ strtolower($school->name) }}"
                     data-hoy="{{ $tieneHoy ? '1' : '0' }}"
                     data-tiene-eca="{{ $capsEca->isNotEmpty() ? '1' : '0' }}"
@@ -380,6 +385,9 @@
                     <td>
                         <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap">
                             <span style="font-weight:500">{{ $school->name }}</span>
+                            @if($esNovedadSsa)
+                                <span class="sic-nuevo-pill">✨ Novedad</span>
+                            @endif
                             @if($tieneHoy)
                                 <span class="hoy-tag">📅 Hoy</span>
                             @endif
@@ -839,22 +847,24 @@ $capsCalendario = $schools->flatMap(function ($school) {
 @endforeach
 
 @php
-function ssaChipData($cap, $hoy): array
-{
-    if ($cap->estatus === 'realizado') {
-        return ['chip-realizado', '✓ ' . $cap->fecha->format('d/m'), ''];
+if (!function_exists('ssaChipData')) {
+    function ssaChipData($cap, $hoy): array
+    {
+        if ($cap->estatus === 'realizado') {
+            return ['chip-realizado', '✓ ' . $cap->fecha->format('d/m'), ''];
+        }
+        if ($cap->estatus === 'cancelado') {
+            return ['chip-cancelado', $cap->fecha->format('d/m'), ''];
+        }
+        if ($cap->fecha->isToday()) {
+            return ['chip-' . $cap->estatus, $cap->fecha->format('d/m'), 'Hoy'];
+        }
+        if ($cap->fecha->gt($hoy)) {
+            $dias = $hoy->diffInDays($cap->fecha);
+            return ['chip-' . $cap->estatus, $cap->fecha->format('d/m'), $dias === 1 ? 'mañana' : $dias . ' días'];
+        }
+        return ['chip-vencida', $cap->fecha->format('d/m'), 'vencida'];
     }
-    if ($cap->estatus === 'cancelado') {
-        return ['chip-cancelado', $cap->fecha->format('d/m'), ''];
-    }
-    if ($cap->fecha->isToday()) {
-        return ['chip-' . $cap->estatus, $cap->fecha->format('d/m'), 'Hoy'];
-    }
-    if ($cap->fecha->gt($hoy)) {
-        $dias = $hoy->diffInDays($cap->fecha);
-        return ['chip-' . $cap->estatus, $cap->fecha->format('d/m'), $dias === 1 ? 'mañana' : $dias . ' días'];
-    }
-    return ['chip-vencida', $cap->fecha->format('d/m'), 'vencida'];
 }
 @endphp
 

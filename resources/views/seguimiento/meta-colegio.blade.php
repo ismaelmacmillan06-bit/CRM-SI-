@@ -5,7 +5,7 @@
 @section('content')
 @php
     $total = count($acciones);
-    $pct = round($hechas / $total * 100);
+    $pct = $total > 0 ? round($hechas / $total * 100) : 0;
     $val = fn ($campo) => old($campo, $campo === 'hora_capacitacion'
         ? $meta->horaCorta()
         : ($meta->{$campo} instanceof \Carbon\Carbon ? $meta->{$campo}->format('Y-m-d') : $meta->{$campo}));
@@ -65,6 +65,12 @@
 </style>
 
 <div class="mg-top">
+    @if($puedeEditar)
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="margin-bottom:8px; display:inline-flex; align-items:center; gap:7px;">
+            ⚙️ Personalizar acciones
+            <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $total }}</span>
+        </button>
+    @endif
     <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary btn-sm">← Regresar</a>
     <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm" style="margin-left:auto">🎫 Tickets</a>
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
@@ -171,7 +177,20 @@
                 <span class="card-title">🚀 Acciones de arranque</span>
                 <span style="font-size:13px; color:var(--text-muted)">{{ $hechas }}/{{ $total }} completadas</span>
             </div>
-            @foreach($acciones as $clave => $etiqueta)
+            @if($total === 0)
+                <div style="padding:20px 22px;">
+                    <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 15px; border-radius:10px; font-size:13.5px; display:flex; flex-direction:column; gap:10px;">
+                        <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Mientras tanto puedes consultar o editar los datos y fechas de este colegio.</span>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
+                            @if($puedeEditar)
+                                <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @else
+                @foreach($acciones as $clave => $etiqueta)
                 @php
                     $guardada = $guardadas[$clave] ?? null;
                     $status = old("acciones.$clave.status", $guardada->status ?? 'pending');
@@ -199,7 +218,8 @@
                                   class="form-control" aria-label="Notas de {{ $etiqueta }}">{{ old("acciones.$clave.notes", $guardada->notes ?? '') }}</textarea>
                     </div>
                 </div>
-            @endforeach
+                @endforeach
+            @endif
         </div>
     </div>
 
@@ -213,4 +233,8 @@
     </div>
     @endif
 </form>
+
+@if($puedeEditar)
+    @include('seguimiento.partials._catalogo_acciones_modal')
+@endif
 @endsection

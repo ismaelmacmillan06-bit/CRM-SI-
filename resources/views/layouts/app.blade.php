@@ -13,12 +13,15 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MacmillanSI">
-    <link rel="manifest" href="/manifest.json">
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v=3">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('favicon.png') }}?v=3">
+    <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap');
-
         :root {
             --primary:    #181311;
             --secondary:  #221A17;
@@ -548,6 +551,68 @@
             .sidebar-nav { padding: 12px; }
             .nav-item { padding: 8px 10px; font-size: 13px; }
         }
+
+        /* ── NOVEDADES DISCRETAS EN PRIMERA VISITA ── */
+        .sic-novedad-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            background: #fff5f4;
+            border: 1px solid rgba(226, 35, 26, 0.28);
+            color: var(--accent2);
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            max-width: 100%;
+        }
+        .sic-novedad-chip-sep { opacity: 0.45; }
+        .sic-novedad-chip-txt {
+            font-weight: 500;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .sic-novedad-chip-close {
+            border: none;
+            background: none;
+            color: var(--accent2);
+            opacity: 0.65;
+            cursor: pointer;
+            font-size: 11px;
+            line-height: 1;
+            padding: 2px 3px;
+            border-radius: 4px;
+        }
+        .sic-novedad-chip-close:hover { opacity: 1; background: rgba(226, 35, 26, 0.1); }
+        .sic-nuevo-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            vertical-align: middle;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(226, 35, 26, 0.25);
+        }
+        .sic-novedad-card {
+            border: 1.5px solid rgba(226, 35, 26, 0.48) !important;
+            background: linear-gradient(180deg, #fff7f6 0%, #ffffff 100%) !important;
+            box-shadow: 0 6px 18px rgba(226, 35, 26, 0.11) !important;
+        }
+        tr.sic-novedad-row td {
+            background: #fff5f4 !important;
+        }
+        tr.sic-novedad-row td:first-child {
+            box-shadow: inset 4px 0 0 var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -566,7 +631,7 @@
         <details class="nav-section" data-menu="principal" open>
             <summary class="nav-label nav-section-toggle">
                 Principal
-                @if(($hayTareaNueva ?? false) || ($hayComunicadoNuevo ?? false))<span class="nav-dot nav-section-dot" title="Hay algo nuevo"></span>@endif
+                @if(($hayTareaNueva ?? false) || ($hayComunicadoNuevo ?? false) || ($hayReporteSemanalNuevo ?? false))<span class="nav-dot nav-section-dot" title="Hay algo nuevo"></span>@endif
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
@@ -592,6 +657,7 @@
         @hasanyrole('admin|consultor_digital|coordinador')
         <a href="{{ route('reporte-semanal.index') }}" class="nav-item {{ request()->routeIs('reporte-semanal.*') ? 'active' : '' }}">
             <span class="nav-icon">🗓️</span> Reporte Semanal
+            @if($hayReporteSemanalNuevo ?? false)<span class="nav-dot" title="Novedad en Reporte Semanal"></span>@endif
         </a>
         @endhasanyrole
             </div>
@@ -600,12 +666,14 @@
         <details class="nav-section" data-menu="plataformas" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión Plataformas
+                @if($haySeguimientoNuevo ?? false)<span class="nav-dot nav-section-dot" title="Hay novedades en Seguimiento"></span>@endif
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
         <details class="nav-group" data-menu="seguimiento" {{ request()->routeIs('seguimiento.*') ? 'open data-forzar-abierto' : '' }}>
             <summary class="nav-group-toggle">
                 <span class="nav-icon">🧭</span> Seguimiento
+                @if($haySeguimientoNuevo ?? false)<span class="nav-dot" title="Hay novedades en Seguimiento"></span>@endif
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
@@ -613,6 +681,7 @@
                 <a href="{{ route('seguimiento.show', $slugSeg) }}"
                    class="nav-item nav-subitem {{ request()->routeIs('seguimiento.*') && request()->route('plataforma') === $slugSeg ? 'active' : '' }}">
                     <span class="nav-icon">{{ $plataformaSeg['icono'] }}</span> {{ $plataformaSeg['nombre'] }}
+                    @if(!empty($novedadesSeguimiento[$slugSeg]))<span class="nav-dot" style="margin-left:auto" title="Hay novedades en {{ $plataformaSeg['nombre'] }}"></span>@endif
                 </a>
             @endforeach
             </div>
@@ -623,6 +692,7 @@
         <details class="nav-section" data-menu="gestion" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión
+                @if(($haySsaNuevo ?? false) || ($hayHerramientaNueva ?? false))<span class="nav-dot nav-section-dot" title="Hay novedades en Gestión"></span>@endif
                 <span class="nav-group-arrow">▾</span>
             </summary>
             <div class="nav-group-items">
@@ -635,6 +705,7 @@
         @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador')
         <a href="{{ route('ssa.index') }}" class="nav-item {{ request()->routeIs('ssa.*') ? 'active' : '' }}">
             <span class="nav-icon">📅</span> Calendario SSA
+            @if($haySsaNuevo ?? false)<span class="nav-dot" title="Novedad en Calendario SSA"></span>@endif
         </a>
         @endhasanyrole
         @unlessrole('consultor_eca|consultor_elt')
@@ -649,6 +720,7 @@
         @hasanyrole('admin|consultor_digital')
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
+            @if($hayHerramientaNueva ?? false)<span class="nav-dot" title="Nuevo recurso en Herramientas SI"></span>@endif
         </a>
         @endhasanyrole
         @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt|representante_ventas')
@@ -686,15 +758,10 @@
         <div class="user-info">
             
 @php
-    $consultant = auth()->user()->consultant;
-@endphp
-
-@php
-    $consultantPhoto = null;
-    $authConsultant = \App\Models\Consultant::where('user_id', auth()->id())->first();
-    if ($authConsultant && $authConsultant->photo) {
-        $consultantPhoto = asset('storage/' . $authConsultant->photo);
-    }
+    $authConsultant = auth()->user()->consultant;
+    $consultantPhoto = ($authConsultant && $authConsultant->photo)
+        ? asset('storage/' . $authConsultant->photo)
+        : null;
 @endphp
 
 @if($consultantPhoto)
@@ -724,7 +791,21 @@
             </button>
             <div class="page-title">@yield('title', 'Dashboard')</div>
         </div>
-        <div style="font-size:13px; color: var(--text-muted);">{{ now()->format('d M Y') }}</div>
+        <div class="sic-topbar-right">
+            <div class="sic-bell-slot" id="sic-bell-slot">
+                <button type="button" id="sic-notif-bell-btn"
+                        class="sic-bell-btn {{ ($notifUnreadCount ?? 0) > 0 ? 'has-unread' : '' }}"
+                        onclick="SicNotif.openModal()"
+                        title="Abrir notificaciones">
+                    <span class="sic-bell-icon">🔔</span>
+                    <span class="sic-bell-text">Notificaciones</span>
+                    <span class="sic-bell-badge {{ ($notifUnreadCount ?? 0) === 0 ? 'is-zero' : '' }}" id="sic-notif-bell-badge">
+                        {{ ($notifUnreadCount ?? 0) > 99 ? '99+' : ($notifUnreadCount ?? 0) }}
+                    </span>
+                </button>
+            </div>
+            <div class="sic-topbar-date" style="font-size:13px; color: var(--text-muted);">{{ now()->format('d M Y') }}</div>
+        </div>
     </div>
     <div class="content">
         @if(session('success'))
@@ -735,6 +816,16 @@
         @endif
         @if(session('error_acceso'))
             <div class="alert alert-danger">🔒 {{ session('error_acceso') }}</div>
+        @endif
+        @if(!empty($sectionNovedades['count']))
+            <div class="sic-novedad-chip" id="sic-novedad-chip" role="status">
+                <span>✨ {{ $sectionNovedades['count'] }} {{ $sectionNovedades['count'] === 1 ? 'novedad' : 'novedades' }}</span>
+                @if(!empty($sectionNovedades['summary']))
+                    <span class="sic-novedad-chip-sep">·</span>
+                    <span class="sic-novedad-chip-txt">{{ $sectionNovedades['summary'] }}</span>
+                @endif
+                <button type="button" class="sic-novedad-chip-close" onclick="document.getElementById('sic-novedad-chip')?.remove()" aria-label="Cerrar">✕</button>
+            </div>
         @endif
         @yield('content')
     </div>
@@ -788,7 +879,7 @@
 
     // ── Service Worker (PWA) ──
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register(@json(asset('sw.js'))).catch(() => {});
     }
 
     // ── Ocultar menú (solo emojis): la preferencia se guarda en este navegador ──
@@ -902,31 +993,40 @@
 })();
 </script>
 
-{{-- Modal global de confirmación de eliminación --}}
-<div id="modal-confirmar-eliminar" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2000; align-items:center; justify-content:center">
-    <div style="background:#fff; border-radius:14px; padding:36px 32px; width:100%; max-width:440px; box-shadow:0 12px 48px rgba(0,0,0,.28); text-align:center">
-        <div style="font-size:44px; margin-bottom:12px">🗑️</div>
-        <h3 id="modal-eliminar-titulo" style="margin:0 0 10px; font-size:18px; color:#111827"></h3>
-        <p id="modal-eliminar-mensaje" style="color:#6b7280; font-size:14px; margin:0 0 28px; line-height:1.6"></p>
-        <div style="display:flex; gap:12px; justify-content:center">
-            <button type="button" onclick="cerrarModalEliminar()"
-                    style="padding:10px 24px; border-radius:8px; border:1.5px solid #d1d5db; background:#fff; font-size:14px; font-weight:600; cursor:pointer; color:#374151">
-                Cancelar
-            </button>
-            <button id="modal-eliminar-btn" type="button"
-                    style="padding:10px 24px; border-radius:8px; border:none; background:#dc2626; color:#fff; font-size:14px; font-weight:600; cursor:pointer">
-                Sí, eliminar
-            </button>
+{{-- Modal global SIC de confirmación de eliminación --}}
+<div id="modal-confirmar-eliminar" style="display:none; position:fixed; inset:0; background:rgba(24,19,17,.62); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:2950; align-items:center; justify-content:center; padding:18px;">
+    <div style="background:var(--surface, #FBFAF7); border:1px solid var(--border, #E4E0D8); border-radius:16px; width:100%; max-width:450px; box-shadow:0 24px 64px rgba(24,19,17,.36); overflow:hidden;">
+        <div style="background:linear-gradient(120deg, var(--primary, #181311) 0%, var(--secondary, #221A17) 100%); color:#fff; padding:16px 20px; border-bottom:2px solid var(--accent, #E2231A); display:flex; align-items:center; justify-content:space-between; gap:10px;">
+            <h3 id="modal-eliminar-titulo" style="margin:0; font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:700; color:#fff;"></h3>
+            <button type="button" onclick="cerrarModalEliminar()" aria-label="Cerrar"
+                    style="width:30px; height:30px; border-radius:7px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); color:#fff; cursor:pointer; font-size:13px; font-weight:700;">✕</button>
+        </div>
+        <div style="padding:22px 22px 18px;">
+            <p id="modal-eliminar-mensaje" style="color:var(--text-muted, #6F6A64); font-size:14px; margin:0 0 22px; line-height:1.55;"></p>
+            <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+                <button type="button" onclick="cerrarModalEliminar()" class="btn btn-secondary">
+                    Cancelar
+                </button>
+                <button id="modal-eliminar-btn" type="button" class="btn btn-primary">
+                    Sí, eliminar
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-function confirmarEliminar(titulo, mensaje, formId) {
+function confirmarEliminar(titulo, mensaje, targetOrCallback) {
     document.getElementById('modal-eliminar-titulo').textContent = titulo;
     document.getElementById('modal-eliminar-mensaje').textContent = mensaje;
     document.getElementById('modal-eliminar-btn').onclick = function () {
-        document.getElementById(formId).submit();
+        cerrarModalEliminar();
+        if (typeof targetOrCallback === 'function') {
+            targetOrCallback();
+        } else if (targetOrCallback) {
+            const form = document.getElementById(targetOrCallback);
+            if (form) form.submit();
+        }
     };
     document.getElementById('modal-confirmar-eliminar').style.display = 'flex';
 }
@@ -936,7 +1036,19 @@ function cerrarModalEliminar() {
 document.getElementById('modal-confirmar-eliminar').addEventListener('click', function(e) {
     if (e.target === this) cerrarModalEliminar();
 });
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const m = document.getElementById('modal-confirmar-eliminar');
+        if (m && m.style.display === 'flex') cerrarModalEliminar();
+    }
+});
 </script>
+
+@hasrole('admin')
+    @include('partials.arranque-config-hub')
+@endhasrole
+
+@include('partials.notifications-center')
 
 </body>
 </html>

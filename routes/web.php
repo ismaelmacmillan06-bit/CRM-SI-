@@ -29,6 +29,7 @@ use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SeguimientoRecursoController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReporteSemanalController;
 
 
@@ -110,7 +111,16 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      ->except(['show'])
      ->shallow();
     
-    // Procesos por nivel
+    // Procesos por nivel (personalización y edición solo admin)
+    Route::post('procesos-catalogo', [SchoolLevelProcessController::class, 'storeCatalogProcess'])
+         ->name('processes.catalog.store');
+    Route::post('procesos-catalogo/reordenar', [SchoolLevelProcessController::class, 'reorderCatalogProcesses'])
+         ->name('processes.catalog.reorder');
+    Route::patch('procesos-catalogo/{process}', [SchoolLevelProcessController::class, 'updateCatalogProcess'])
+         ->name('processes.catalog.update');
+    Route::delete('procesos-catalogo/{process}', [SchoolLevelProcessController::class, 'destroyCatalogProcess'])
+         ->name('processes.catalog.destroy');
+
     Route::get('schools/{school}/processes', [SchoolLevelProcessController::class, 'index'])
          ->name('schools.processes.index');
     Route::post('schools/{school}/processes-masivo', [SchoolLevelProcessController::class, 'bulkUpdate'])
@@ -204,6 +214,20 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::post('produccion/cargar', [ProduccionController::class, 'upload'])->name('produccion.upload');
      Route::delete('produccion', [ProduccionController::class, 'destroy'])->name('produccion.destroy');
 
+     // Seguimiento — Catálogo editable de acciones de arranque (solo admin)
+     Route::post('seguimiento/{plataforma}/catalogo-acciones', [SeguimientoController::class, 'storeCatalogAccion'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.acciones.store');
+     Route::post('seguimiento/{plataforma}/catalogo-acciones/reordenar', [SeguimientoController::class, 'reorderCatalogAcciones'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.acciones.reorder');
+     Route::patch('seguimiento/{plataforma}/catalogo-acciones/{accionDef}', [SeguimientoController::class, 'updateCatalogAccion'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.acciones.update');
+     Route::delete('seguimiento/{plataforma}/catalogo-acciones/{accionDef}', [SeguimientoController::class, 'destroyCatalogAccion'])
+          ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
+          ->name('seguimiento.acciones.destroy');
+
      // Seguimiento — Manuales y Formatos (antes de {plataforma}/{school} para evitar colisión de rutas)
      Route::post('seguimiento/{plataforma}/recursos', [SeguimientoRecursoController::class, 'store'])
           ->whereIn('plataforma', array_keys(SeguimientoController::PLATAFORMAS))
@@ -263,6 +287,15 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::post('mis-notas',             [NoteController::class, 'store'])  ->name('notes.store');
      Route::put('mis-notas/{note}',       [NoteController::class, 'update']) ->name('notes.update');
      Route::delete('mis-notas/{note}',    [NoteController::class, 'destroy'])->name('notes.destroy');
+
+     // Centro de Notificaciones (todos los roles autenticados)
+     Route::get('notificaciones',                          [NotificationController::class, 'index'])         ->name('notifications.index');
+     Route::get('notificaciones/poll',                     [NotificationController::class, 'poll'])          ->name('notifications.poll');
+     Route::post('notificaciones/leer-todas',              [NotificationController::class, 'markAllRead'])   ->name('notifications.read-all');
+     Route::post('notificaciones/configuracion',           [NotificationController::class, 'updateSettings'])->name('notifications.settings');
+     Route::patch('notificaciones/{notification}/leer',    [NotificationController::class, 'markRead'])   ->name('notifications.read');
+     Route::delete('notificaciones/{notification}',        [NotificationController::class, 'destroy'])    ->name('notifications.destroy');
+     Route::delete('notificaciones',                       [NotificationController::class, 'clear'])      ->name('notifications.clear');
 
      // Calendario SSA
      Route::get('ssa',                           [SsaController::class, 'index'])  ->name('ssa.index');

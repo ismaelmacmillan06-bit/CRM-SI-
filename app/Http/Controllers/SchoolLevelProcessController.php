@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\Process;
 use App\Models\School;
+use App\Models\SchoolLevel;
 use App\Models\SchoolLevelProcess;
 use App\Models\Consultant;
 use App\Traits\BloqueaColegioInactivo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class SchoolLevelProcessController extends Controller
 {
@@ -18,7 +22,8 @@ class SchoolLevelProcessController extends Controller
     public function index(School $school)
     {
         $school->load('schoolLevels.level', 'schoolLevels.processes.process');
-        return view('schools.processes', compact('school'));
+        $catalogProcesses = Process::orderBy('order')->orderBy('id')->get();
+        return view('schools.processes', compact('school', 'catalogProcesses'));
     }
 
     public function update(Request $request, School $school, SchoolLevelProcess $schoolLevelProcess)
@@ -26,6 +31,7 @@ class SchoolLevelProcessController extends Controller
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
+        abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede editar acciones de arranque.');
 
         // Validador manual para poder re-keying el error de 'evidence' al proceso exacto
         // y mostrarlo en la fila correcta (no en una fila genérica sin contexto)
@@ -109,7 +115,7 @@ class SchoolLevelProcessController extends Controller
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede editar acciones de arranque.');
 
         $request->validate([
             'status' => 'required|in:pending,in_progress,done,reopened',
@@ -161,7 +167,7 @@ class SchoolLevelProcessController extends Controller
 
     public function destroyEvidence(School $school, SchoolLevelProcess $schoolLevelProcess)
     {
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede editar acciones de arranque.');
 
         if ($schoolLevelProcess->evidence) {
             Storage::disk('public')->delete($schoolLevelProcess->evidence);
@@ -170,5 +176,155 @@ class SchoolLevelProcessController extends Controller
         }
 
         return back()->with('success', 'Evidencia eliminada.');
+    }
+
+    public function storeCatalogProcess(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $request->validate([
+            'name'  => 'required|string|max:180',
+            'order' => 'nullable|integer|min:0|max:999',
+        ]);
+
+        $baseSlug = Str::slug($request->name, '_') ?: 'accion_arranque';
+        $slug = $baseSlug;
+        $suffix = 2;
+        while (Process::where('slug', $slug)->exists()) {
+            $slug = Str::limit($baseSlug, 90, '') . '_' . $suffix++;
+        }
+
+        $order = $request->filled('order')
+            ? (int) $request->order
+            : ((int) Process::max('order') + 1);
+
+        $process = null;
+        DB::transaction(function () use ($request, $slug, $order, &$process) {
+            $process = Process::create([
+                'name'  => trim($request->name),
+                'slug'  => $slug,
+                'order' => $order,
+            ]);
+
+            $levelIds = SchoolLevel::pluck('id');
+            if ($levelIds->isNotEmpty()) {
+                $now = now();
+                $rows = $levelIds->map(fn ($id) => [
+                    'school_level_id' => $id,
+                    'process_id'      => $process->id,
+                    'status'          => 'pending',
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ])->all();
+                foreach (array_chunk($rows, 500) as $chunk) {
+                    SchoolLevelProcess::insert($chunk);
+                }
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'    => true,
+                'item'  => [
+                    'id'    => $process->id,
+                    'name'  => $process->name,
+                    'slug'  => $process->slug,
+                    'order' => (int) $process->order,
+                ],
+                'total' => Process::count(),
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque agregada al catálogo y asignada a los colegios.');
+    }
+
+    public function updateCatalogProcess(Request $request, Process $process)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $request->validate([
+            'name'  => 'required|string|max:180',
+            'order' => 'nullable|integer|min:0|max:999',
+        ]);
+
+        $process->update([
+            'name'  => trim($request->name),
+            'order' => $request->filled('order') ? (int) $request->order : $process->order,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'   => true,
+                'item' => [
+                    'id'    => $process->id,
+                    'name'  => $process->name,
+                    'slug'  => $process->slug,
+                    'order' => (int) $process->order,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque actualizada.');
+    }
+
+    public function reorderCatalogProcesses(Request $request)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $data = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['ids'])));
+
+        DB::transaction(function () use ($ids) {
+            $validIds = Process::whereIn('id', $ids)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $pos = 1;
+            foreach ($ids as $id) {
+                if (in_array($id, $validIds, true)) {
+                    Process::where('id', $id)->update(['order' => $pos++]);
+                }
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back()->with('success', 'Orden de acciones de arranque actualizado.');
+    }
+
+    public function destroyCatalogProcess(Process $process)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        $deletedId = $process->id;
+        DB::transaction(function () use ($process) {
+            $evidences = SchoolLevelProcess::where('process_id', $process->id)
+                ->whereNotNull('evidence')
+                ->pluck('evidence');
+
+            foreach ($evidences as $path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            SchoolLevelProcess::where('process_id', $process->id)->delete();
+            $process->delete();
+        });
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'ok'         => true,
+                'deleted_id' => $deletedId,
+                'total'      => Process::count(),
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque eliminada del catálogo.');
     }
 }

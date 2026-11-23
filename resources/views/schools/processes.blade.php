@@ -11,11 +11,23 @@
     para poder avanzar sus acciones de arranque. Tampoco se cuentan en las estadísticas mientras siga inactivo.
 </div>
 @endif
-<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
+<div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @role('admin')
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoProcesos()" style="margin-left:auto; display:inline-flex; align-items:center; gap:7px;">
+            ⚙️ Personalizar acciones de arranque
+            <span data-hub-count="colegios-num" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $catalogProcesses->count() }}</span>
+        </button>
+    @endrole
 </div>
 
-@hasanyrole('admin|consultor_digital')
+@unless(auth()->user()->hasRole('admin'))
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:13.5px">
+    👁️ <strong>Modo consulta:</strong> solo el administrador puede editar o personalizar las acciones de arranque.
+</div>
+@endunless
+
+@role('admin')
 @if($school->status !== 'inactivo')
 <div class="card" style="margin-bottom:24px">
     <div class="card-body" style="display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:14px 20px">
@@ -42,7 +54,7 @@
     </div>
 </div>
 @endif
-@endhasanyrole
+@endrole
 
 @forelse($school->schoolLevels as $schoolLevel)
 <div class="card" style="margin-bottom:24px">
@@ -88,7 +100,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($schoolLevel->processes->sortBy('process.order') as $slp)
+            @foreach($schoolLevel->processes->filter(fn($p) => $p->process)->sortBy('process.order') as $slp)
             <tr>
                 <td style="color:var(--text-muted); font-size:13px">{{ $slp->process->order }}</td>
 
@@ -122,7 +134,7 @@
                               form="form-slp-{{ $slp->id }}"
                               rows="2"
                               placeholder="Sin notas..."
-                              @disabled($school->status === 'inactivo')
+                              @disabled($school->status === 'inactivo' || !auth()->user()->hasRole('admin'))
                               style="width:100%; font-size:12px; padding:5px 8px; border-radius:6px;
                                      background:var(--surface2); border:1px solid var(--border);
                                      color:var(--text); resize:vertical; min-height:36px;
@@ -137,7 +149,7 @@
                                  style="width:40px; height:40px; object-fit:cover; border-radius:6px;
                                         border:2px solid #22c55e; display:block; margin:0 auto">
                         </a>
-                        @hasanyrole('admin|consultor_digital')
+                        @role('admin')
                         <form method="POST"
                               action="{{ route('schools.processes.evidence.destroy', [$school, $slp]) }}"
                               id="form-del-ev-{{ $slp->id }}"
@@ -149,7 +161,7 @@
                                 🗑
                             </button>
                         </form>
-                        @endhasanyrole
+                        @endrole
                     @else
                         <span id="ev-placeholder-{{ $slp->id }}" style="color:var(--text-muted); font-size:12px">—</span>
                     @endif
@@ -161,7 +173,7 @@
                         <div style="color:#e55; font-size:11px; margin-bottom:4px">{{ $message }}</div>
                     @enderror
 
-                    @hasanyrole('admin|consultor_digital')
+                    @role('admin')
                     @if($school->status === 'inactivo')
                         <span style="font-size:11px; color:var(--text-muted)">Colegio inactivo</span>
                     @else
@@ -213,7 +225,7 @@
                         </button>
                     </form>
                     @endif
-                    @endhasanyrole
+                    @endrole
                 </td>
             </tr>
             @endforeach
@@ -292,4 +304,5 @@ document.querySelectorAll('input[type="file"][data-slp]').forEach(function (file
     });
 });
 </script>
+
 @endsection

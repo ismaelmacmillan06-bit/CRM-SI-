@@ -1,14 +1,139 @@
 @extends('layouts.app')
 
-@section('title', 'Configuración — Servicios')
+@section('title', 'Configuración')
 
 @section('content')
-<div style="max-width:680px">
+@php
+    $totalProcesosGlobales = $totalProcesosGlobales ?? \App\Models\Process::count();
+    $conteoSeg = $conteoSeg ?? [];
+    $totalSegAcciones = array_sum($conteoSeg);
+    $totalArranqueAll = $totalProcesosGlobales + $totalSegAcciones;
+@endphp
 
+<style>
+    .cfg-vistas {
+        display: inline-flex;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 4px;
+        gap: 4px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+    .cfg-vista-btn {
+        border: none;
+        background: none;
+        font: inherit;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--text-muted);
+        padding: 7px 16px;
+        border-radius: 7px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        transition: all 0.15s;
+    }
+    .cfg-vista-btn:hover { color: var(--text); }
+    .cfg-vista-btn.activa {
+        background: #ffffff;
+        color: var(--text);
+        box-shadow: 0 1px 3px rgba(24, 19, 17, 0.1);
+    }
+    .cfg-tab-count {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 7px;
+        border-radius: 99px;
+        background: rgba(24, 19, 17, 0.08);
+        color: var(--text-muted);
+    }
+    .cfg-vista-btn.activa .cfg-tab-count {
+        background: var(--accent);
+        color: #ffffff;
+    }
+    .cfg-arr-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+    }
+    .cfg-arr-card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 16px 18px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border);
+        background: var(--surface);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+    .cfg-arr-card:hover {
+        border-color: var(--accent);
+        background: #ffffff;
+        box-shadow: 0 8px 20px rgba(24, 19, 17, 0.07);
+        transform: translateY(-2px);
+    }
+    .cfg-arr-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    .cfg-arr-ico {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+    .cfg-arr-count-pill {
+        font-size: 11.5px;
+        font-weight: 700;
+        padding: 2px 9px;
+        border-radius: 999px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+    }
+    .cfg-arr-count-pill.is-zero {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #b45309;
+    }
+</style>
+
+<div style="max-width:960px">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px">
+        <div>
+            <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-size:24px; font-weight:700; margin:0">⚙️ Configuración del CRM</h1>
+            <p style="font-size:13px; color:var(--text-muted); margin:4px 0 0">Administración exclusiva para Administrador.</p>
+        </div>
+        <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-sm">← Dashboard</a>
+    </div>
+
+    <div class="cfg-vistas" role="tablist">
+        <button type="button" class="cfg-vista-btn activa" data-cfg-tab="servicios" role="tab">
+            📦 Servicios <span class="cfg-tab-count">{{ $types->count() }}</span>
+        </button>
+        @hasrole('admin')
+        <button type="button" class="cfg-vista-btn" data-cfg-tab="arranque" role="tab">
+            🚀 Acciones de arranque <span class="cfg-tab-count" data-cfg-arranque-total>{{ $totalArranqueAll }}</span>
+        </button>
+        @endhasrole
+    </div>
+
+    <div id="cfg-panel-servicios" style="max-width:720px">
     <div class="card">
         <div class="card-header">
             <span class="card-title">⚙️ Servicios contables por colegio</span>
-            <a href="{{ route('dashboard') }}" class="btn btn-secondary btn-sm">← Dashboard</a>
         </div>
         <div class="card-body">
 
@@ -57,10 +182,10 @@
                             </button>
                         </form>
                         {{-- Eliminar --}}
-                        <form method="POST" action="{{ route('configuracion.servicios.destroy', $type) }}" style="margin:0"
-                              onsubmit="return confirm('¿Eliminar el servicio \'{{ $type->name }}\'? Se quitará de todos los colegios que lo tengan.')">
+                        <form method="POST" action="{{ route('configuracion.servicios.destroy', $type) }}" id="form-del-srv-{{ $type->id }}" style="margin:0">
                             @csrf @method('DELETE')
-                            <button type="submit"
+                            <button type="button"
+                                    onclick="confirmarEliminar('Eliminar servicio', '¿Eliminar el servicio «{{ addslashes($type->name) }}»? Se quitará de todos los colegios que lo tengan.', 'form-del-srv-{{ $type->id }}')"
                                     style="padding:5px 10px; border-radius:6px; font-size:12px; font-weight:500;
                                            cursor:pointer; border:1px solid #fecaca; background:#fff5f5; color:#dc2626">
                                 Eliminar
@@ -175,6 +300,56 @@
 
         </div>
     </div>
+    </div>
+
+    @hasrole('admin')
+    <div id="cfg-panel-arranque" style="display:none">
+        <div class="card" style="margin-bottom:18px">
+            <div class="card-header">
+                <span class="card-title">🏫 Acciones de arranque globales (Colegios)</span>
+                <span class="cfg-arr-count-pill" data-cfg-colegios-count>{{ $totalProcesosGlobales }} {{ $totalProcesosGlobales === 1 ? 'acción' : 'acciones' }}</span>
+            </div>
+            <div class="card-body" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap">
+                <p style="font-size:13.5px; color:var(--text-muted); margin:0; line-height:1.55; flex:1 1 320px;">
+                    Administra los pasos globales que se muestran en la ficha de <strong>Acciones de arranque</strong> por nivel de cada colegio.
+                    Puedes agregar, renombrar, arrastrar para ordenar o eliminar acciones al instante.
+                </p>
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirHubArranque('colegios')">
+                    ⚙️ Personalizar acciones globales
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">🧭 Acciones de arranque por plataforma (Seguimiento)</span>
+                <span style="font-size:12.5px; color:var(--text-muted)">Selecciona una plataforma para personalizar</span>
+            </div>
+            <div class="card-body">
+                <div class="cfg-arr-grid">
+                    @foreach($plataformas as $pSlug => $pMeta)
+                        @php $pCant = (int) ($conteoSeg[$pSlug] ?? 0); @endphp
+                        <button type="button" class="cfg-arr-card" onclick="window.abrirHubArranque('seguimiento', '{{ $pSlug }}')">
+                            <div class="cfg-arr-card-top">
+                                <span class="cfg-arr-ico">{{ $pMeta['icono'] }}</span>
+                                <span class="cfg-arr-count-pill {{ $pCant === 0 ? 'is-zero' : '' }}" data-cfg-seg-count="{{ $pSlug }}">
+                                    {{ $pCant }} {{ $pCant === 1 ? 'acción' : 'acciones' }}
+                                </span>
+                            </div>
+                            <div style="font-family:'Bricolage Grotesque',sans-serif; font-size:15.5px; font-weight:700; color:var(--text);">
+                                {{ $pMeta['nombre'] }}
+                            </div>
+                            <div style="font-size:12px; color:var(--text-muted); line-height:1.45;">
+                                {{ $pCant > 0 ? 'Agregar, editar, arrastrar orden o eliminar acciones.' : 'Sin acciones todavía. Haz clic para agregar.' }}
+                            </div>
+                            <span style="font-size:12px; font-weight:700; color:var(--accent);">Configurar {{ $pMeta['nombre'] }} →</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+    @endhasrole
 
 </div>
 
@@ -184,6 +359,36 @@
     .servicio-item[data-editando="1"] .servicio-editar { display: block; }
 </style>
 <script>
+    (function () {
+        const tabs = Array.from(document.querySelectorAll('[data-cfg-tab]'));
+        const panelServicios = document.getElementById('cfg-panel-servicios');
+        const panelArranque = document.getElementById('cfg-panel-arranque');
+        const storageKey = 'sic-config-tab';
+
+        function activarTab(nombre) {
+            if (!panelArranque && nombre === 'arranque') nombre = 'servicios';
+            tabs.forEach(t => t.classList.toggle('activa', t.dataset.cfgTab === nombre));
+            if (panelServicios) panelServicios.style.display = nombre === 'servicios' ? 'block' : 'none';
+            if (panelArranque) panelArranque.style.display = nombre === 'arranque' ? 'block' : 'none';
+            try { sessionStorage.setItem(storageKey, nombre); } catch (e) {}
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const tabQuery = params.get('tab');
+        let tabInicial = 'servicios';
+        if (tabQuery === 'arranque' || tabQuery === 'servicios') {
+            tabInicial = tabQuery;
+        } else {
+            try {
+                const guardada = sessionStorage.getItem(storageKey);
+                if (guardada === 'arranque' || guardada === 'servicios') tabInicial = guardada;
+            } catch (e) {}
+        }
+        activarTab(tabInicial);
+
+        tabs.forEach(t => t.addEventListener('click', () => activarTab(t.dataset.cfgTab)));
+    })();
+
     document.querySelectorAll('.servicio-item').forEach(function (item) {
         const form = item.querySelector('.servicio-editar');
         item.querySelector('.servicio-btn-editar')?.addEventListener('click', function () {

@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Consultant;
 use App\Models\Process;
 use App\Models\School;
+use App\Models\UserNotification;
 use App\Models\WeeklyReportEntry;
+use App\Services\NotificationService;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
@@ -22,6 +25,9 @@ class ReporteSemanalController extends Controller
 
     public function index(Request $request)
     {
+        if ($user = auth()->user()) {
+            app(SectionNovedadesService::class)->consumeReporteSemanal($user);
+        }
         [$weekStart, $weekEnd] = $this->resolverSemana($request->query('week'));
         $weekOptions = $this->opcionesDeSemana($weekStart);
 
@@ -100,6 +106,8 @@ class ReporteSemanalController extends Controller
         $miConsultorId = optional(Consultant::where('user_id', auth()->id())->first())->id;
 
         $guardados = 0;
+        $categoriasTocadas = [];
+        $consultoresAfectados = [];
         foreach ($entradas as $entrada) {
             $categoria = $entrada['category'] ?? null;
             $consultantId = $entrada['consultant_id'] ?? null;
@@ -114,6 +122,16 @@ class ReporteSemanalController extends Controller
                 continue;
             }
 
+            $nuevoContenido = $entrada['content'] ?? null;
+            $existente = WeeklyReportEntry::where('week_start', $weekStart)
+                ->where('category', $categoria)
+                ->where('consultant_id', $consultantId)
+                ->first();
+
+            $cambioReal = !$existente
+                ? trim((string) $nuevoContenido) !== ''
+                : (string) ($existente->content ?? '') !== (string) ($nuevoContenido ?? '');
+
             WeeklyReportEntry::updateOrCreate(
                 [
                     'week_start'    => $weekStart,
@@ -121,11 +139,33 @@ class ReporteSemanalController extends Controller
                     'consultant_id' => $consultantId,
                 ],
                 [
-                    'content'    => $entrada['content'] ?? null,
+                    'content'    => $nuevoContenido,
                     'updated_by' => auth()->id(),
                 ]
             );
             $guardados++;
+            if ($cambioReal) {
+                $categoriasTocadas[] = self::CATEGORIAS[$categoria]['label'] ?? $categoria;
+                $consultoresAfectados[] = (int) $consultantId;
+            }
+        }
+
+        if (!empty($categoriasTocadas)) {
+            $inicioCarbon = Carbon::parse($weekStart);
+            $finCarbon = $inicioCarbon->copy()->addDays(4);
+            $weekLabel = $this->formatearRangoSemana($inicioCarbon, $finCarbon);
+            $consultorUserIds = Consultant::whereIn('id', array_unique($consultoresAfectados))
+                ->pluck('user_id')
+                ->filter()
+                ->all();
+
+            app(NotificationService::class)->notifyWeeklyReportUpdated(
+                $weekStart,
+                $weekLabel,
+                count($categoriasTocadas),
+                array_values(array_unique($categoriasTocadas)),
+                $consultorUserIds
+            );
         }
 
         return back()->with('success', "Reporte guardado ({$guardados} celda(s) actualizadas).");

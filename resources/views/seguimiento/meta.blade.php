@@ -162,6 +162,9 @@
     }
 </style>
 
+@php
+    $tieneAcciones = $tieneAcciones ?? (($totalAcciones ?? 0) > 0);
+@endphp
 <div style="margin-bottom:24px">
     <h1 style="font-family:'Bricolage Grotesque',sans-serif; font-size:24px; font-weight:700; margin:0">
         {{ $icono }} Agenda de exámenes {{ $nombre }}
@@ -202,10 +205,12 @@
         <div class="num">{{ $pendientes }}</div>
         <div class="lbl">⏳ Con fechas pendientes</div>
     </button>
+    @if($tieneAcciones)
     <button type="button" class="mt-card verde" data-filtro-card="arr-ok">
         <div class="num">{{ $completos }}/{{ $filas->count() }}</div>
         <div class="lbl">🚀 Arranque completo</div>
     </button>
+    @endif
     {{-- Tickets y sesiones registrados con producto Meta (en Tickets/Sesiones → Producto) --}}
     <div class="mt-card morado info" title="Tickets de estos colegios con el producto {{ $nombre }}">
         <div class="num">{{ $tickets['total'] }}</div>
@@ -226,9 +231,16 @@
         <button type="button" class="mt-vista-btn" data-vista="calendario" role="tab">📅 Calendario</button>
         <button type="button" class="mt-vista-btn" data-vista="manuales" role="tab">
             📘 Manuales <span class="mt-tab-count">{{ $manuales->count() }}</span>
+            @if(!empty($sectionNovedades['highlight_tabs']['manuales']))<span class="nav-dot" style="margin-left:2px"></span>@endif
         </button>
     </div>
     <div class="mt-barra-der">
+    @if($puedeEditar)
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
+            ⚙️ Personalizar acciones
+            <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $totalAcciones ?? 0 }}</span>
+        </button>
+    @endif
         <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary mt-contacto-btn">📥 Descargar Excel</a>
         @if($contacto)
             <button type="button" class="btn btn-secondary mt-contacto-btn" onclick="mtContacto(true)">
@@ -332,6 +344,20 @@
     ])
 </div>
 
+@unless($tieneAcciones)
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 16px;
+            border-radius:10px; margin-bottom:14px; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+    <span>
+        ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Por ahora puedes consultar los colegios, agenda, tickets, sesiones y manuales.
+    </span>
+    @if($puedeEditar)
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">
+            ⚙️ Configurar acciones de arranque
+        </button>
+    @endif
+</div>
+@endunless
+
 <div class="card" id="mt-vista-tabla">
     <div class="card-header" style="gap:10px; flex-wrap:wrap">
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
@@ -345,8 +371,10 @@
                 <option value="apl">Aplicación próxima (30 días)</option>
                 <option value="pend">Con fechas pendientes</option>
                 <option value="listo">Con ambas fechas</option>
+                @if($tieneAcciones)
                 <option value="arr-pend">Arranque pendiente</option>
                 <option value="arr-ok">Arranque completo</option>
+                @endif
             </select>
         </div>
         @endif
@@ -356,7 +384,7 @@
         <thead>
             <tr>
                 <th>Colegio</th>
-                <th>Arranque</th>
+                @if($tieneAcciones)<th>Arranque</th>@endif
                 <th>Administrador</th>
                 <th>Acceso</th>
                 <th>Capacitación</th>
@@ -365,6 +393,7 @@
             </tr>
         </thead>
         <tbody id="mt-tbody">
+            @php $novedadMetaSchoolIds = $sectionNovedades['highlight_ids']['schools'] ?? []; @endphp
             @forelse($filas as $fila)
             @php
                 $c = $fila['colegio'];
@@ -377,16 +406,23 @@
                 ])->filter()->implode(' ');
                 $texto = mb_strtolower(implode(' ', [$c->nexus_id, $c->name, $m->administrador, $m->usuario, $m->capacitacion, $m->notas]));
                 $gestionar = route('seguimiento.colegio', [$slug, $c]);
+                $esNovedadMeta = in_array($c->id, $novedadMetaSchoolIds, true);
             @endphp
-            <tr data-estado="{{ $estado }}" data-texto="{{ $texto }}">
+            <tr id="meta-school-{{ $c->id }}" class="{{ $esNovedadMeta ? 'sic-novedad-row' : '' }}" data-estado="{{ $estado }}" data-texto="{{ $texto }}">
                 <td style="min-width:170px; max-width:260px">
-                    <a href="{{ route('schools.show', $c) }}" style="font-weight:600; color:var(--text); text-decoration:none">{{ $c->name }}</a>
-                    @if($m->notas)<span class="mt-nota-ico" title="Notas: {{ $m->notas }}">📝</span>@endif
+                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap">
+                        <a href="{{ route('schools.show', $c) }}" style="font-weight:600; color:var(--text); text-decoration:none">{{ $c->name }}</a>
+                        @if($esNovedadMeta)
+                            <span class="sic-nuevo-pill">✨ Novedad</span>
+                        @endif
+                        @if($m->notas)<span class="mt-nota-ico" title="Notas: {{ $m->notas }}">📝</span>@endif
+                    </div>
                     <div style="font-size:12px; color:var(--text-muted)">
                         @if($c->nexus_id)<strong style="color:var(--text)">{{ $c->nexus_id }}</strong>@else<span title="Sin Nexus ID">Sin ID</span>@endif
                         @if($c->state) · {{ $c->state }}@endif
                     </div>
                 </td>
+                @if($tieneAcciones)
                 <td>
                     <div class="mt-arr {{ $fila['completo'] ? 'ok' : '' }}" title="{{ $fila['completo'] ? 'Arranque completo' : 'Siguiente: ' . $fila['siguiente'] }}">
                         <div class="top"><span>{{ $fila['hechas'] }}/{{ $totalAcciones }}</span><span>{{ $fila['pct'] }}%</span></div>
@@ -394,6 +430,7 @@
                         <div class="sig">{{ $fila['completo'] ? '✅ Completo' : '→ ' . $fila['siguiente'] }}</div>
                     </div>
                 </td>
+                @endif
                 <td>{!! $m->administrador ? e($m->administrador) : '<span class="mt-vacio">—</span>' !!}</td>
                 <td class="mt-acceso">
                     @if($m->usuario || $m->contrasena)
@@ -441,19 +478,23 @@
                         <a href="{{ route('schools.students.index', $c) }}" class="btn btn-secondary btn-sm" title="Alumnos de {{ $c->name }}">👨‍🎓</a>
                         <a href="{{ route('schools.tickets.index', $c) }}" class="btn btn-secondary btn-sm" title="Tickets de {{ $c->name }}">🎫</a>
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
-                        <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
+                        @if($tieneAcciones)
+                            <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
+                        @else
+                            <a href="{{ route('schools.show', $c) }}" class="btn btn-secondary btn-sm" style="white-space:nowrap">Ver colegio →</a>
+                        @endif
                     </div>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px">
+                <td colspan="{{ $tieneAcciones ? 7 : 6 }}" style="text-align:center; color:var(--text-muted); padding:40px">
                     No hay colegios con {{ $nombre }}. Agrega el servicio en la ficha del colegio (📦 Servicios adicionales).
                 </td>
             </tr>
             @endforelse
             <tr id="mt-sin-resultados" style="display:none">
-                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px">Ningún colegio coincide con la búsqueda.</td>
+                <td colspan="{{ $tieneAcciones ? 7 : 6 }}" style="text-align:center; color:var(--text-muted); padding:30px">Ningún colegio coincide con la búsqueda.</td>
             </tr>
         </tbody>
     </table>
@@ -644,4 +685,7 @@
 })();
 </script>
 @include('seguimiento.partials._recursos_modals', ['slug' => $slug, 'categoriaDefault' => 'manuales'])
+@if($puedeEditar)
+    @include('seguimiento.partials._catalogo_acciones_modal')
+@endif
 @endsection

@@ -130,12 +130,14 @@ class VisitController extends Controller
         $visit->update($data);
         $visit->attendees()->sync($request->input('attendees', []));
 
+        $statusLabel = ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'terminada' => 'Terminada'];
+        $de = $statusLabel[$oldStatus]        ?? $oldStatus;
+        $a  = $statusLabel[$request->status]  ?? $request->status;
         if ($oldStatus !== $request->status) {
-            $statusLabel = ['pendiente' => 'Pendiente', 'en_curso' => 'En curso', 'terminada' => 'Terminada'];
-            $de = $statusLabel[$oldStatus]        ?? $oldStatus;
-            $a  = $statusLabel[$request->status]  ?? $request->status;
             $ico = $request->status === 'terminada' ? '✅' : '🔄';
             ActivityLog::log('visita', "Sesión cambió de $de → $a", $visit->school_id, $ico);
+        } else {
+            ActivityLog::log('visita', "Sesión actualizada (estado: $a)", $visit->school_id, '✏️');
         }
 
         return redirect()->route('schools.visits.index', $visit->school)

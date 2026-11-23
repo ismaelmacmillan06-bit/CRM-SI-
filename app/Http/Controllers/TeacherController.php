@@ -94,6 +94,8 @@ class TeacherController extends Controller
             }
         }
 
+        ActivityLog::log('docente', "Docente \"{$teacher->name} {$teacher->last_name}\" actualizado en {$teacher->school->name}", $teacher->school_id, '✏️');
+
         return redirect()->route('schools.teachers.index', $teacher->school)
                          ->with('success', 'Docente actualizado correctamente.');
     }

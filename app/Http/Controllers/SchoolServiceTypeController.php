@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Process;
 use App\Models\SchoolServiceType;
+use App\Models\SeguimientoDefinicionAccion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +15,16 @@ class SchoolServiceTypeController extends Controller
         abort_unless(auth()->user()->hasRole('admin'), 403);
         $types = SchoolServiceType::orderBy('order')->get();
         $plataformas = SeguimientoController::PLATAFORMAS;
-        return view('configuracion.servicios', compact('types', 'plataformas'));
+        $totalProcesosGlobales = Process::count();
+        $rawSegCounts = SeguimientoDefinicionAccion::selectRaw('plataforma, COUNT(*) as total')
+            ->groupBy('plataforma')
+            ->pluck('total', 'plataforma');
+        $conteoSeg = [];
+        foreach (array_keys($plataformas) as $slug) {
+            $conteoSeg[$slug] = (int) ($rawSegCounts[$slug] ?? 0);
+        }
+
+        return view('configuracion.servicios', compact('types', 'plataformas', 'totalProcesosGlobales', 'conteoSeg'));
     }
 
     public function store(Request $request)

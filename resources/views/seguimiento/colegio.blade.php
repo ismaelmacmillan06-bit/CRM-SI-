@@ -3,6 +3,35 @@
 @section('title', $nombre . ' — ' . $school->name)
 
 @section('content')
+<style>
+    .seg-guardar-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 15px 24px;
+        background: var(--surface2);
+        border-top: 2px solid var(--border);
+        border-radius: 0 0 12px 12px;
+    }
+    .seg-guardar-bar.is-standalone {
+        margin-top: 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 4px 14px rgba(24, 19, 17, 0.05);
+    }
+    .seg-guardar-hint {
+        font-size: 12.5px;
+        color: var(--text-muted);
+    }
+    .seg-guardar-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-left: auto;
+    }
+</style>
 @php
     $total = $totalAcciones ?? count($acciones);
     $porNivel = $porNivel ?? false;
@@ -11,6 +40,12 @@
 
 <div style="margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap">
     <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @if($puedeEditar)
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
+            ⚙️ Personalizar acciones
+            <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ count($acciones) }}</span>
+        </button>
+    @endif
     <a href="{{ route('schools.tickets.index', ['school' => $school, 'producto' => $nombre]) }}" class="btn btn-secondary btn-sm" style="margin-left:auto">🎫 Tickets</a>
     <a href="{{ route('schools.visits.index', ['school' => $school, 'producto' => $nombre]) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
 </div>
@@ -170,7 +205,7 @@
     @endif
 </div>
 
-@if($niveles->isNotEmpty())
+@if($niveles->isNotEmpty() && $totalPorNivel > 0)
 <form method="POST" action="{{ route('seguimiento.guardar', [$slug, $school]) }}">
     @csrf
     @foreach($niveles as $nivel)
@@ -247,11 +282,26 @@
     @endforeach
 
     @if($puedeEditar)
-    <div style="display:flex; justify-content:flex-end; margin-top:16px">
-        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    <div class="seg-guardar-bar is-standalone">
+        <span class="seg-guardar-hint">💾 Guarda los cambios al terminar de actualizar estatus o notas por nivel.</span>
+        <div class="seg-guardar-actions">
+            <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
     </div>
     @endif
 </form>
+@elseif($niveles->isNotEmpty())
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:14px 18px; border-radius:10px; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+    <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles para capturar.</span>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
+        @if($puedeEditar)
+            <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
+        @endif
+    </div>
+</div>
+@endif
 
 <script>
 (function () {
@@ -340,11 +390,24 @@
 
         <div style="padding:16px 24px 0">
             <div style="background:var(--surface2); border-radius:20px; height:7px; overflow:hidden">
-                <div style="height:100%; width:{{ round($hechas / $total * 100) }}%; border-radius:20px;
-                            background:{{ $hechas === $total ? 'var(--success)' : 'var(--accent)' }}"></div>
+                <div style="height:100%; width:{{ ($total > 0 ? round($hechas / $total * 100) : 0) }}%; border-radius:20px;
+                            background:{{ ($total > 0 && $hechas === $total) ? 'var(--success)' : 'var(--accent)' }}"></div>
             </div>
         </div>
 
+        @if(empty($acciones))
+        <div style="padding:20px 24px">
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:14px 18px; border-radius:10px; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+                <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles para capturar.</span>
+                <div style="display:flex; gap:8px; flex-wrap:wrap">
+                    <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
+                    @if($puedeEditar)
+                        <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @else
         <div style="overflow-x:auto">
         <table class="table" style="margin-top:8px">
             <thead>
@@ -388,12 +451,21 @@
         </div>
 
         @if($puedeEditar)
-        <div style="display:flex; justify-content:flex-end; padding:16px 24px">
-            <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        <div class="seg-guardar-bar">
+            <span class="seg-guardar-hint">💾 Guarda los cambios al terminar de actualizar estatus o notas de arranque.</span>
+            <div class="seg-guardar-actions">
+                <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+            </div>
         </div>
+        @endif
         @endif
     </div>
     </fieldset>
 </form>
+@endif
+
+@if($puedeEditar)
+    @include('seguimiento.partials._catalogo_acciones_modal')
 @endif
 @endsection

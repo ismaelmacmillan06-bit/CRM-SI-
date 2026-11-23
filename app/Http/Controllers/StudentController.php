@@ -109,7 +109,7 @@ class StudentController extends Controller
             'mee_username.unique' => 'Este usuario MEE ya está registrado en el sistema.',
         ]);
 
-        $school->students()->create($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
+        $student = $school->students()->create($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
 
         ActivityLog::log('alumno', "Alumno \"{$request->name} {$request->last_name}\" registrado en {$school->name}", $school->id, '👨‍🎓');
 
@@ -254,6 +254,8 @@ private function extractStudentsFromPdf(string $text): array
         ]);
 
         $student->update($request->only(['name', 'last_name', 'mee_username', 'mee_password', 'grade', 'level']));
+
+        ActivityLog::log('alumno', "Alumno \"{$student->name} {$student->last_name}\" actualizado en {$student->school->name}", $student->school_id, '✏️');
 
         return redirect()->route('schools.students.index', $student->school)
                          ->with('success', 'Alumno actualizado correctamente.');

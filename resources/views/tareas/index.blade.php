@@ -5,6 +5,7 @@
 @section('content')
 @php
     $usuario = auth()->user();
+    $novedadTareaIds = $sectionNovedades['highlight_ids']['tareas'] ?? [];
     // null = puede marcar todos los colegios de la tarea; [] = ninguno
     $puedeMarcar = $tarea && ($marcables === null || count($marcables) > 0);
     $puedeGestionar = $tarea && $tarea->puedeGestionar($usuario);
@@ -138,17 +139,23 @@
         <div style="padding:8px">
             @forelse($tareas as $t)
             @php
-                $p       = $t->progreso();
-                $pct     = $p['total'] > 0 ? round(($p['realizada'] / $p['total']) * 100) : 0;
-                $isActive = $tarea && $tarea->id === $t->id;
+                $p         = $t->progreso();
+                $pct       = $p['total'] > 0 ? round(($p['realizada'] / $p['total']) * 100) : 0;
+                $isActive  = $tarea && $tarea->id === $t->id;
+                $esNovedad = in_array($t->id, $novedadTareaIds, true);
             @endphp
             <a href="{{ route('tareas.index', ['tarea_id' => $t->id]) }}"
+               id="tarea-item-{{ $t->id }}"
+               class="{{ $esNovedad ? 'sic-novedad-card' : '' }}"
                style="display:block; padding:12px; border-radius:8px; text-decoration:none; margin-bottom:4px;
                       border:1px solid {{ $isActive ? 'var(--accent)' : 'transparent' }};
                       background:{{ $isActive ? '#fff5f5' : 'transparent' }};
                       transition:background 0.15s">
-                <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px">
-                    {{ $t->titulo }}
+                <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap">
+                    <span>{{ $t->titulo }}</span>
+                    @if($esNovedad)
+                        <span class="sic-nuevo-pill">✨ Nueva</span>
+                    @endif
                 </div>
                 <div style="margin-bottom:6px">{!! $chipAudiencia($t->audiencia) !!}</div>
                 <div style="background:var(--surface2); border-radius:20px; height:4px; overflow:hidden; margin-bottom:4px">
@@ -175,6 +182,9 @@
             <div>
                 @if($tarea)
                     <span class="card-title">{{ $tarea->titulo }}</span>
+                    @if(in_array($tarea->id, $novedadTareaIds, true))
+                        <span class="sic-nuevo-pill" style="margin-left:6px">✨ Nueva</span>
+                    @endif
                     <span style="margin-left:6px">{!! $chipAudiencia($tarea->audiencia) !!}</span>
                     <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px">
                         Publicada por {{ $tarea->creator->name ?? '—' }} · {{ $tarea->created_at->format('d/m/Y') }}

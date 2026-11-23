@@ -6,6 +6,8 @@ use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\TareaSI;
 use App\Models\TareaColegio;
+use App\Services\NotificationService;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +17,7 @@ class TareaController extends Controller
     {
         $user   = auth()->user();
         $tareas = TareaSI::visiblePara($user)->with('creator')->latest()->get();
+        app(SectionNovedadesService::class)->consumeTareas($user);
         $tarea  = $request->tarea_id ? $tareas->firstWhere('id', (int) $request->tarea_id) : $tareas->first();
 
         $schools = School::with('schoolConsultants.consultant.user')->orderBy('name');
@@ -85,6 +88,7 @@ class TareaController extends Controller
 
         $para = TareaSI::AUDIENCIAS[$audiencia];
         ActivityLog::log('tarea', "Tarea \"{$tarea->titulo}\" creada para {$para} ({$schoolIds->count()} colegios)", null, '✅');
+        app(NotificationService::class)->notifyTareaCreated($tarea, $schoolIds->count(), false);
 
         return redirect()->route('tareas.index', ['tarea_id' => $tarea->id])
             ->with('success', "Tarea \"{$tarea->titulo}\" publicada para {$para} en {$schoolIds->count()} colegios.");
@@ -105,6 +109,7 @@ class TareaController extends Controller
         ]);
 
         ActivityLog::log('tarea', "Tarea \"{$tarea->titulo}\" editada", null, '✏️');
+        app(NotificationService::class)->notifyTareaCreated($tarea, $tarea->colegios()->count(), true);
 
         return redirect()->route('tareas.index', ['tarea_id' => $tarea->id])
             ->with('success', "Tarea \"{$tarea->titulo}\" actualizada correctamente.");

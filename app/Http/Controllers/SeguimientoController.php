@@ -9,12 +9,15 @@ use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SchoolServiceType;
 use App\Models\SeguimientoAccion;
+use App\Models\SeguimientoDefinicionAccion;
 use App\Models\SeguimientoMeta;
 use App\Models\SeguimientoRecurso;
 use App\Models\Ticket;
 use App\Models\Visit;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class SeguimientoController extends Controller
@@ -64,17 +67,47 @@ class SeguimientoController extends Controller
 
     // Quién puede capturar en Seguimiento; el resto de los roles con acceso (ECA, ELT, ventas,
     // coordinador) solo consulta. El middleware VerificarAccesoRol también bloquea sus POST.
-    public const ROLES_EDICION = ['admin', 'consultor_digital'];
+    public const ROLES_EDICION = ['admin'];
 
     public static function puedeEditar(): bool
     {
         return (bool) auth()->user()?->hasAnyRole(self::ROLES_EDICION);
     }
 
+    private function catalogoAcciones(string $plataforma)
+    {
+        return SeguimientoDefinicionAccion::where('plataforma', $plataforma)
+            ->orderBy('orden')
+            ->orderBy('id')
+            ->get();
+    }
+
+    private function infoPlataforma(string $plataforma): array
+    {
+        abort_unless(array_key_exists($plataforma, self::PLATAFORMAS), 404);
+        $info = self::PLATAFORMAS[$plataforma];
+        $catalogo = $this->catalogoAcciones($plataforma);
+
+        if (array_key_exists('acciones', $info)) {
+            $info['acciones'] = $catalogo->pluck('etiqueta', 'clave')->all();
+        }
+
+        return $info;
+    }
+
     public function show(string $plataforma)
     {
-        $info = self::PLATAFORMAS[$plataforma];
-        $datos = ['slug' => $plataforma, 'nombre' => $info['nombre'], 'icono' => $info['icono'], 'puedeEditar' => self::puedeEditar()];
+        $info = $this->infoPlataforma($plataforma);
+        if ($user = auth()->user()) {
+            app(SectionNovedadesService::class)->consumeSeguimiento($user, $plataforma);
+        }
+        $datos = [
+            'slug'             => $plataforma,
+            'nombre'           => $info['nombre'],
+            'icono'            => $info['icono'],
+            'puedeEditar'      => self::puedeEditar(),
+            'catalogoAcciones' => $this->catalogoAcciones($plataforma),
+        ];
 
         if (!empty($info['agenda'])) {
             return $this->agendaMeta($datos);
@@ -147,6 +180,7 @@ class SeguimientoController extends Controller
     // Agenda de exámenes Meta: datos de acceso, capacitación y fecha de aplicación por colegio
     private function agendaMeta(array $datos)
     {
+        $info = $this->infoPlataforma($datos['slug']);
         $filas = $this->filasPlataforma($datos['slug']);
         $manuales = SeguimientoRecurso::where('plataforma', $datos['slug'])
             ->where('categoria', 'manuales')
@@ -157,9 +191,10 @@ class SeguimientoController extends Controller
 
         return view('seguimiento.meta', $datos + [
             'filas'          => $filas,
-            'totalAcciones'  => count(self::PLATAFORMAS[$datos['slug']]['acciones']),
+            'tieneAcciones'  => count($info['acciones']) > 0,
+            'totalAcciones'  => count($info['acciones']),
             'servicioLigado' => SchoolServiceType::where('plataforma', $datos['slug'])->exists(),
-            'contacto'       => self::PLATAFORMAS[$datos['slug']]['contacto'] ?? null,
+            'contacto'       => $info['contacto'] ?? null,
             'manuales'       => $manuales,
         ] + $this->actividad($datos['nombre'], $filas->pluck('colegio.id')));
     }
@@ -187,7 +222,7 @@ class SeguimientoController extends Controller
     // Descarga en Excel: colegios, acciones de arranque, tickets y sesiones del producto
     public function excel(string $plataforma)
     {
-        $info = self::PLATAFORMAS[$plataforma];
+        $info = $this->infoPlataforma($plataforma);
         abort_if(!array_key_exists('acciones', $info), 404);
 
         $filas = $this->filasPlataforma($plataforma);
@@ -224,9 +259,10 @@ class SeguimientoController extends Controller
     // Un renglón por colegio con su avance de arranque (y, en plataformas con agenda, sus datos de Meta)
     private function filasPlataforma(string $slug)
     {
-        $agenda = !empty(self::PLATAFORMAS[$slug]['agenda']);
-        $porNivel = !empty(self::PLATAFORMAS[$slug]['por_nivel']);
-        $acciones = self::PLATAFORMAS[$slug]['acciones'];
+        $info = $this->infoPlataforma($slug);
+        $agenda = !empty($info['agenda']);
+        $porNivel = !empty($info['por_nivel']);
+        $acciones = $info['acciones'];
         $totalAcciones = count($acciones);
 
         $colegios = $this->colegiosDe($slug)
@@ -254,7 +290,7 @@ class SeguimientoController extends Controller
             $consultor = $colegio->schoolConsultants->first()?->consultant?->user?->name;
 
             if ($totalAcciones === 0) {
-                return [
+                $filaZero = [
                     'colegio'   => $colegio,
                     'hechas'    => 0,
                     'total'     => 0,
@@ -264,6 +300,16 @@ class SeguimientoController extends Controller
                     'acciones'  => collect(),
                     'consultor' => $consultor,
                 ];
+                if ($agenda) {
+                    $meta = $colegio->seguimientoMeta ?? new SeguimientoMeta();
+                    $filaZero += [
+                        'meta'                 => $meta,
+                        'capacitacion_proxima' => $proxima($meta->fecha_capacitacion),
+                        'aplicacion_proxima'   => $proxima($meta->fecha_aplicacion),
+                        'pendiente'            => $meta->fechasPendientes(),
+                    ];
+                }
+                return $filaZero;
             }
 
             if ($porNivel) {
@@ -429,16 +475,17 @@ class SeguimientoController extends Controller
                 ->keyBy('accion');
 
             return view('seguimiento.meta-colegio', [
-                'slug'        => $plataforma,
-                'nombre'      => $info['nombre'],
-                'icono'       => $info['icono'],
-                'school'      => $school,
-                'meta'        => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
-                'acciones'    => $info['acciones'],
-                'guardadas'   => $guardadas,
-                'hechas'      => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
-                'contacto'    => $info['contacto'] ?? null,
-                'puedeEditar' => self::puedeEditar(),
+                'slug'             => $plataforma,
+                'nombre'           => $info['nombre'],
+                'icono'            => $info['icono'],
+                'school'           => $school,
+                'meta'             => $school->seguimientoMeta()->with('updatedBy')->first() ?? new SeguimientoMeta(),
+                'acciones'         => $info['acciones'],
+                'catalogoAcciones' => $this->catalogoAcciones($plataforma),
+                'guardadas'        => $guardadas,
+                'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+                'contacto'         => $info['contacto'] ?? null,
+                'puedeEditar'      => self::puedeEditar(),
             ]);
         }
 
@@ -471,6 +518,7 @@ class SeguimientoController extends Controller
                 'nivelesColegio'    => $nivelesColegio,
                 'niveles'           => $niveles,
                 'acciones'          => $info['acciones'],
+                'catalogoAcciones'  => $this->catalogoAcciones($plataforma),
                 'guardadasPorNivel' => $guardadasPorNivel,
                 'guardadas'         => collect(),
                 'hechas'            => $hechas,
@@ -487,16 +535,17 @@ class SeguimientoController extends Controller
             ->keyBy('accion');
 
         return view('seguimiento.colegio', [
-            'slug'          => $plataforma,
-            'nombre'        => $info['nombre'],
-            'icono'         => $info['icono'],
-            'school'        => $school,
-            'porNivel'      => false,
-            'acciones'      => $info['acciones'],
-            'guardadas'     => $guardadas,
-            'hechas'        => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
-            'totalAcciones' => count($info['acciones']),
-            'puedeEditar'   => self::puedeEditar(),
+            'slug'             => $plataforma,
+            'nombre'           => $info['nombre'],
+            'icono'            => $info['icono'],
+            'school'           => $school,
+            'porNivel'         => false,
+            'acciones'         => $info['acciones'],
+            'catalogoAcciones' => $this->catalogoAcciones($plataforma),
+            'guardadas'        => $guardadas,
+            'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
+            'totalAcciones'    => count($info['acciones']),
+            'puedeEditar'      => self::puedeEditar(),
         ]);
     }
 
@@ -678,11 +727,147 @@ class SeguimientoController extends Controller
 
     private function plataformaDelColegio(string $plataforma, School $school): array
     {
-        $info = self::PLATAFORMAS[$plataforma];
+        $info = $this->infoPlataforma($plataforma);
 
-        abort_if(empty($info['acciones']), 404);
+        abort_if(empty($info['acciones']) && empty($info['agenda']), 404);
         abort_unless($school->status !== 'inactivo' && $school->tienePlataforma($plataforma), 404);
 
         return $info;
+    }
+
+    public function storeCatalogAccion(Request $request, string $plataforma)
+    {
+        abort_unless(self::puedeEditar(), 403);
+        abort_unless(array_key_exists($plataforma, self::PLATAFORMAS), 404);
+
+        $request->validate([
+            'etiqueta' => 'required|string|max:200',
+            'orden'    => 'nullable|integer|min:0|max:999',
+        ]);
+
+        $baseClave = Str::slug($request->etiqueta, '-') ?: 'accion';
+        $clave = Str::limit($baseClave, 70, '');
+        $suffix = 2;
+        while (SeguimientoDefinicionAccion::where('plataforma', $plataforma)->where('clave', $clave)->exists()) {
+            $clave = Str::limit($baseClave, 60, '') . '-' . $suffix++;
+        }
+
+        $orden = $request->filled('orden')
+            ? (int) $request->orden
+            : ((int) SeguimientoDefinicionAccion::where('plataforma', $plataforma)->max('orden') + 1);
+
+        $accionDef = SeguimientoDefinicionAccion::create([
+            'plataforma' => $plataforma,
+            'clave'      => $clave,
+            'etiqueta'   => trim($request->etiqueta),
+            'orden'      => $orden,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'    => true,
+                'item'  => [
+                    'id'         => $accionDef->id,
+                    'plataforma' => $plataforma,
+                    'clave'      => $accionDef->clave,
+                    'etiqueta'   => $accionDef->etiqueta,
+                    'orden'      => (int) $accionDef->orden,
+                ],
+                'total' => SeguimientoDefinicionAccion::where('plataforma', $plataforma)->count(),
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque agregada a ' . self::PLATAFORMAS[$plataforma]['nombre'] . '.');
+    }
+
+    public function updateCatalogAccion(Request $request, string $plataforma, SeguimientoDefinicionAccion $accionDef)
+    {
+        abort_unless(self::puedeEditar(), 403);
+        abort_unless($accionDef->plataforma === $plataforma, 404);
+
+        $request->validate([
+            'etiqueta' => 'required|string|max:200',
+            'orden'    => 'nullable|integer|min:0|max:999',
+        ]);
+
+        $accionDef->update([
+            'etiqueta' => trim($request->etiqueta),
+            'orden'    => $request->filled('orden') ? (int) $request->orden : $accionDef->orden,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok'   => true,
+                'item' => [
+                    'id'         => $accionDef->id,
+                    'plataforma' => $plataforma,
+                    'clave'      => $accionDef->clave,
+                    'etiqueta'   => $accionDef->etiqueta,
+                    'orden'      => (int) $accionDef->orden,
+                ],
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque actualizada.');
+    }
+
+    public function reorderCatalogAcciones(Request $request, string $plataforma)
+    {
+        abort_unless(self::puedeEditar(), 403);
+        abort_unless(array_key_exists($plataforma, self::PLATAFORMAS), 404);
+
+        $data = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $data['ids'])));
+
+        DB::transaction(function () use ($plataforma, $ids) {
+            $validIds = SeguimientoDefinicionAccion::where('plataforma', $plataforma)
+                ->whereIn('id', $ids)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $pos = 1;
+            foreach ($ids as $id) {
+                if (in_array($id, $validIds, true)) {
+                    SeguimientoDefinicionAccion::where('plataforma', $plataforma)
+                        ->where('id', $id)
+                        ->update(['orden' => $pos++]);
+                }
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return back()->with('success', 'Orden de acciones actualizado.');
+    }
+
+    public function destroyCatalogAccion(string $plataforma, SeguimientoDefinicionAccion $accionDef)
+    {
+        abort_unless(self::puedeEditar(), 403);
+        abort_unless($accionDef->plataforma === $plataforma, 404);
+
+        $deletedId = $accionDef->id;
+        DB::transaction(function () use ($plataforma, $accionDef) {
+            SeguimientoAccion::where('plataforma', $plataforma)
+                ->where('accion', $accionDef->clave)
+                ->delete();
+            $accionDef->delete();
+        });
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'ok'         => true,
+                'deleted_id' => $deletedId,
+                'total'      => SeguimientoDefinicionAccion::where('plataforma', $plataforma)->count(),
+            ]);
+        }
+
+        return back()->with('success', 'Acción de arranque eliminada.');
     }
 }

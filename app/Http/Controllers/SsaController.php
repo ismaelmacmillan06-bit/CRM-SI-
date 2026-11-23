@@ -6,12 +6,17 @@ use App\Models\Consultant;
 use App\Models\School;
 use App\Models\SchoolConsultant;
 use App\Models\SsaCapacitacion;
+use App\Services\NotificationService;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 
 class SsaController extends Controller
 {
     public function index(Request $request)
     {
+        if ($user = auth()->user()) {
+            app(SectionNovedadesService::class)->consumeSsa($user);
+        }
         $schools = $this->resolveSchools();
 
         $schools->load(['ssaCapacitaciones' => function ($q) {
@@ -68,7 +73,10 @@ class SsaController extends Controller
 
         $this->authorizeSchool($data['school_id']);
 
-        SsaCapacitacion::create(array_merge($data, ['user_id' => auth()->id()]));
+        $cap = SsaCapacitacion::create(array_merge($data, ['user_id' => auth()->id()]));
+        if ($school = School::find($data['school_id'])) {
+            app(NotificationService::class)->notifySsaEvent($cap, $school, false);
+        }
 
         return back()->with('success', 'Capacitación registrada.');
     }
@@ -85,6 +93,9 @@ class SsaController extends Controller
         $this->authorizeSchool($ssaCapacitacion->school_id);
 
         $ssaCapacitacion->update($data);
+        if ($ssaCapacitacion->school) {
+            app(NotificationService::class)->notifySsaEvent($ssaCapacitacion, $ssaCapacitacion->school, true);
+        }
 
         return back()->with('success', 'Capacitación actualizada.');
     }

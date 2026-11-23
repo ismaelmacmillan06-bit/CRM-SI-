@@ -91,9 +91,11 @@
     <button type="button" class="ge-vista-btn activa" data-ge-vista="tabla" role="tab">📋 Tabla</button>
     <button type="button" class="ge-vista-btn" data-ge-vista="formatos" role="tab">
         📄 Formatos <span class="ge-tab-count">{{ ($formatos ?? collect())->count() }}</span>
+        @if(!empty($sectionNovedades['highlight_tabs']['formatos']))<span class="nav-dot" style="margin-left:2px"></span>@endif
     </button>
     <button type="button" class="ge-vista-btn" data-ge-vista="manuales" role="tab">
         📘 Manuales <span class="ge-tab-count">{{ ($manuales ?? collect())->count() }}</span>
+        @if(!empty($sectionNovedades['highlight_tabs']['manuales']))<span class="nav-dot" style="margin-left:2px"></span>@endif
     </button>
 </div>
 @elseif($esPanelConActividad)
@@ -108,11 +110,13 @@
     @if($tieneFormatos)
     <button type="button" class="ge-vista-btn" data-seg-vista="formatos" role="tab">
         📄 Formatos <span class="ge-tab-count">{{ ($formatos ?? collect())->count() }}</span>
+        @if(!empty($sectionNovedades['highlight_tabs']['formatos']))<span class="nav-dot" style="margin-left:2px"></span>@endif
     </button>
     @endif
     @if($tieneManuales)
     <button type="button" class="ge-vista-btn" data-seg-vista="manuales" role="tab">
         📘 Manuales <span class="ge-tab-count">{{ ($manuales ?? collect())->count() }}</span>
+        @if(!empty($sectionNovedades['highlight_tabs']['manuales']))<span class="nav-dot" style="margin-left:2px"></span>@endif
     </button>
     @endif
 </div>
@@ -120,9 +124,16 @@
 
 <div id="ge-vista-tabla">
 @unless($tieneAcciones)
-<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:11px 16px;
-            border-radius:10px; margin-bottom:14px; font-size:13.5px">
-    ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> estarán disponibles próximamente. Por ahora puedes consultar los colegios, tickets, sesiones, formatos y manuales.
+<div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 16px;
+            border-radius:10px; margin-bottom:14px; font-size:13.5px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap">
+    <span>
+        ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Por ahora puedes consultar los colegios, tickets, sesiones, formatos y manuales.
+    </span>
+    @if($puedeEditar)
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">
+            ⚙️ Configurar acciones de arranque
+        </button>
+    @endif
 </div>
 @endunless
 <div class="card">
@@ -133,7 +144,13 @@
                 <input type="search" id="buscador-colegios" class="form-control" autocomplete="off"
                        placeholder="🔍 Buscar colegio..." style="flex:1 1 200px; max-width:260px">
             @endif
-            <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary" style="white-space:nowrap">📥 Descargar Excel</a>
+            @if($puedeEditar)
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.abrirCatalogoSeguimiento()" style="display:inline-flex; align-items:center; gap:7px;">
+            ⚙️ Personalizar acciones
+            <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $totalAcciones ?? 0 }}</span>
+        </button>
+    @endif
+    <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary" style="white-space:nowrap">📥 Descargar Excel</a>
         </div>
     </div>
     <div style="overflow-x:auto">
@@ -508,7 +525,7 @@
                             @endif
                         </td>
                         <td style="text-align:right">
-                            @if($puedeEditar)
+                            @if(auth()->user()?->hasAnyRole(['admin', 'consultor_digital']))
                                 <a href="{{ route('visits.edit', $visit) }}" class="btn btn-secondary btn-sm" style="white-space:nowrap">Editar →</a>
                             @elseif($visit->school)
                                 <a href="{{ route('schools.visits.index', ['school' => $visit->school, 'producto' => $nombre]) }}" class="btn btn-secondary btn-sm" style="white-space:nowrap">Ver sesiones →</a>
@@ -640,4 +657,8 @@
         });
     });
 </script>
+
+@if($puedeEditar)
+    @include('seguimiento.partials._catalogo_acciones_modal')
+@endif
 @endsection

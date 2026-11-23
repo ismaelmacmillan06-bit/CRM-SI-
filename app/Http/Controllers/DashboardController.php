@@ -112,7 +112,8 @@ class DashboardController extends Controller
         $libroProfesorDetalle = $schoolScopeId(
             School::noInactivos()->with([
                 'schoolLevels.level',
-                'schoolLevels.processes' => fn($q) => $q->where('process_id', 5)->where('status', 'done'),
+                'schoolLevels.processes' => fn($q) => $q->whereHas('process', fn($pq) => $pq->where('slug', 'libro_profesor'))
+                    ->where('status', 'done'),
             ])
         )->get()
         ->map(fn($school) => [

@@ -35,6 +35,11 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Centro de notificaciones: todos los roles pueden consultar, leer y descartar sus notificaciones
+        if ($request->routeIs('notifications.*')) {
+            return $next($request);
+        }
+
         // Tablero SI: todos ven lo que va dirigido a su rol; quién publica o edita
         // se decide en ComunicadoController (Comunicado::puedePublicar)
         if ($request->routeIs('tablero.*')) {
@@ -60,15 +65,15 @@ class VerificarAccesoRol
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads, Equipamiento): admin y consultor_digital
-        // capturan; ECA, ELT, ventas y coordinador solo consultan (ver y descargar Excel, nada de guardar)
+        // Seguimiento (Meta, Global Educa, Francés, Red Roo Reads, Equipamiento): solo admin edita o
+        // personaliza acciones de arranque; el resto de roles con acceso solo consulta y exporta Excel.
         if ($request->routeIs('seguimiento.*')) {
             if (!$user->hasAnyRole(['consultor_digital', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'coordinador'])) {
                 return redirect()->route('dashboard')
                     ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
             }
-            if (!$user->hasRole('consultor_digital') && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
-                return back()->with('error_acceso', 'Seguimiento es solo de consulta para tu rol.');
+            if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                return back()->with('error_acceso', 'Solo un administrador puede modificar o configurar las acciones de arranque.');
             }
         }
 
@@ -154,9 +159,9 @@ class VerificarAccesoRol
             return $next($request);
         }
 
-        // Ventas: lectura en todo el sistema + escritura en SSA + descarga de alumnos por clase
-        if ($user->hasRole('representante_ventas')) {
-            if ($request->routeIs('ssa.*') || $request->routeIs('schools.students.export-by-class')) {
+        // Ventas, Supervisor y Vendedor: lectura en todo el sistema (+ escritura SSA y descarga alumnos para ventas)
+        if ($user->hasAnyRole(['representante_ventas', 'supervisor', 'vendedor'])) {
+            if ($user->hasRole('representante_ventas') && ($request->routeIs('ssa.*') || $request->routeIs('schools.students.export-by-class'))) {
                 return $next($request);
             }
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
@@ -167,6 +172,13 @@ class VerificarAccesoRol
 
         // Consultor Digital: solo sus colegios asignados
         if ($user->hasRole('consultor_digital')) {
+            if ($request->routeIs('processes.catalog.*')) {
+                abort(403, 'Solo un administrador puede personalizar las acciones de arranque.');
+            }
+            if ($request->routeIs('schools.processes.*') && !$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                abort(403, 'Solo un administrador puede modificar las acciones de arranque del colegio.');
+            }
+
             $schoolParam = $request->route('school');
 
             // Rutas shallow de tickets (ver/editar/borrar): el colegio sale del ticket

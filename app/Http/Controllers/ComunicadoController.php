@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Comunicado;
 use App\Models\ComunicadoAudiencia;
+use App\Services\NotificationService;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +20,8 @@ class ComunicadoController extends Controller
 
         $activos = $base()->activos()->latest()->get();
         $pasados = $base()->pasados()->latest()->get();
+
+        app(SectionNovedadesService::class)->consumeTablero($usuario);
 
         return view('tablero.index', compact('activos', 'pasados'));
     }
@@ -61,12 +65,16 @@ class ComunicadoController extends Controller
             $data['archivo_tipo']   = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'pdf';
         }
 
-        DB::transaction(function () use ($data, $request) {
+        $comunicado = null;
+        DB::transaction(function () use ($data, $request, &$comunicado) {
             $comunicado = Comunicado::create($data);
             $this->guardarAudiencia($comunicado, $request->audiencia);
         });
 
         ActivityLog::log('comunicado', "Comunicado \"{$request->titulo}\" publicado", null, '📢');
+        if ($comunicado) {
+            app(NotificationService::class)->notifyComunicadoPublished($comunicado, $request->audiencia, false);
+        }
 
         return redirect()->route('tablero.index')->with('success', 'Comunicado publicado correctamente.');
     }
@@ -86,6 +94,7 @@ class ComunicadoController extends Controller
         $this->guardarAudiencia($comunicado, $request->audiencia);
 
         ActivityLog::log('comunicado', "Audiencia del comunicado \"{$comunicado->titulo}\" actualizada", null, '👥');
+        app(NotificationService::class)->notifyComunicadoPublished($comunicado, $request->audiencia, true);
 
         return redirect()->route('tablero.index')->with('success', 'Audiencia actualizada correctamente.');
     }

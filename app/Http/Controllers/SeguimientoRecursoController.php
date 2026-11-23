@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\SeguimientoRecurso;
 use App\Models\SeguimientoRecursoAudiencia;
+use App\Services\NotificationService;
 use App\Services\SeguimientoRecursoPreviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -52,8 +53,9 @@ class SeguimientoRecursoController extends Controller
         $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
         $ruta = $file->store("seguimiento-recursos/{$plataforma}/{$categoria}", 'local');
 
+        $recurso = null;
         try {
-            DB::transaction(function () use ($request, $plataforma, $categoria, $file, $extension, $ruta) {
+            DB::transaction(function () use ($request, $plataforma, $categoria, $file, $extension, $ruta, &$recurso) {
                 $recurso = SeguimientoRecurso::create([
                     'plataforma'     => $plataforma,
                     'categoria'      => $categoria,
@@ -76,6 +78,9 @@ class SeguimientoRecursoController extends Controller
 
         $etiqueta = $categoria === 'formatos' ? 'Formato' : 'Manual';
         ActivityLog::log('seguimiento_recurso', "{$etiqueta} \"{$request->titulo}\" subido en {$plataforma}", null, '📁');
+        if ($recurso) {
+            app(NotificationService::class)->notifySeguimientoRecursoUploaded($recurso, $request->audiencia, false);
+        }
 
         return redirect()
             ->route('seguimiento.show', $plataforma)
@@ -143,6 +148,7 @@ class SeguimientoRecursoController extends Controller
         }
 
         ActivityLog::log('seguimiento_recurso', "Recurso \"{$recurso->titulo}\" actualizado", null, '✏️');
+        app(NotificationService::class)->notifySeguimientoRecursoUploaded($recurso, $request->audiencia, true);
 
         return redirect()
             ->route('seguimiento.show', $recurso->plataforma)
@@ -165,6 +171,7 @@ class SeguimientoRecursoController extends Controller
         $this->guardarAudiencia($recurso, $request->audiencia);
 
         ActivityLog::log('seguimiento_recurso', "Audiencia de \"{$recurso->titulo}\" actualizada", null, '👥');
+        app(NotificationService::class)->notifySeguimientoRecursoUploaded($recurso, $request->audiencia, true);
 
         return redirect()
             ->route('seguimiento.show', $recurso->plataforma)

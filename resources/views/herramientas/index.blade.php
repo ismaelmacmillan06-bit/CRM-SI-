@@ -420,9 +420,16 @@
     </div>
 @else
     <div class="archivos-grid">
+        @php $novedadArchIds = $sectionNovedades['highlight_ids']['archivos'] ?? []; @endphp
         @foreach($archivos as $archivo)
-        <div class="archivo-card">
-            <div class="archivo-titulo">{{ $archivo->titulo }}</div>
+        @php $esNovedadArch = in_array($archivo->id, $novedadArchIds, true); @endphp
+        <div id="archivo-{{ $archivo->id }}" class="archivo-card {{ $esNovedadArch ? 'sic-novedad-card' : '' }}">
+            <div class="archivo-titulo" style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap">
+                <span>{{ $archivo->titulo }}</span>
+                @if($esNovedadArch)
+                    <span class="sic-nuevo-pill">✨ Nuevo</span>
+                @endif
+            </div>
 
             @if($archivo->descripcion)
                 <p class="archivo-desc" title="{{ $archivo->descripcion }}">{{ $archivo->descripcion }}</p>

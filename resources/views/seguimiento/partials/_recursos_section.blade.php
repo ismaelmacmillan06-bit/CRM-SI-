@@ -2,6 +2,7 @@
     $esAdmin = auth()->user()?->hasRole('admin');
     $etiquetaSingular = $categoria === 'formatos' ? 'formato' : 'manual';
     $etiquetaPlural = $categoria === 'formatos' ? 'Formatos' : 'Manuales';
+    $novedadRecIds = $sectionNovedades['highlight_ids']['recursos'] ?? [];
 @endphp
 
 <div class="sr-toolbar">
@@ -57,8 +58,9 @@
                 $haceTiempo = $recurso->created_at->locale('es')->diffForHumans();
                 $autor = $recurso->user->name ?? '—';
                 $textoBusqueda = mb_strtolower($recurso->titulo . ' ' . ($recurso->descripcion ?? '') . ' ' . $recurso->archivo_nombre . ' ' . $fmt['etiqueta']);
+                $esNovedadRec = in_array($recurso->id, $novedadRecIds, true);
             @endphp
-            <div class="sr-card" data-sr-card data-search="{{ $textoBusqueda }}">
+            <div id="recurso-{{ $recurso->id }}" class="sr-card {{ $esNovedadRec ? 'sic-novedad-card' : '' }}" data-sr-card data-search="{{ $textoBusqueda }}">
                 {{-- Header de card: ícono por formato + título + botón ojo --}}
                 <div class="sr-card-head">
                     <div class="sr-fmt-icon" style="background:{{ $fmt['bg'] }}; color:{{ $fmt['color'] }}; border-color:{{ $fmt['border'] }}" title="{{ $fmt['etiqueta'] }}">
@@ -89,6 +91,9 @@
                     <div class="sr-card-title-wrap">
                         <div class="sr-card-titulo">{{ $recurso->titulo }}</div>
                         <div class="sr-card-ext-row">
+                            @if($esNovedadRec)
+                                <span class="sic-nuevo-pill">✨ Nuevo</span>
+                            @endif
                             <span class="sr-ext-pill" style="background:{{ $fmt['bg'] }}; color:{{ $fmt['color'] }}; border-color:{{ $fmt['border'] }}">{{ $fmt['etiqueta'] }}</span>
                             <span class="sr-size-pill">{{ $recurso->tamanoFormateado() }}</span>
                         </div>

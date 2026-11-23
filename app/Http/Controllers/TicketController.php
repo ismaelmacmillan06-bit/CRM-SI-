@@ -132,12 +132,14 @@ class TicketController extends Controller
         $oldStatus = $ticket->status;
         $ticket->update($data);
 
+        $statusLabel = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
+        $de  = $statusLabel[$oldStatus]        ?? $oldStatus;
+        $a   = $statusLabel[$request->status]  ?? $request->status;
         if ($oldStatus !== $request->status) {
-            $statusLabel = ['open' => 'Abierto', 'in_progress' => 'En proceso', 'closed' => 'Cerrado'];
-            $de  = $statusLabel[$oldStatus]        ?? $oldStatus;
-            $a   = $statusLabel[$request->status]  ?? $request->status;
             $ico = $request->status === 'closed' ? '✅' : '🔄';
             ActivityLog::log('ticket', "Ticket \"{$ticket->title}\" cambió de $de → $a", $ticket->school_id, $ico);
+        } else {
+            ActivityLog::log('ticket', "Ticket \"{$ticket->title}\" actualizado (estatus: $a)", $ticket->school_id, '✏️');
         }
 
         return redirect()->route('schools.tickets.index', $ticket->school)

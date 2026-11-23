@@ -1,4 +1,7 @@
-<div class="comunicado-card {{ $tipo === 'pasado' ? 'pasado' : '' }}" style="position:relative">
+@php
+    $esNovedadCom = $tipo === 'activo' && in_array($comunicado->id, $sectionNovedades['highlight_ids']['comunicados'] ?? [], true);
+@endphp
+<div id="comunicado-{{ $comunicado->id }}" class="comunicado-card {{ $tipo === 'pasado' ? 'pasado' : '' }} {{ $esNovedadCom ? 'sic-novedad-card' : '' }}" style="position:relative">
 
     {{-- Botón ver --}}
     <button class="btn-ver-comunicado" title="Ver completo"
@@ -18,7 +21,12 @@
     </button>
 
     {{-- Título --}}
-    <div class="comunicado-titulo" style="padding-right:36px">{{ $comunicado->titulo }}</div>
+    <div class="comunicado-titulo" style="padding-right:36px; display:flex; align-items:center; gap:7px; flex-wrap:wrap">
+        <span>{{ $comunicado->titulo }}</span>
+        @if($esNovedadCom)
+            <span class="sic-nuevo-pill">✨ Nuevo</span>
+        @endif
+    </div>
 
     {{-- Audiencia --}}
     <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px">

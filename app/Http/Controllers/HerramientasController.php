@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArchivoSI;
+use App\Services\NotificationService;
+use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,6 +13,9 @@ class HerramientasController extends Controller
     public function index()
     {
         $archivos = ArchivoSI::with('user')->latest()->get();
+        if ($user = auth()->user()) {
+            app(SectionNovedadesService::class)->consumeHerramientas($user);
+        }
         return view('herramientas.index', compact('archivos'));
     }
 
@@ -83,8 +88,12 @@ class HerramientasController extends Controller
 
         abort_if(! $path || ! str_starts_with($path, $base . DIRECTORY_SEPARATOR), 404);
 
+        $html = file_get_contents($path);
+        $faviconUrl = asset('favicon.png') . '?v=3';
+        $html = str_replace('href="/favicon.png?v=3"', 'href="' . e($faviconUrl) . '"', $html);
+
         return response()->make(
-            file_get_contents($path),
+            $html,
             200,
             ['Content-Type' => 'text/html; charset=utf-8']
         );
@@ -136,6 +145,8 @@ class HerramientasController extends Controller
         $registro->user_id = auth()->id();
         $registro->save();
 
+        app(NotificationService::class)->notifyArchivoSiUploaded($registro, false);
+
         return redirect()->route('herramientas.index')
             ->with('success', 'Archivo publicado correctamente.');
     }
@@ -178,6 +189,8 @@ class HerramientasController extends Controller
         }
 
         $archivoSI->update($updates);
+
+        app(NotificationService::class)->notifyArchivoSiUploaded($archivoSI, true);
 
         return redirect()->route('herramientas.index')
             ->with('success', 'Archivo actualizado correctamente.');

@@ -43,7 +43,7 @@ class SchoolFileController extends Controller
         $archivo = $request->file('archivo');
         $ruta = $archivo->store("repositorio/{$school->id}", 'local');
 
-        $school->files()->create([
+        $file = $school->files()->create([
             'uploaded_by' => auth()->id(),
             'nombre'      => basename($archivo->getClientOriginalName()),
             'ruta'        => $ruta,

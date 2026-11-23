@@ -349,7 +349,6 @@
     });
 })();
 </script>
-@endif
 
 <script>
 (function () {

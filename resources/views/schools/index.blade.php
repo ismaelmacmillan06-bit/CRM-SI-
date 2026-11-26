@@ -98,9 +98,9 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver</a>
-                        @hasanyrole('admin|consultor_digital')
+                        @puedeEliminar($school)
                         <a href="{{ route('schools.edit', $school) }}" class="btn btn-secondary btn-sm">Editar</a>
-                        @endhasanyrole
+                        @endpuedeEliminar
                         @role('admin')
                         <form method="POST" action="{{ route('schools.destroy', $school) }}"
                               id="form-eliminar-colegio-{{ $school->id }}">

@@ -27,7 +27,7 @@
         📥 Importación masiva Excel
     </button>
     @endif
-    @if($schoolBundles->isNotEmpty())
+    @if($schoolBundles->isNotEmpty() && \App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school))
     <form method="POST" action="{{ route('schools.bundles.destroy-all', $school) }}"
           id="form-delete-all" style="margin:0">
         @csrf @method('DELETE')
@@ -343,11 +343,13 @@ function cerrarEliminarBundle() {
                         🔄 Resurtido
                     </button>
                     @endif
+                    @puedeEliminar($school)
                     <button type="button"
                             onclick="abrirEliminarBundle({{ json_encode(route('schools.bundles.destroy', [$school, $bundle])) }}, {{ json_encode($bundle->name) }})"
                             class="btn btn-danger btn-sm">
                         Eliminar
                     </button>
+                    @endpuedeEliminar
                     @endhasanyrole
                 </td>
             </tr>
@@ -614,6 +616,7 @@ $resurtidosJson = $resurtidosPorBundle->map(fn($items) => $items->map(fn($r) => 
 <script>
 const resurtidosData = @json(json_decode($resurtidosJson));
 const puedeEditarResurtido = @json(auth()->user()->hasAnyRole(['admin', 'consultor_digital']));
+const puedeEliminarResurtido = @json(\App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school));
 
 const baseResurtidoUrl = '{{ url("schools/{$school->id}/bundles") }}';
 let historialBundleActual = null;
@@ -655,11 +658,11 @@ function renderHistorial(bundleId) {
                                border-radius:6px; font-size:11.5px; font-weight:500; cursor:pointer">
                     Editar
                 </button>
-                <button onclick="eliminarResurtido(${bundleId}, ${r.id})"
+                ${puedeEliminarResurtido ? `<button onclick="eliminarResurtido(${bundleId}, ${r.id})"
                         style="padding:4px 9px; background:#fff5f5; color:#dc2626; border:1px solid #fecaca;
                                border-radius:6px; font-size:11.5px; font-weight:500; cursor:pointer">
                     Eliminar
-                </button>
+                </button>` : ''}
             </td>` : ''}
         </tr>`;
     });

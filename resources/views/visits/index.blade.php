@@ -104,11 +104,13 @@
                     @hasanyrole('admin|consultor_digital')
                     <div class="acciones">
                         <a href="{{ route('visits.edit', $visit) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        @puedeEliminar($school)
                         <form method="POST" action="{{ route('visits.destroy', $visit) }}"
                               onsubmit="return confirm('¿Eliminar esta sesión?')">
                             @csrf @method('DELETE')
                             <button class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
+                        @endpuedeEliminar
                     </div>
                     @endhasanyrole
                 </td>

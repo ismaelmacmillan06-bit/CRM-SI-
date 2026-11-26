@@ -34,6 +34,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Borrar datos del colegio (y editar su ficha general): admin y el consultor digital asignado.
+        // Un responsable de plataforma trabaja en el colegio pero no ve estos botones.
+        \Illuminate\Support\Facades\Blade::if('puedeEliminar', fn ($school) => \App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school));
+
         // En producción el SSL se atiende antes de Laravel: la petición llega como http
         // y los formularios salían con action="http://..." (Chrome: "información no segura").
         if ($this->app->environment('production') || str_starts_with((string) config('app.url'), 'https://')) {

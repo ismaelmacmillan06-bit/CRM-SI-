@@ -72,8 +72,11 @@
         </button>
     @endif
     <a href="{{ route('seguimiento.show', $slug) }}" class="btn btn-secondary btn-sm">← Regresar</a>
+    @php $verColegio = !auth()->user()->hasRole('consultor_digital') || \App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school); @endphp
+    @if($verColegio)
     <a href="{{ route('schools.tickets.index', $school) }}" class="btn btn-secondary btn-sm" style="margin-left:auto">🎫 Tickets</a>
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
+    @endif
 </div>
 
 @unless($puedeEditar)
@@ -182,7 +185,7 @@
                     <div style="background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; padding:12px 15px; border-radius:10px; font-size:13.5px; display:flex; flex-direction:column; gap:10px;">
                         <span>ℹ️ Las acciones de arranque de <strong>{{ $nombre }}</strong> aún no están disponibles. Mientras tanto puedes consultar o editar los datos y fechas de este colegio.</span>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>
+                            @if($verColegio)<a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">Ver colegio →</a>@endif
                             @if($puedeConfigurar)
                                 <button type="button" class="btn btn-primary btn-sm" onclick="window.abrirCatalogoSeguimiento('{{ $slug }}')">⚙️ Configurar acciones</button>
                             @endif

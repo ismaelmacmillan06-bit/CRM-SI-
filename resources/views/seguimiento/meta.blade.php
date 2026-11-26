@@ -187,27 +187,28 @@
 </div>
 @endunless
 
+@php $conAlcance = auth()->user()->hasRole('consultor_digital'); @endphp
 {{-- Cards: también sirven de filtro --}}
 <div class="mt-cards">
     <button type="button" class="mt-card" data-filtro-card="">
-        <div class="num">{{ $filas->count() }}</div>
+        <div class="num" data-cuenta="total">{{ $filas->count() }}</div>
         <div class="lbl">🏫 Colegios</div>
     </button>
     <button type="button" class="mt-card azul" data-filtro-card="cap">
-        <div class="num">{{ $proximasCap }}</div>
+        <div class="num" data-cuenta="cap">{{ $proximasCap }}</div>
         <div class="lbl">👩‍🏫 Capacitaciones próximas (30 días)</div>
     </button>
     <button type="button" class="mt-card verde" data-filtro-card="apl">
-        <div class="num">{{ $proximasApl }}</div>
+        <div class="num" data-cuenta="apl">{{ $proximasApl }}</div>
         <div class="lbl">📝 Aplicaciones próximas (30 días)</div>
     </button>
     <button type="button" class="mt-card ambar" data-filtro-card="pend">
-        <div class="num">{{ $pendientes }}</div>
+        <div class="num" data-cuenta="pend">{{ $pendientes }}</div>
         <div class="lbl">⏳ Con fechas pendientes</div>
     </button>
     @if($tieneAcciones)
     <button type="button" class="mt-card verde" data-filtro-card="arr-ok">
-        <div class="num">{{ $completos }}/{{ $filas->count() }}</div>
+        <div class="num" data-cuenta="arr-ok">{{ $completos }}/{{ $filas->count() }}</div>
         <div class="lbl">🚀 Arranque completo</div>
     </button>
     @endif
@@ -296,7 +297,7 @@
     $eventos = collect();
     foreach ($filas as $fila) {
         $m = $fila['meta'];
-        $base = ['url' => route('seguimiento.colegio', [$slug, $fila['colegio']]), 'colegio' => $fila['colegio']->name,
+        $base = ['url' => route('seguimiento.colegio', [$slug, $fila['colegio']]), 'colegio' => $fila['colegio']->name, 'mio' => $fila['esMio'],
                  'administrador' => $m->administrador, 'capacitacion' => $m->capacitacion];
         if ($m->fecha_capacitacion) {
             $eventos->push($base + ['tipo' => 'cap', 'fecha' => $m->fecha_capacitacion->format('Y-m-d'), 'hora' => $m->horaCorta()]);
@@ -363,6 +364,12 @@
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
         @if($filas->isNotEmpty())
         <div style="display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end">
+            @if($conAlcance)
+            <select id="mt-alcance" class="form-control" style="max-width:190px" aria-label="Qué colegios mostrar">
+                <option value="mios">🏫 Mis colegios</option>
+                <option value="todos">🌐 Todos los colegios</option>
+            </select>
+            @endif
             <input type="search" id="mt-buscar" class="form-control" autocomplete="off"
                    placeholder="🔍 Buscar colegio, ID, administrador, capacitación..." style="flex:1 1 240px; max-width:380px">
             <select id="mt-filtro" class="form-control" style="max-width:240px">
@@ -408,10 +415,17 @@
                 $gestionar = route('seguimiento.colegio', [$slug, $c]);
                 $esNovedadMeta = in_array($c->id, $novedadMetaSchoolIds, true);
             @endphp
-            <tr id="meta-school-{{ $c->id }}" class="{{ $esNovedadMeta ? 'sic-novedad-row' : '' }}" data-estado="{{ $estado }}" data-texto="{{ $texto }}">
+            <tr id="meta-school-{{ $c->id }}" class="{{ $esNovedadMeta ? 'sic-novedad-row' : '' }}" data-estado="{{ $estado }}" data-texto="{{ $texto }}" data-mio="{{ $fila['esMio'] ? 1 : 0 }}">
                 <td style="min-width:170px; max-width:260px">
                     <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap">
-                        <a href="{{ route('schools.show', $c) }}" style="font-weight:600; color:var(--text); text-decoration:none">{{ $c->name }}</a>
+                        @if($fila['gestionable'])
+                            <a href="{{ route('schools.show', $c) }}" style="font-weight:600; color:var(--text); text-decoration:none">{{ $c->name }}</a>
+                        @else
+                            <span style="font-weight:600">{{ $c->name }}</span>
+                        @endif
+                        @if($conAlcance && $fila['esMio'])
+                            <span class="badge badge-success" style="font-size:10.5px">🏫 Mío</span>
+                        @endif
                         @if($esNovedadMeta)
                             <span class="sic-nuevo-pill">✨ Novedad</span>
                         @endif
@@ -475,11 +489,14 @@
                 </td>
                 <td style="text-align:right">
                     <div class="mt-acc">
+                        {{-- Colegio ajeno sin responsabilidad: solo consulta su ficha Meta --}}
+                        @if($fila['gestionable'] || !$conAlcance)
                         <a href="{{ route('schools.students.index', $c) }}" class="btn btn-secondary btn-sm" title="Alumnos de {{ $c->name }}">👨‍🎓</a>
                         <a href="{{ route('schools.tickets.index', $c) }}" class="btn btn-secondary btn-sm" title="Tickets de {{ $c->name }}">🎫</a>
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
-                        @if($tieneAcciones)
-                            <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
+                        @endif
+                        @if($tieneAcciones || !$fila['gestionable'])
+                            <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
                         @else
                             <a href="{{ route('schools.show', $c) }}" class="btn btn-secondary btn-sm" style="white-space:nowrap">Ver colegio →</a>
                         @endif
@@ -520,19 +537,44 @@
     const filas  = document.querySelectorAll('#mt-tbody tr[data-estado]');
     const sinRes = document.getElementById('mt-sin-resultados');
 
+    // Mis colegios / Todos (solo consultores digitales); por defecto "Mis colegios" y se recuerda
+    const alcance = document.getElementById('mt-alcance');
+    if (alcance) {
+        try { const g = localStorage.getItem('sic-meta-alcance'); if (g === 'todos' || g === 'mios') alcance.value = g; } catch (e) {}
+    }
+    const soloMios = () => alcance?.value === 'mios';
+    const enAlcance = (mio) => !soloMios() || !!mio;
+
     function aplicar() {
         const q = (buscar?.value || '').trim().toLowerCase();
         const f = filtro?.value || '';
         let visibles = 0;
+        const cuenta = { total: 0, cap: 0, apl: 0, pend: 0, 'arr-ok': 0 };
         filas.forEach(tr => {
-            const ok = (!q || tr.dataset.texto.includes(q)) && (!f || tr.dataset.estado.split(' ').includes(f));
+            const dentro = enAlcance(tr.dataset.mio === '1');
+            const estados = tr.dataset.estado.split(' ');
+            if (dentro) {
+                cuenta.total++;
+                Object.keys(cuenta).forEach(k => { if (k !== 'total' && estados.includes(k)) cuenta[k]++; });
+            }
+            const ok = dentro && (!q || tr.dataset.texto.includes(q)) && (!f || estados.includes(f));
             tr.style.display = ok ? '' : 'none';
             if (ok) visibles++;
+        });
+        document.querySelectorAll('[data-cuenta]').forEach(el => {
+            const k = el.dataset.cuenta;
+            el.textContent = k === 'arr-ok' ? cuenta[k] + '/' + cuenta.total : cuenta[k];
         });
         sinRes.style.display = filas.length && !visibles ? '' : 'none';
         cards.forEach(c => c.classList.toggle('activa', c.dataset.filtroCard === f && f !== ''));
     }
+    alcance?.addEventListener('change', () => {
+        try { localStorage.setItem('sic-meta-alcance', alcance.value); } catch (e) {}
+        aplicar();
+        if (document.getElementById('mt-vista-calendario').style.display !== 'none') pintarCalendario();
+    });
     buscar?.addEventListener('input', aplicar);
+    if (alcance) aplicar(); // aplica "Mis colegios" desde que carga
     filtro?.addEventListener('change', aplicar);
     cards.forEach(c => c.addEventListener('click', () => {
         if (!filtro) return;
@@ -607,7 +649,7 @@
             celda.innerHTML = '<div class="mt-cal-num"><span>' + dia + '</span></div>';
             const cont = document.createElement('div');
             cont.className = 'mt-cal-eventos';
-            const delDia = EVENTOS.filter(e => e.fecha === fecha).sort(orden);
+            const delDia = EVENTOS.filter(e => e.fecha === fecha && enAlcance(e.mio)).sort(orden);
             delDia.forEach((e, idx) => cont.appendChild(botonEvento(e, idx >= MAX_POR_DIA)));
             if (delDia.length > MAX_POR_DIA) {
                 const mas = document.createElement('button');
@@ -625,7 +667,7 @@
         }
 
         // Lista del mes (visible en celular)
-        const delMes = EVENTOS.filter(e => e.fecha.startsWith(prefijo))
+        const delMes = EVENTOS.filter(e => e.fecha.startsWith(prefijo) && enAlcance(e.mio))
             .sort((a, b) => a.fecha.localeCompare(b.fecha) || orden(a, b));
         document.getElementById('mt-cal-lista-titulo').textContent = '📅 ' + MESES[calMes] + ': ' + delMes.length + (delMes.length === 1 ? ' evento' : ' eventos');
         const lista = document.getElementById('mt-cal-lista');

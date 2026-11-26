@@ -21,6 +21,7 @@
     <button onclick="document.getElementById('modal-pdf').style.display='flex'"
             class="btn btn-secondary">📄 Carga masiva PDF</button>
     @endif
+    @puedeEliminar($school)
     <form method="POST" action="{{ route('schools.students.destroy-all', $school) }}"
           id="form-borrar-todos-alumnos">
         @csrf @method('DELETE')
@@ -29,6 +30,7 @@
             🗑️ Borrar todos
         </button>
     </form>
+    @endpuedeEliminar
     @endhasanyrole
     <button type="button"
             id="btn-descargar-por-clase"
@@ -549,6 +551,7 @@
                            style="flex:1; text-align:center; white-space:nowrap; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
                             Admin Servicios
                         </a>
+                        @puedeEliminar($school)
                         <form method="POST" action="{{ route('students.destroy', $student) }}"
                               id="form-eliminar-alumno-{{ $student->id }}"
                               style="flex:1">
@@ -559,6 +562,7 @@
                                 Eliminar
                             </button>
                         </form>
+                        @endpuedeEliminar
                     </div>
                     @endhasanyrole
                 </td>

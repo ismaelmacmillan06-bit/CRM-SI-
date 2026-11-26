@@ -83,6 +83,9 @@
         <small style="color:var(--text-muted)">El rol solo puede modificarlo el administrador</small>
     @endif
 </div>
+@if(auth()->user()->hasRole('admin'))
+    @include('consultants._responsable_seguimiento', ['seleccionadas' => $consultant->responsable_seguimiento ?? []])
+@endif
 <div class="form-group">
     <label class="form-label">Foto de perfil</label>
     @if($consultant->photo)

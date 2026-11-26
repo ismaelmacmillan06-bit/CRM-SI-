@@ -128,7 +128,7 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('schools.repositorio.download', [$school, $file]) }}" class="btn btn-secondary btn-sm">⬇ Descargar</a>
-                        @hasanyrole('admin|consultor_digital')
+                        @puedeEliminar($school)
                         <form method="POST" action="{{ route('schools.repositorio.destroy', [$school, $file]) }}"
                               id="form-eliminar-archivo-{{ $file->id }}">
                             @csrf @method('DELETE')
@@ -139,7 +139,7 @@
                                 Eliminar
                             </button>
                         </form>
-                        @endhasanyrole
+                        @endpuedeEliminar
                     </div>
                 </td>
             </tr>

@@ -351,12 +351,14 @@ function ejecutarReporteTickets(e) {
                         <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-secondary btn-sm">Ver</a>
                         @hasanyrole('admin|consultor_digital')
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-secondary btn-sm">Editar</a>
+                        @puedeEliminar($school)
                         <form method="POST" action="{{ route('tickets.destroy', $ticket) }}"
                               id="form-ticket-{{ $ticket->id }}"
                               onsubmit="return confirm('¿Eliminar este ticket?')">
                             @csrf @method('DELETE')
                             <button class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
+                        @endpuedeEliminar
                         @endhasanyrole
                     </div>
                 </td>

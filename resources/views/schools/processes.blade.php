@@ -149,7 +149,7 @@
                                  style="width:40px; height:40px; object-fit:cover; border-radius:6px;
                                         border:2px solid #22c55e; display:block; margin:0 auto">
                         </a>
-                        @hasanyrole('admin|consultor_digital')
+                        @puedeEliminar($school)
                         <form method="POST"
                               action="{{ route('schools.processes.evidence.destroy', [$school, $slp]) }}"
                               id="form-del-ev-{{ $slp->id }}"
@@ -161,7 +161,7 @@
                                 🗑
                             </button>
                         </form>
-                        @endhasanyrole
+                        @endpuedeEliminar
                     @else
                         <span id="ev-placeholder-{{ $slp->id }}" style="color:var(--text-muted); font-size:12px">—</span>
                     @endif

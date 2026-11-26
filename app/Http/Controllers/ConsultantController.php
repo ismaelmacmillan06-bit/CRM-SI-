@@ -42,6 +42,8 @@ public function store(Request $request)
         'zone'     => 'nullable|string|max:100',
         'role'     => 'required|exists:roles,name',
         'photo'    => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+        'responsable_seguimiento'   => 'nullable|array',
+        'responsable_seguimiento.*' => 'string',
     ]);
 
     $user = User::create([
@@ -56,6 +58,7 @@ public function store(Request $request)
         'user_id' => $user->id,
         'phone'   => $request->phone,
         'zone'    => $request->zone,
+        'responsable_seguimiento' => $this->responsabilidades($request, $request->role),
     ];
 
     if ($request->hasFile('photo')) {
@@ -99,6 +102,8 @@ public function store(Request $request)
         if ($isAdmin) {
             $rules['email'] = 'required|email|unique:users,email,' . $consultant->user->id;
             $rules['role']  = 'required|exists:roles,name';
+            $rules['responsable_seguimiento']   = 'nullable|array';
+            $rules['responsable_seguimiento.*'] = 'string';
         }
 
         $request->validate($rules);
@@ -115,6 +120,16 @@ public function store(Request $request)
 
         $data = ['phone' => $request->phone, 'zone' => $request->zone];
 
+        // Responsable de Seguimiento: solo el admin lo asigna (nadie se lo puede dar a sí mismo)
+        if ($isAdmin && $request->has('responsable_seguimiento_enviado')) {
+            $antes = (array) ($consultant->responsable_seguimiento ?? []);
+            $data['responsable_seguimiento'] = $this->responsabilidades($request, $request->input('role', $consultant->user->getRoleNames()->first()));
+            if ($antes != (array) ($data['responsable_seguimiento'] ?? [])) {
+                $lista = implode(', ', (array) ($data['responsable_seguimiento'] ?? [])) ?: 'ninguna';
+                ActivityLog::log('equipo', "Responsable de Seguimiento de \"{$consultant->user->name}\": {$lista}", null, '🧭');
+            }
+        }
+
         if ($request->hasFile('photo')) {
             if ($consultant->photo) {
                 Storage::disk('public')->delete($consultant->photo);
@@ -126,6 +141,18 @@ public function store(Request $request)
 
         return redirect()->route('consultants.index')
                          ->with('success', 'Consultor actualizado correctamente.');
+    }
+
+    /** Plataformas válidas marcadas; solo se guardan para consultores digitales. */
+    private function responsabilidades(Request $request, ?string $rol): ?array
+    {
+        if ($rol !== 'consultor_digital') {
+            return null;
+        }
+        $validas = array_keys(\App\Http\Controllers\SeguimientoController::PLATAFORMAS);
+        $marcadas = array_values(array_intersect($validas, (array) $request->input('responsable_seguimiento', [])));
+
+        return $marcadas ?: null;
     }
 
     public function updatePassword(Request $request, Consultant $consultant)

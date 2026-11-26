@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\Niveles;
 use App\Models\ActivityLog;
+use App\Helpers\AccesoColegios;
 use App\Models\Consultant;
 use App\Models\School;
 use App\Models\SchoolConsultant;
@@ -274,7 +275,28 @@ class SeguimientoController extends Controller
     }
 
     // Un renglón por colegio con su avance de arranque (y, en plataformas con agenda, sus datos de Meta)
+    // Filas de la plataforma + si el colegio es del consultor ("Mío") y si puede trabajar en él.
+    // Para el consultor digital sus colegios van primero.
     private function filasPlataforma(string $slug)
+    {
+        $user = auth()->user();
+        $esDigital = $user->hasRole('consultor_digital');
+        $asignados = $esDigital ? AccesoColegios::idsAsignados($user) : [];
+        $responsable = $esDigital ? AccesoColegios::idsResponsable($user, $slug) : [];
+        $editaRol = self::puedeEditar($slug);
+
+        $filas = $this->filasPlataformaBase($slug)->map(function (array $fila) use ($esDigital, $asignados, $responsable, $editaRol) {
+            $id = (int) $fila['colegio']->id;
+            $fila['esMio'] = in_array($id, $asignados, true);
+            $fila['gestionable'] = $editaRol && (!$esDigital || $fila['esMio'] || in_array($id, $responsable, true));
+
+            return $fila;
+        });
+
+        return $esDigital ? $filas->sortByDesc('esMio')->values() : $filas;
+    }
+
+    private function filasPlataformaBase(string $slug)
     {
         $info = $this->infoPlataforma($slug);
         $agenda = !empty($info['agenda']);
@@ -502,7 +524,7 @@ class SeguimientoController extends Controller
                 'guardadas'        => $guardadas,
                 'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
                 'contacto'         => $info['contacto'] ?? null,
-                'puedeEditar'      => self::puedeEditar($plataforma),
+                'puedeEditar'      => $this->puedeEditarColegio($plataforma, $school),
                 'puedeConfigurar'  => self::puedeConfigurar(),
             ]);
         }
@@ -541,7 +563,7 @@ class SeguimientoController extends Controller
                 'guardadas'         => collect(),
                 'hechas'            => $hechas,
                 'totalAcciones'     => $niveles->count() * count($info['acciones']),
-                'puedeEditar'       => self::puedeEditar($plataforma),
+                'puedeEditar'       => $this->puedeEditarColegio($plataforma, $school),
                 'puedeConfigurar'   => self::puedeConfigurar(),
             ]);
         }
@@ -564,14 +586,14 @@ class SeguimientoController extends Controller
             'guardadas'        => $guardadas,
             'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
             'totalAcciones'    => count($info['acciones']),
-            'puedeEditar'      => self::puedeEditar($plataforma),
+            'puedeEditar'      => $this->puedeEditarColegio($plataforma, $school),
             'puedeConfigurar'  => self::puedeConfigurar(),
         ]);
     }
 
     public function guardar(Request $request, string $plataforma, School $school)
     {
-        abort_unless(self::puedeEditar($plataforma), 403, 'Seguimiento es solo de consulta para tu rol.');
+        abort_unless($this->puedeEditarColegio($plataforma, $school), 403, 'Seguimiento es solo de consulta para tu rol.');
 
         $info = $this->plataformaDelColegio($plataforma, $school);
 
@@ -633,7 +655,7 @@ class SeguimientoController extends Controller
 
     public function guardarNiveles(Request $request, string $plataforma, School $school)
     {
-        abort_unless(self::puedeEditar($plataforma), 403, 'Seguimiento es solo de consulta para tu rol.');
+        abort_unless($this->puedeEditarColegio($plataforma, $school), 403, 'Seguimiento es solo de consulta para tu rol.');
 
         $info = $this->plataformaDelColegio($plataforma, $school);
         abort_if(empty($info['por_nivel']), 404);
@@ -729,20 +751,39 @@ class SeguimientoController extends Controller
         return false;
     }
 
-    // Colegios que llevan la plataforma: sin inactivos y, para consultor digital, solo los suyos
+    // Colegios que llevan la plataforma: sin inactivos. El consultor digital ve solo los suyos,
+    // salvo en Meta (la consultan todos) y en las plataformas de las que es responsable.
     private function colegiosDe(string $plataforma)
     {
         $query = School::noInactivos()
             ->whereHas('services', fn ($q) => $q->where('plataforma', $plataforma));
 
-        if (auth()->user()->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', auth()->id())->first();
-            $query->whereIn('id', SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')
-                ->pluck('school_id'));
+        $user = auth()->user();
+        if ($user->hasRole('consultor_digital') && !$this->digitalVeTodos($user, $plataforma)) {
+            $query->whereIn('id', AccesoColegios::idsAsignados($user));
         }
 
         return $query;
+    }
+
+    private function digitalVeTodos($user, string $plataforma): bool
+    {
+        return $plataforma === 'meta' || in_array($plataforma, AccesoColegios::plataformasResponsable($user), true);
+    }
+
+    // Puede capturar en ESTE colegio: su rol edita la plataforma y, si es digital, el colegio es
+    // suyo o es responsable de la plataforma.
+    private function puedeEditarColegio(string $plataforma, School $school): bool
+    {
+        $user = auth()->user();
+        if (!self::puedeEditar($plataforma)) {
+            return false;
+        }
+        if (!$user->hasRole('consultor_digital')) {
+            return true;
+        }
+
+        return AccesoColegios::esAsignado($user, $school) || AccesoColegios::esResponsable($user, $school, $plataforma);
     }
 
     private function plataformaDelColegio(string $plataforma, School $school): array

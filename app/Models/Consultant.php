@@ -7,7 +7,11 @@ use App\Models\SchoolConsultant;
 
 class Consultant extends Model
 {
-    protected $fillable = ['user_id', 'phone', 'zone', 'photo'];
+    protected $fillable = ['user_id', 'phone', 'zone', 'photo', 'responsable_seguimiento'];
+
+    protected $casts = [
+        'responsable_seguimiento' => 'array',
+    ];
 
     public function user()
     {

@@ -2,8 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Consultant;
-use App\Models\SchoolConsultant;
+use App\Helpers\AccesoColegios;
 use App\Models\School;
 use Closure;
 use Illuminate\Http\Request;
@@ -231,23 +230,38 @@ class VerificarAccesoRol
             }
 
             if ($schoolParam) {
-                $consultant = Consultant::where('user_id', $user->id)->first();
-
-                if (!$consultant) {
+                if (!AccesoColegios::consultor($user)) {
                     abort(403, 'No se encontró tu perfil de consultor.');
                 }
-
-                $assignedIds = SchoolConsultant::where('consultant_id', $consultant->id)
-                    ->where('role', 'digital')
-                    ->pluck('school_id')
-                    ->toArray();
 
                 $schoolId = $schoolParam instanceof School
                     ? $schoolParam->id
                     : (int) $schoolParam;
+                $asignado = AccesoColegios::esAsignado($user, $schoolId);
 
-                if (!in_array($schoolId, $assignedIds)) {
-                    abort(403, 'No tienes acceso a este colegio.');
+                // Seguimiento: el permiso depende de la plataforma de la URL. Meta lo consultan
+                // todos los digitales; capturar es del asignado o del responsable de esa plataforma.
+                if ($request->routeIs('seguimiento.*')) {
+                    $plataforma = $this->plataformaDeSeguimiento($request);
+                    $soloConsulta = $request->isMethod('GET') || $request->isMethod('HEAD');
+                    $permitido = $asignado
+                        || AccesoColegios::esResponsable($user, $schoolId, $plataforma)
+                        || ($soloConsulta && $plataforma === 'meta');
+                    abort_unless($permitido, 403, 'No tienes acceso a este colegio.');
+
+                    return $next($request);
+                }
+
+                if (!$asignado) {
+                    abort_unless(AccesoColegios::esResponsable($user, $schoolId), 403, 'No tienes acceso a este colegio.');
+
+                    // Responsable de plataforma: todo menos borrar y cambiar los datos generales del colegio
+                    if ($request->isMethod('DELETE')) {
+                        abort(403, 'Solo el consultor asignado al colegio puede eliminar información.');
+                    }
+                    if ($request->routeIs(['schools.edit', 'schools.update'])) {
+                        abort(403, 'Solo el consultor asignado puede editar los datos generales del colegio.');
+                    }
                 }
             }
 

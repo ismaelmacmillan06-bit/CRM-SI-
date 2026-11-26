@@ -258,8 +258,9 @@ class SeguimientoMetaTest extends TestCase
 
         $res = $this->actingAs($user)->get(route('seguimiento.excel', 'meta'))->assertOk();
         $hoja = IOFactory::load($res->getFile()->getPathname())->getSheetByName('Colegios');
+        // Meta lo consultan todos los digitales: sus colegios primero y luego los demás
         $this->assertSame('Colegio propio', $hoja->getCell('B5')->getValue());
-        $this->assertNull($hoja->getCell('B6')->getValue());
+        $this->assertSame('Colegio ajeno', $hoja->getCell('B6')->getValue());
 
         $this->actingAs($this->usuario('admin'))->get('/seguimiento/inexistente/excel')->assertNotFound();
     }
@@ -282,12 +283,14 @@ class SeguimientoMetaTest extends TestCase
         $ajeno = $this->colegio('Colegio ajeno');
         SchoolConsultant::create(['school_id' => $propio->id, 'consultant_id' => $consultant->id, 'role' => 'digital']);
 
+        // Ve todos los colegios Meta, pero en los ajenos solo consulta
         $this->actingAs($user)->get(route('seguimiento.show', 'meta'))
             ->assertSee('Colegio propio')
-            ->assertDontSee('Colegio ajeno');
+            ->assertSee('Colegio ajeno')
+            ->assertSee('Mis colegios');
 
-        $this->get(route('seguimiento.colegio', ['meta', $propio]))->assertOk();
-        $this->get(route('seguimiento.colegio', ['meta', $ajeno]))->assertForbidden();
+        $this->get(route('seguimiento.colegio', ['meta', $propio]))->assertOk()->assertSee('Guardar');
+        $this->get(route('seguimiento.colegio', ['meta', $ajeno]))->assertOk()->assertDontSee(route('schools.tickets.index', $ajeno));
         $this->post(route('seguimiento.guardar', ['meta', $propio]), $this->datos())->assertRedirect();
         $this->post(route('seguimiento.guardar', ['meta', $ajeno]), $this->datos())->assertForbidden();
         $this->assertSame([$propio->id], SeguimientoMeta::pluck('school_id')->all());

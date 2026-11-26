@@ -140,6 +140,16 @@
     <div class="card-header" style="gap:12px; flex-wrap:wrap">
         <span class="card-title">🏫 Colegios con {{ $nombre }}</span>
         <div style="display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end">
+            @php
+                $conAlcance = auth()->user()->hasRole('consultor_digital')
+                    && in_array($slug, \App\Helpers\AccesoColegios::plataformasResponsable(auth()->user()), true);
+            @endphp
+            @if($conAlcance && $filas->isNotEmpty())
+                <select id="seg-alcance" class="form-control" style="max-width:190px" aria-label="Qué colegios mostrar">
+                    <option value="mios">🏫 Mis colegios</option>
+                    <option value="todos">🌐 Todos (responsable)</option>
+                </select>
+            @endif
             @if($filas->isNotEmpty())
                 <input type="search" id="buscador-colegios" class="form-control" autocomplete="off"
                        placeholder="🔍 Buscar colegio..." style="flex:1 1 200px; max-width:260px">
@@ -169,9 +179,10 @@
         </thead>
         <tbody id="tabla-colegios">
             @forelse($filas as $fila)
-            <tr data-nombre="{{ mb_strtolower($fila['colegio']->name . ' ' . $fila['colegio']->nexus_id) }}">
+            <tr data-nombre="{{ mb_strtolower($fila['colegio']->name . ' ' . $fila['colegio']->nexus_id) }}" data-mio="{{ $fila['esMio'] ? 1 : 0 }}">
                 <td>
                     <strong>{{ $fila['colegio']->name }}</strong>
+                    @if($conAlcance && $fila['esMio'])<span class="badge badge-success" style="font-size:10.5px">🏫 Mío</span>@endif
                     <div style="font-size:12px; color:var(--text-muted)">{{ $fila['colegio']->state ?? $fila['colegio']->city ?? '—' }}</div>
                 </td>
                 <td style="font-size:13px">{{ $fila['consultor'] ?? 'Sin asignar' }}</td>
@@ -264,7 +275,7 @@
                            style="white-space:nowrap" title="Sesiones de {{ $fila['colegio']->name }}">📅 Sesiones</a>
                         @if($tieneAcciones)
                             <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn btn-secondary btn-sm"
-                               style="white-space:nowrap">{{ $puedeEditar ? 'Gestionar' : 'Ver' }} →</a>
+                               style="white-space:nowrap">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
                         @else
                             <a href="{{ route('schools.show', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
                                style="white-space:nowrap">Ver colegio →</a>
@@ -650,12 +661,29 @@
 @endif
 
 <script>
-    document.getElementById('buscador-colegios')?.addEventListener('input', function () {
-        const texto = this.value.toLowerCase().trim();
+(function () {
+    const buscador = document.getElementById('buscador-colegios');
+    // Responsable de la plataforma: "Mis colegios" (por defecto, se recuerda) o todos
+    const alcance = document.getElementById('seg-alcance');
+    const clave = 'sic-seg-alcance-{{ $slug }}';
+    if (alcance) {
+        try { const g = localStorage.getItem(clave); if (g === 'todos' || g === 'mios') alcance.value = g; } catch (e) {}
+    }
+    function aplicar() {
+        const texto = (buscador?.value || '').toLowerCase().trim();
+        const soloMios = alcance?.value === 'mios';
         document.querySelectorAll('#tabla-colegios tr[data-nombre]').forEach(function (fila) {
-            fila.style.display = fila.dataset.nombre.includes(texto) ? '' : 'none';
+            const ok = fila.dataset.nombre.includes(texto) && (!soloMios || fila.dataset.mio === '1');
+            fila.style.display = ok ? '' : 'none';
         });
+    }
+    buscador?.addEventListener('input', aplicar);
+    alcance?.addEventListener('change', function () {
+        try { localStorage.setItem(clave, alcance.value); } catch (e) {}
+        aplicar();
     });
+    if (alcance) aplicar();
+})();
 </script>
 
 @if($puedeConfigurar)

@@ -33,7 +33,7 @@
        onmouseout="this.style.background='#eff6ff';this.style.color='#1d4ed8'">
         📋 Descargar plantilla
     </a>
-    @if($teachers->count())
+    @if($teachers->count() && \App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school))
     <form method="POST" action="{{ route('schools.teachers.destroy-all', $school) }}"
           onsubmit="return confirm('¿Eliminar TODOS los {{ $teachers->count() }} docentes de {{ $school->name }}? Esta acción no se puede deshacer.')">
         @csrf @method('DELETE')
@@ -165,12 +165,14 @@
                            style="flex:1; text-align:center; white-space:nowrap; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe;">
                             Admin Servicios
                         </a>
+                        @puedeEliminar($school)
                         <form method="POST" action="{{ route('teachers.destroy', $teacher) }}"
                               style="flex:1"
                               onsubmit="return confirm('¿Eliminar este docente?')">
                             @csrf @method('DELETE')
                             <button class="btn btn-danger btn-sm" style="width:100%; white-space:nowrap">Eliminar</button>
                         </form>
+                        @endpuedeEliminar
                     </div>
                     @endhasanyrole
                 </td>

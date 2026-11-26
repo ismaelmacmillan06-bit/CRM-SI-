@@ -16,6 +16,9 @@
         <div class="card-header">
             <span class="card-title">👤 Información del consultor</span>
             <span class="badge badge-info">{{ ucfirst($consultant->user->getRoleNames()->first()) }}</span>
+            @foreach(array_intersect_key(\App\Http\Controllers\SeguimientoController::PLATAFORMAS, array_flip((array) ($consultant->responsable_seguimiento ?? []))) as $respInfo)
+                <span class="badge badge-warning" title="Responsable de {{ $respInfo['nombre'] }} en todos sus colegios">{{ $respInfo['icono'] }} Resp. {{ $respInfo['nombre'] }}</span>
+            @endforeach
         </div>
         <div class="card-body">
             {{-- Foto --}}

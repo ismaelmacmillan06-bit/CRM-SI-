@@ -26,12 +26,9 @@ class SchoolController extends Controller
     {
         $query = School::with('levels', 'schoolConsultants.consultant.user');
 
+        // Consultor digital: sus colegios + los de las plataformas de las que es responsable
         if (auth()->user()->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', auth()->id())->first();
-            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')
-                ->pluck('school_id');
-            $query->whereIn('id', $schoolIds);
+            $query->whereIn('id', \App\Helpers\AccesoColegios::idsGestionables(auth()->user()));
         }
 
         // Búsqueda por nombre, Nexus ID o estado

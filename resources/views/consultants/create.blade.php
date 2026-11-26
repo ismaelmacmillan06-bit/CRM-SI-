@@ -91,6 +91,8 @@
                     </div>
                 </div>
 
+                @include('consultants._responsable_seguimiento', ['seleccionadas' => []])
+
                 <div style="display:flex; gap:10px; justify-content:flex-end">
                     <a href="{{ route('consultants.index') }}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary">Registrar Consultor</button>

@@ -46,21 +46,21 @@ class VerificarAccesoRol
             return $next($request);
         }
 
-        // Herramientas SI: solo admin y consultor_digital
-        if ($request->routeIs('herramientas.*') && !$user->hasRole('consultor_digital')) {
+        // Herramientas SI: admin y consultor_digital; consul_ged las consulta (su rama solo deja GET)
+        if ($request->routeIs('herramientas.*') && !$user->hasAnyRole(['consultor_digital', 'consul_ged'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
-        // Seguimiento SIC: solo admin y consultor_digital
-        if ($request->routeIs('seguimiento-sic.*') && !$user->hasRole('consultor_digital')) {
+        // Seguimiento SIC: admin y consultor_digital; consul_ged solo consulta
+        if ($request->routeIs('seguimiento-sic.*') && !$user->hasAnyRole(['consultor_digital', 'consul_ged'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
 
         // Producción: admin y consultor_digital cargan/borran; coordinador, ECA, ELT y ventas solo
         // consultan (sus ramas de abajo bloquean POST/DELETE y la vista oculta cargar/borrar)
-        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consultor_eca', 'consultor_elt', 'representante_ventas'])) {
+        if ($request->routeIs('produccion.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'consul_ged'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
@@ -69,7 +69,7 @@ class VerificarAccesoRol
         // capturan avances; personalizar el catálogo de acciones es solo del admin. ECA, ELT, ventas y
         // coordinador solo consultan (ver y descargar Excel, nada de guardar).
         if ($request->routeIs('seguimiento.*')) {
-            if (!$user->hasAnyRole(['consultor_digital', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'coordinador'])) {
+            if (!$user->hasAnyRole(['consultor_digital', 'consultor_eca', 'consultor_elt', 'representante_ventas', 'coordinador', 'consul_ged'])) {
                 return redirect()->route('dashboard')
                     ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
             }
@@ -77,7 +77,10 @@ class VerificarAccesoRol
                 if ($request->routeIs('seguimiento.acciones.*')) {
                     abort(403, 'Solo un administrador puede personalizar las acciones de arranque.');
                 }
-                if (!$user->hasRole('consultor_digital')) {
+                // consul_ged: libertad total solo en Global Educa (capturar y gestionar sus archivos)
+                $esGlobalEducaDeGed = $user->hasRole('consul_ged')
+                    && in_array($this->plataformaDeSeguimiento($request), \App\Http\Controllers\SeguimientoController::PLATAFORMAS_CONSUL_GED, true);
+                if (!$user->hasRole('consultor_digital') && !$esGlobalEducaDeGed) {
                     return back()->with('error_acceso', 'Seguimiento es solo de consulta para tu rol.');
                 }
             }
@@ -85,7 +88,7 @@ class VerificarAccesoRol
 
         // Reporte Semanal: admin, consultor_digital y coordinador (este último solo
         // puede consultar/exportar, no guardar — ver rama de coordinador más abajo)
-        if ($request->routeIs('reporte-semanal.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador'])) {
+        if ($request->routeIs('reporte-semanal.*') && !$user->hasAnyRole(['consultor_digital', 'coordinador', 'consul_ged'])) {
             return redirect()->route('dashboard')
                 ->with('error_acceso', 'No tienes permisos de acceso para esta sección.');
         }
@@ -165,6 +168,43 @@ class VerificarAccesoRol
             return $next($request);
         }
 
+        // Consul GED (Consultor Global Educa): consulta Dashboard, Avance Colegios, Reporte
+        // Semanal, Colegios (incl. formatos y reportes), Bundles, Herramientas SI, Producción
+        // y Seguimiento SIC; en Seguimiento solo escribe en Global Educa (validado arriba).
+        // Escritura además en Mis Notas SI (permitido arriba). Sin Configuración, Equipo SI,
+        // Alumnos Docentes, Calendario SSA, Tareas, Tablero ni Bitácora.
+        if ($user->hasRole('consul_ged')) {
+            // Seguimiento ya pasó su filtro de arriba (solo deja escribir en Global Educa)
+            if ($request->routeIs('seguimiento.*') || $request->routeIs('schools.students.export-by-class')) {
+                return $next($request);
+            }
+            if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
+                return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
+            }
+            $rutasPermitidas = [
+                'dashboard', 'dashboard.acciones-arranque.excel', 'reportes.general', 'reportes.zonas',
+                'avance-colegios.*',
+                'reporte-semanal.index', 'reporte-semanal.exportar',
+                'schools.index', 'schools.show', 'schools.reporte-master',
+                'schools.processes.index',
+                'schools.teachers.index', 'schools.tickets.index',
+                'schools.tickets.report.*', 'tickets.show',
+                'schools.visits.index', 'schools.students.index',
+                'schools.formato-entrega', 'schools.formato-entrega.script', 'schools.formato-entrega.accesos',
+                'schools.bundles.index',
+                'schools.repositorio.index', 'schools.repositorio.download',
+                'bundles.index',
+                'herramientas.*',
+                'produccion.index',
+                'seguimiento-sic.*',
+            ];
+            if (!$request->routeIs($rutasPermitidas)) {
+                return redirect()->route('dashboard')
+                    ->with('error_acceso', 'No tienes acceso a esta sección.');
+            }
+            return $next($request);
+        }
+
         // Ventas, Supervisor y Vendedor: lectura en todo el sistema (+ escritura SSA y descarga alumnos para ventas)
         if ($user->hasAnyRole(['representante_ventas', 'supervisor', 'vendedor'])) {
             if ($user->hasRole('representante_ventas') && ($request->routeIs('ssa.*') || $request->routeIs('schools.students.export-by-class'))) {
@@ -216,6 +256,21 @@ class VerificarAccesoRol
 
         // Rol desconocido o sin rol asignado
         abort(403, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.');
+    }
+
+    /** Plataforma de una ruta de Seguimiento: el {plataforma} de la URL o la del archivo. */
+    private function plataformaDeSeguimiento(Request $request): ?string
+    {
+        $plataforma = $request->route('plataforma');
+        if (is_string($plataforma)) {
+            return $plataforma;
+        }
+        $recurso = $request->route('recurso');
+        if ($recurso instanceof \App\Models\SeguimientoRecurso) {
+            return $recurso->plataforma;
+        }
+
+        return $recurso ? \App\Models\SeguimientoRecurso::whereKey($recurso)->value('plataforma') : null;
     }
 
     /** Modelos que se editan por ruta shallow y de los que se toma el colegio. */

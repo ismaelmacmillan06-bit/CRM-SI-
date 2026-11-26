@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             LevelsSeeder::class,
             ProcessesSeeder::class,
             CoordinadorRoleSeeder::class,
+            ConsulGedRoleSeeder::class,
         ]);
 
     }

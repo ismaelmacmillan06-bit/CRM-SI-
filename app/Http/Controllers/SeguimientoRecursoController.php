@@ -24,7 +24,7 @@ class SeguimientoRecursoController extends Controller
 
     public function store(Request $request, string $plataforma)
     {
-        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user()), 403);
+        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user(), $plataforma), 403);
 
         $categoriasPermitidas = self::CATEGORIAS_POR_PLATAFORMA[$plataforma] ?? [];
         abort_if(empty($categoriasPermitidas), 404);
@@ -90,7 +90,7 @@ class SeguimientoRecursoController extends Controller
 
     public function update(Request $request, SeguimientoRecurso $recurso)
     {
-        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user()), 403);
+        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user(), $recurso->plataforma), 403);
 
         $extensiones = implode(',', SeguimientoRecurso::EXTENSIONES_PERMITIDAS);
         $audienciasValidas = implode(',', array_keys(SeguimientoRecurso::AUDIENCIAS));
@@ -158,7 +158,7 @@ class SeguimientoRecursoController extends Controller
 
     public function updateAudiencia(Request $request, SeguimientoRecurso $recurso)
     {
-        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user()), 403);
+        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user(), $recurso->plataforma), 403);
 
         $request->validate([
             'audiencia'   => 'required|array|min:1',
@@ -181,7 +181,7 @@ class SeguimientoRecursoController extends Controller
 
     public function destroy(SeguimientoRecurso $recurso)
     {
-        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user()), 403);
+        abort_unless(SeguimientoRecurso::puedeGestionar(auth()->user(), $recurso->plataforma), 403);
 
         if ($recurso->archivo && Storage::disk('local')->exists($recurso->archivo)) {
             Storage::disk('local')->delete($recurso->archivo);

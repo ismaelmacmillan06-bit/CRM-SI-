@@ -1,5 +1,5 @@
 @php
-    $esAdmin = auth()->user()?->hasRole('admin');
+    $esAdmin = auth()->check() && \App\Models\SeguimientoRecurso::puedeGestionar(auth()->user(), $slug ?? null);
     $etiquetaSingular = $categoria === 'formatos' ? 'formato' : 'manual';
     $etiquetaPlural = $categoria === 'formatos' ? 'Formatos' : 'Manuales';
     $novedadRecIds = $sectionNovedades['highlight_ids']['recursos'] ?? [];

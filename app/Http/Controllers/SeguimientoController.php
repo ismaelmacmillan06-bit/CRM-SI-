@@ -69,9 +69,18 @@ class SeguimientoController extends Controller
     // coordinador) solo consulta. El middleware VerificarAccesoRol también bloquea sus POST.
     public const ROLES_EDICION = ['admin', 'consultor_digital'];
 
-    public static function puedeEditar(): bool
+    // consul_ged (Consultor Global Educa) captura solo en las plataformas de esta lista
+    public const PLATAFORMAS_CONSUL_GED = ['global-educa'];
+
+    public static function puedeEditar(?string $plataforma = null): bool
     {
-        return (bool) auth()->user()?->hasAnyRole(self::ROLES_EDICION);
+        $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasAnyRole(self::ROLES_EDICION)
+            || ($user->hasRole('consul_ged') && in_array($plataforma, self::PLATAFORMAS_CONSUL_GED, true));
     }
 
     // Personalizar el catálogo de acciones de arranque (agregar, renombrar, ordenar, eliminar)
@@ -112,7 +121,7 @@ class SeguimientoController extends Controller
             'slug'             => $plataforma,
             'nombre'           => $info['nombre'],
             'icono'            => $info['icono'],
-            'puedeEditar'      => self::puedeEditar(),
+            'puedeEditar'      => self::puedeEditar($plataforma),
             'puedeConfigurar'  => self::puedeConfigurar(),
             'catalogoAcciones' => $this->catalogoAcciones($plataforma),
         ];
@@ -493,7 +502,7 @@ class SeguimientoController extends Controller
                 'guardadas'        => $guardadas,
                 'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
                 'contacto'         => $info['contacto'] ?? null,
-                'puedeEditar'      => self::puedeEditar(),
+                'puedeEditar'      => self::puedeEditar($plataforma),
                 'puedeConfigurar'  => self::puedeConfigurar(),
             ]);
         }
@@ -532,7 +541,7 @@ class SeguimientoController extends Controller
                 'guardadas'         => collect(),
                 'hechas'            => $hechas,
                 'totalAcciones'     => $niveles->count() * count($info['acciones']),
-                'puedeEditar'       => self::puedeEditar(),
+                'puedeEditar'       => self::puedeEditar($plataforma),
                 'puedeConfigurar'   => self::puedeConfigurar(),
             ]);
         }
@@ -555,14 +564,14 @@ class SeguimientoController extends Controller
             'guardadas'        => $guardadas,
             'hechas'           => $guardadas->toBase()->only(array_keys($info['acciones']))->where('status', 'done')->count(),
             'totalAcciones'    => count($info['acciones']),
-            'puedeEditar'      => self::puedeEditar(),
+            'puedeEditar'      => self::puedeEditar($plataforma),
             'puedeConfigurar'  => self::puedeConfigurar(),
         ]);
     }
 
     public function guardar(Request $request, string $plataforma, School $school)
     {
-        abort_unless(self::puedeEditar(), 403, 'Seguimiento es solo de consulta para tu rol.');
+        abort_unless(self::puedeEditar($plataforma), 403, 'Seguimiento es solo de consulta para tu rol.');
 
         $info = $this->plataformaDelColegio($plataforma, $school);
 
@@ -624,7 +633,7 @@ class SeguimientoController extends Controller
 
     public function guardarNiveles(Request $request, string $plataforma, School $school)
     {
-        abort_unless(self::puedeEditar(), 403, 'Seguimiento es solo de consulta para tu rol.');
+        abort_unless(self::puedeEditar($plataforma), 403, 'Seguimiento es solo de consulta para tu rol.');
 
         $info = $this->plataformaDelColegio($plataforma, $school);
         abort_if(empty($info['por_nivel']), 404);

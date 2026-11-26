@@ -11,6 +11,7 @@
         ['key' => 'consultor_elt',        'label' => 'Consultor Académico ELT', 'icon' => '📘', 'color' => '#0ea5e9'],
         ['key' => 'representante_ventas', 'label' => 'Representante de Ventas', 'icon' => '🤝', 'color' => '#d97706'],
         ['key' => 'coordinador',          'label' => 'Coordinador',             'icon' => '🧭', 'color' => '#7c3aed'],
+        ['key' => 'consul_ged',           'label' => 'Consultor Global Educa',  'icon' => '🌐', 'color' => '#0d9488'],
     ];
 @endphp
 <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:14px; margin-bottom:20px">

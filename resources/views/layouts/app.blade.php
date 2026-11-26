@@ -638,6 +638,7 @@
         <a href="{{ route('dashboard') }}" class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <span class="nav-icon">📊</span> Dashboard
         </a>
+        @unlessrole('consul_ged')
         <a href="{{ route('tareas.index') }}" class="nav-item {{ request()->routeIs('tareas.*') ? 'active' : '' }}">
             <span class="nav-icon">✅</span> Tareas SI
             @if($hayTareaNueva ?? false)<span class="nav-dot" title="Hay una tarea nueva"></span>@endif
@@ -646,7 +647,8 @@
             <span class="nav-icon">📌</span> Tablero SI
             @if($hayComunicadoNuevo ?? false)<span class="nav-dot" title="Hay un comunicado nuevo"></span>@endif
         </a>
-        @unlessrole('consultor_eca|consultor_elt|representante_ventas|coordinador')
+        @endunlessrole
+        @unlessrole('consultor_eca|consultor_elt|representante_ventas|coordinador|consul_ged')
         <a href="{{ route('bitacora.index') }}" class="nav-item {{ request()->routeIs('bitacora.*') ? 'active' : '' }}">
             <span class="nav-icon">📋</span> Bitácora
         </a>
@@ -654,7 +656,7 @@
         <a href="{{ route('avance-colegios.index') }}" class="nav-item {{ request()->routeIs('avance-colegios.*') ? 'active' : '' }}">
             <span class="nav-icon">🚀</span> Avance Colegios
         </a>
-        @hasanyrole('admin|consultor_digital|coordinador')
+        @hasanyrole('admin|consultor_digital|coordinador|consul_ged')
         <a href="{{ route('reporte-semanal.index') }}" class="nav-item {{ request()->routeIs('reporte-semanal.*') ? 'active' : '' }}">
             <span class="nav-icon">🗓️</span> Reporte Semanal
             @if($hayReporteSemanalNuevo ?? false)<span class="nav-dot" title="Novedad en Reporte Semanal"></span>@endif
@@ -662,7 +664,7 @@
         @endhasanyrole
             </div>
         </details>
-        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador')
+        @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador|consul_ged')
         <details class="nav-section" data-menu="plataformas" open>
             <summary class="nav-label nav-section-toggle">
                 Gestión Plataformas
@@ -699,9 +701,11 @@
         <a href="{{ route('schools.index') }}" class="nav-item {{ request()->routeIs('schools.*') ? 'active' : '' }}">
             <span class="nav-icon">🏫</span> Colegios
         </a>
+        @unlessrole('consul_ged')
         <a href="{{ route('alumnos-docentes.index') }}" class="nav-item {{ request()->routeIs('alumnos-docentes.*') ? 'active' : '' }}">
             <span class="nav-icon">🎓</span> Alumnos Docentes
         </a>
+        @endunlessrole
         @hasanyrole('admin|consultor_digital|consultor_eca|consultor_elt|representante_ventas|coordinador')
         <a href="{{ route('ssa.index') }}" class="nav-item {{ request()->routeIs('ssa.*') ? 'active' : '' }}">
             <span class="nav-icon">📅</span> Calendario SSA
@@ -709,26 +713,28 @@
         </a>
         @endhasanyrole
         @unlessrole('consultor_eca|consultor_elt')
+        @unlessrole('consul_ged')
         <a href="{{ route('consultants.index') }}" class="nav-item {{ request()->routeIs('consultants.*') ? 'active' : '' }}">
             <span class="nav-icon">👥</span> Equipo SI
         </a>
+        @endunlessrole
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI
         </a>
         @endunlessrole
         {{-- Lo que sigue ya filtra por rol cada liga (Producción sí la ven ECA y ELT) --}}
-        @hasanyrole('admin|consultor_digital')
+        @hasanyrole('admin|consultor_digital|consul_ged')
         <a href="{{ route('herramientas.index') }}" class="nav-item {{ request()->routeIs('herramientas.*') ? 'active' : '' }}">
             <span class="nav-icon">🛠️</span> Herramientas SI
             @if($hayHerramientaNueva ?? false)<span class="nav-dot" title="Nuevo recurso en Herramientas SI"></span>@endif
         </a>
         @endhasanyrole
-        @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt|representante_ventas')
+        @hasanyrole('admin|consultor_digital|coordinador|consultor_eca|consultor_elt|representante_ventas|consul_ged')
         <a href="{{ route('produccion.index') }}" class="nav-item {{ request()->routeIs('produccion.*') ? 'active' : '' }}">
             <span class="nav-icon">📦</span> Producción
         </a>
         @endhasanyrole
-        @hasanyrole('admin|consultor_digital')
+        @hasanyrole('admin|consultor_digital|consul_ged')
         <a href="{{ route('seguimiento-sic.index') }}" class="nav-item {{ request()->routeIs('seguimiento-sic.*') ? 'active' : '' }}">
             <span class="nav-icon">📈</span> Seguimiento SIC
         </a>

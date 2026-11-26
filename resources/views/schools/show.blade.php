@@ -49,7 +49,7 @@
     <a href="{{ route('schools.visits.index', $school) }}" class="btn btn-secondary btn-sm">📅 Sesiones</a>
     <a href="{{ route('schools.bundles.index', $school) }}" class="btn btn-secondary btn-sm">📚 Bundles</a>
     <a href="{{ route('schools.repositorio.index', $school) }}" class="btn btn-secondary btn-sm">📁 Repositorio</a>
-    @hasanyrole('admin|consultor_digital|coordinador')
+    @hasanyrole('admin|consultor_digital|coordinador|consul_ged')
     <a href="{{ route('schools.reporte-master', $school) }}"
        class="btn btn-sm"
        style="background:#C0392B; color:#fff; border-color:#C0392B; font-weight:700; letter-spacing:.5px">

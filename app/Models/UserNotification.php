@@ -108,6 +108,7 @@ class UserNotification extends Model
         'consultor_elt'        => 'Consultor ELT',
         'representante_ventas' => 'Rep. Ventas',
         'coordinador'          => 'Coordinador',
+        'consul_ged'           => 'Consultor Global Educa',
     ];
 
     /**

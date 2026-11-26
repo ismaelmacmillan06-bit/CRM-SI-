@@ -10,6 +10,7 @@ class SeguimientoRecurso extends Model
     public const AUDIENCIAS = [
         'consultor_digital'    => 'Consultores digitales',
         'coordinador'          => 'Coordinadores',
+        'consul_ged'           => 'Consultores Global Educa',
         'consultor_eca'        => 'Consultores ECA',
         'consultor_elt'        => 'Consultores ELT',
         'representante_ventas' => 'Representantes de ventas',
@@ -61,13 +62,17 @@ class SeguimientoRecurso extends Model
         }
 
         $roles = array_merge($usuario->getRoleNames()->all(), ['todos']);
+        $gestionadas = $usuario->hasRole('consul_ged') ? \App\Http\Controllers\SeguimientoController::PLATAFORMAS_CONSUL_GED : [];
 
-        return $q->whereHas('audiencias', fn (Builder $a) => $a->whereIn('rol', $roles));
+        // Quien gestiona una plataforma (consul_ged en Global Educa) ve todos sus archivos
+        return $q->where(fn (Builder $w) => $w
+            ->whereHas('audiencias', fn (Builder $a) => $a->whereIn('rol', $roles))
+            ->orWhereIn('plataforma', $gestionadas));
     }
 
     public function esVisiblePara(User $usuario): bool
     {
-        if ($usuario->hasRole('admin')) {
+        if (self::puedeGestionar($usuario, $this->plataforma)) {
             return true;
         }
 
@@ -76,9 +81,12 @@ class SeguimientoRecurso extends Model
         return $this->audiencias()->whereIn('rol', $roles)->exists();
     }
 
-    public static function puedeGestionar(User $usuario): bool
+    /** Subir, editar y borrar archivos: admin en todas; consul_ged solo en Global Educa. */
+    public static function puedeGestionar(User $usuario, ?string $plataforma = null): bool
     {
-        return $usuario->hasRole('admin');
+        return $usuario->hasRole('admin')
+            || ($usuario->hasRole('consul_ged')
+                && in_array($plataforma, \App\Http\Controllers\SeguimientoController::PLATAFORMAS_CONSUL_GED, true));
     }
 
     public function formatoInfo(): array

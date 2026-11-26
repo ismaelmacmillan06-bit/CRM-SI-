@@ -745,7 +745,7 @@ class ReporteController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function reporteMaster(School $school)
     {
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital', 'coordinador']), 403);
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital', 'coordinador', 'consul_ged']), 403);
 
         $school->load([
             'schoolConsultants.consultant.user',

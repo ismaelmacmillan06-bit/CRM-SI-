@@ -184,13 +184,10 @@ class VerificarAccesoRol
 
             $schoolParam = $request->route('school');
 
-            // Rutas shallow de tickets (ver/editar/borrar): el colegio sale del ticket
-            if (!$schoolParam && $request->route('ticket')) {
-                $ticket = $request->route('ticket');
-                $schoolParam = $ticket instanceof \App\Models\Ticket
-                    ? $ticket->school_id
-                    : \App\Models\Ticket::whereKey($ticket)->value('school_id');
-                abort_unless($schoolParam, 404);
+            // Rutas shallow (tickets, alumnos, docentes, visitas: ver/editar/borrar sin
+            // {school} en la URL): el colegio sale del propio registro
+            if (!$schoolParam) {
+                $schoolParam = $this->colegioDeRutaShallow($request);
             }
 
             if ($schoolParam) {
@@ -219,5 +216,31 @@ class VerificarAccesoRol
 
         // Rol desconocido o sin rol asignado
         abort(403, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.');
+    }
+
+    /** Modelos que se editan por ruta shallow y de los que se toma el colegio. */
+    private const MODELOS_SHALLOW = [
+        'ticket'  => \App\Models\Ticket::class,
+        'student' => \App\Models\Student::class,
+        'teacher' => \App\Models\Teacher::class,
+        'visit'   => \App\Models\Visit::class,
+    ];
+
+    private function colegioDeRutaShallow(Request $request): ?int
+    {
+        foreach (self::MODELOS_SHALLOW as $param => $modelo) {
+            $valor = $request->route($param);
+            if ($valor === null) {
+                continue;
+            }
+            $schoolId = $valor instanceof \Illuminate\Database\Eloquent\Model
+                ? $valor->school_id
+                : $modelo::whereKey($valor)->value('school_id');
+            abort_unless($schoolId, 404);
+
+            return (int) $schoolId;
+        }
+
+        return null;
     }
 }

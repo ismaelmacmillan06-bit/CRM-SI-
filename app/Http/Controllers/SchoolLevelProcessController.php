@@ -28,6 +28,7 @@ class SchoolLevelProcessController extends Controller
 
     public function update(Request $request, School $school, SchoolLevelProcess $schoolLevelProcess)
     {
+        $this->verificarQueSeaDelColegio($school, $schoolLevelProcess);
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
@@ -167,6 +168,7 @@ class SchoolLevelProcessController extends Controller
 
     public function destroyEvidence(School $school, SchoolLevelProcess $schoolLevelProcess)
     {
+        $this->verificarQueSeaDelColegio($school, $schoolLevelProcess);
         abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
 
         if ($schoolLevelProcess->evidence) {
@@ -326,5 +328,11 @@ class SchoolLevelProcessController extends Controller
         }
 
         return back()->with('success', 'Acción de arranque eliminada del catálogo.');
+    }
+
+    // El registro debe pertenecer al colegio de la URL (evita editar otro colegio cambiando el ID)
+    private function verificarQueSeaDelColegio(School $school, SchoolLevelProcess $schoolLevelProcess): void
+    {
+        abort_unless((int) $schoolLevelProcess->schoolLevel?->school_id === (int) $school->id, 404);
     }
 }

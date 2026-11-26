@@ -121,7 +121,7 @@
                 <td style="display:flex; gap:6px">
                     @hasanyrole('admin|consultor_digital')
                     <button class="btn btn-secondary btn-sm"
-                            onclick="abrirEditar({{ $bundle->id }}, '{{ addslashes($bundle->serie) }}', '{{ addslashes($bundle->name) }}', '{{ $bundle->grade }}', '{{ $bundle->level }}', '{{ $bundle->role }}', '{{ $bundle->type }}')">
+                            onclick="abrirEditar({{ (int) $bundle->id }}, @js((string) $bundle->serie), @js((string) $bundle->name), @js((string) $bundle->grade), @js((string) $bundle->level), @js((string) $bundle->role), @js((string) $bundle->type))">
                         Editar
                     </button>
                     <form method="POST" action="{{ route('bundles.destroy', $bundle) }}"

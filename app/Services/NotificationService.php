@@ -181,7 +181,9 @@ class NotificationService
 
         $roles = $rolesPorAudiencia[$tarea->audiencia] ?? ['admin'];
         $audienciaLabel = TareaSI::AUDIENCIAS[$tarea->audiencia] ?? $tarea->audiencia;
-        $recipients = $this->userIdsByRoles($roles);
+        $recipients = $tarea->esAcademica()
+            ? $this->destinatariosTareaAcademica($tarea)
+            : $this->userIdsByRoles($roles);
         $accionTxt = $isUpdate ? 'Tarea SI actualizada' : 'Nueva tarea SI asignada';
 
         return $this->sendToUsers($recipients, [
@@ -200,6 +202,35 @@ class NotificationService
             'action_url'   => route('tareas.index', ['tarea_id' => $tarea->id]),
             'action_label' => 'Ir a Tareas SI',
         ]);
+    }
+
+    /**
+     * Tareas ECA / ELT / académicas: admin y coordinador (que las gestionan) más solo los
+     * consultores ECA/ELT asignados con esa área a alguno de los colegios de la tarea.
+     * Así nadie recibe avisos de tareas en las que no tiene colegios que marcar.
+     */
+    private function destinatariosTareaAcademica(TareaSI $tarea): array
+    {
+        $rolSpatiePorArea = ['eca' => 'consultor_eca', 'elt' => 'consultor_elt'];
+        $schoolIds = $tarea->colegios()->pluck('school_id');
+
+        $ids = $this->userIdsByRoles(['admin', 'coordinador']);
+
+        foreach ($tarea->rolesColegio() as $area) {
+            if (!isset($rolSpatiePorArea[$area]) || $schoolIds->isEmpty()) {
+                continue;
+            }
+            $userIds = SchoolConsultant::query()
+                ->whereIn('school_consultants.school_id', $schoolIds)
+                ->where('school_consultants.role', $area)
+                ->join('consultants', 'school_consultants.consultant_id', '=', 'consultants.id')
+                ->pluck('consultants.user_id')
+                ->unique();
+
+            $ids = array_merge($ids, User::role($rolSpatiePorArea[$area])->whereIn('id', $userIds)->pluck('id')->all());
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 
     public function notifyComunicadoPublished(Comunicado $comunicado, array $audienciaRoles, bool $isUpdate = false): int

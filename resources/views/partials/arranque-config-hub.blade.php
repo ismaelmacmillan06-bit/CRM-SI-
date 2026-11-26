@@ -693,8 +693,8 @@
         const nombre = item ? item.text : 'esta acción';
 
         window.confirmarEliminar(
-            'Eliminar acción de arranque',
-            `¿Deseas eliminar «${nombre}» de ${activeScope.label}? También se eliminará su registro de avance en todos los colegios.`,
+            '⚠️ Eliminar acción de arranque en TODOS los colegios',
+            `Vas a eliminar «${nombre}» de ${activeScope.label}. Esto modificará las acciones de arranque en TODOS los colegios: se borrará el estatus, las notas${activeScope.kind === 'colegios' ? ' y las evidencias' : ''} que cada colegio tenga capturados en esta acción y los porcentajes de avance se recalcularán. Esta acción no se puede deshacer.`,
             async () => {
                 const url = activeScope.routes.destroy.replace('__ID__', String(id));
                 setStatus('is-saving', '⏳ Eliminando...');

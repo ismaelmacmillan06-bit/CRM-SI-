@@ -25,12 +25,15 @@ class ConsultantController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede agregar miembros.');
         $roles = Role::all();
         return view('consultants.create', compact('roles'));
     }
 
 public function store(Request $request)
 {
+    // Crear usuarios implica asignar rol: solo admin
+    abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede agregar miembros.');
     $request->validate([
         'name'     => 'required|string|max:255',
         'email'    => 'required|email|unique:users,email',
@@ -75,12 +78,14 @@ public function store(Request $request)
 
     public function edit(Consultant $consultant)
     {
+        $this->autorizarEdicion($consultant);
         $roles = Role::all();
         return view('consultants.edit', compact('consultant', 'roles'));
     }
 
     public function update(Request $request, Consultant $consultant)
     {
+        $this->autorizarEdicion($consultant);
         $isAdmin = auth()->user()->hasRole('admin');
 
         $rules = [
@@ -145,10 +150,25 @@ public function store(Request $request)
 
     public function destroy(Consultant $consultant)
     {
+        abort_unless(auth()->user()->hasRole('admin'), 403, 'Solo el administrador puede eliminar miembros.');
         $nombre = $consultant->user?->name ?? 'Consultor';
         $consultant->user?->delete();
         ActivityLog::log('equipo', "Consultor \"{$nombre}\" eliminado", null, '🗑️');
         return redirect()->route('consultants.index')
                          ->with('success', 'Consultor eliminado correctamente.');
+    }
+
+    /**
+     * Admin edita a cualquiera (incluido rol y correo). El resto solo su propia ficha
+     * (nombre, teléfono, zona, foto); el rol y el correo los cambia únicamente el admin.
+     */
+    private function autorizarEdicion(Consultant $consultant): void
+    {
+        $user = auth()->user();
+        abort_unless(
+            $user->hasRole('admin') || (int) $consultant->user_id === (int) $user->id,
+            403,
+            'Solo el administrador puede editar a otros miembros del equipo.'
+        );
     }
 }

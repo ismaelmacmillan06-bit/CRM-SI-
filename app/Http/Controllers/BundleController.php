@@ -47,11 +47,13 @@ class BundleController extends Controller
 
     public function create()
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
         return view('bundles.create');
     }
 
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
         $request->validate([
             'serie' => 'required|string|max:255',
             'name'  => 'required|string|max:255',
@@ -200,11 +202,13 @@ class BundleController extends Controller
 
     public function edit(Bundle $bundle)
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
         return response()->json($bundle);
     }
 
     public function update(Request $request, Bundle $bundle)
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
         $request->validate([
             'serie' => 'required|string|max:255',
             'name'  => 'required|string|max:255',
@@ -222,6 +226,7 @@ class BundleController extends Controller
 
     public function destroy(Bundle $bundle)
     {
+        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
         $nombre = $bundle->name;
         $bundle->delete();
         ActivityLog::log('bundle', "Bundle \"{$nombre}\" eliminado del catálogo", null, '🗑️');

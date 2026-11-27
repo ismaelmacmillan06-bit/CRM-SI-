@@ -5,9 +5,9 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.tickets.index', $ticket->school) }}" class="btn btn-secondary btn-sm">← Regresar a Tickets</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($ticket->school)
     <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-primary btn-sm">✏️ Editar ticket</a>
-    @endhasanyrole
+    @endpuedeGestionar
 </div>
 
 <div class="card" style="max-width:860px">

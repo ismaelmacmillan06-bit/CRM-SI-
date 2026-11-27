@@ -30,7 +30,7 @@ class SchoolFileController extends Controller
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school), 403);
 
         $request->validate([
             'archivo' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx',
@@ -63,7 +63,7 @@ class SchoolFileController extends Controller
 
     public function destroy(School $school, SchoolFile $file)
     {
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school), 403);
         abort_unless($file->school_id === $school->id, 404);
 
         Storage::disk('local')->delete($file->ruta);

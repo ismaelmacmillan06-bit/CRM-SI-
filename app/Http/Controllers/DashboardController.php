@@ -19,17 +19,11 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DashboardController extends Controller
 {
-    // IDs de colegios asignados al usuario si es consultor_digital, null si ve todo
+    // IDs de colegios del usuario si es consultor_digital, null si ve todo
     private function resolveSchoolIds()
     {
-        $user = auth()->user();
-        if (!$user->hasRole('consultor_digital')) {
-            return null;
-        }
-        $consultant = Consultant::where('user_id', $user->id)->first();
-        return SchoolConsultant::where('consultant_id', $consultant?->id)
-            ->where('role', 'digital')
-            ->pluck('school_id');
+        // Digital: asignados + los de su responsabilidad de Seguimiento
+        return \App\Helpers\AccesoColegios::idsTablero(auth()->user());
     }
 
     public function index()

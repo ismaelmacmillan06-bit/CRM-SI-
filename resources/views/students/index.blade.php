@@ -13,7 +13,7 @@
 @endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($school)
     @if($school->status !== 'inactivo')
     <a href="{{ route('schools.students.create', $school) }}" class="btn btn-primary">+ Nuevo Alumno</a>
     <button onclick="document.getElementById('modal-excel').style.display='flex'"
@@ -31,7 +31,7 @@
         </button>
     </form>
     @endpuedeEliminar
-    @endhasanyrole
+    @endpuedeGestionar
     <button type="button"
             id="btn-descargar-por-clase"
             onclick="abrirModalDescargarClases()"
@@ -542,7 +542,7 @@
                     </div>
                 </td>
                 <td>
-                    @hasanyrole('admin|consultor_digital')
+                    @puedeGestionar($school)
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('students.edit', $student) }}" class="btn btn-secondary btn-sm"
                            style="flex:1; text-align:center; white-space:nowrap">Editar</a>
@@ -564,7 +564,7 @@
                         </form>
                         @endpuedeEliminar
                     </div>
-                    @endhasanyrole
+                    @endpuedeGestionar
                 </td>
             </tr>
             @empty

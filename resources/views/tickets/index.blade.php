@@ -13,11 +13,11 @@
 @endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($school)
     @if($school->status !== 'inactivo')
     <a href="{{ route('schools.tickets.create', $school) }}" class="btn btn-primary">+ Nuevo Ticket</a>
     @endif
-    @endhasanyrole
+    @endpuedeGestionar
     <button type="button"
             onclick="abrirModalReporteTickets()"
             class="btn btn-secondary">
@@ -349,7 +349,7 @@ function ejecutarReporteTickets(e) {
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('tickets.show', $ticket) }}" class="btn btn-secondary btn-sm">Ver</a>
-                        @hasanyrole('admin|consultor_digital')
+                        @puedeGestionar($school)
                         <a href="{{ route('tickets.edit', $ticket) }}" class="btn btn-secondary btn-sm">Editar</a>
                         @puedeEliminar($school)
                         <form method="POST" action="{{ route('tickets.destroy', $ticket) }}"
@@ -359,7 +359,7 @@ function ejecutarReporteTickets(e) {
                             <button class="btn btn-danger btn-sm">Eliminar</button>
                         </form>
                         @endpuedeEliminar
-                        @endhasanyrole
+                        @endpuedeGestionar
                     </div>
                 </td>
             </tr>

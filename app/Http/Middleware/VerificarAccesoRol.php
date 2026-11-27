@@ -177,6 +177,22 @@ class VerificarAccesoRol
             if ($request->routeIs('seguimiento.*') || $request->routeIs('schools.students.export-by-class')) {
                 return $next($request);
             }
+
+            // Responsable automático de Global Educa: en los colegios que la llevan trabaja como
+            // un responsable digital (alumnos, docentes, tickets, sesiones, bundles, acciones de
+            // arranque, repositorio), menos borrar y cambiar los datos generales del colegio.
+            $schoolParam = $request->route('school') ?: $this->colegioDeRutaShallow($request);
+            if ($schoolParam && AccesoColegios::esResponsable($user, $schoolParam instanceof School ? $schoolParam : (int) $schoolParam)) {
+                if ($request->isMethod('DELETE')) {
+                    abort(403, 'Solo el consultor asignado al colegio puede eliminar información.');
+                }
+                if ($request->routeIs(['schools.edit', 'schools.update', 'processes.catalog.*'])) {
+                    abort(403, 'Solo el consultor asignado puede editar los datos generales del colegio.');
+                }
+
+                return $next($request);
+            }
+
             if (!$request->isMethod('GET') && !$request->isMethod('HEAD')) {
                 return back()->with('error_acceso', 'No tienes permisos para realizar esta acción.');
             }

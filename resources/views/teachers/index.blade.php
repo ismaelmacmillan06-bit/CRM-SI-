@@ -13,7 +13,7 @@
 @endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($school)
     @if($school->status !== 'inactivo')
     <a href="{{ route('schools.teachers.create', $school) }}" class="btn btn-primary">+ Nuevo Docente</a>
     <button onclick="document.getElementById('modal-import-teachers').style.display='flex'"
@@ -47,7 +47,7 @@
         </button>
     </form>
     @endif
-    @endhasanyrole
+    @endpuedeGestionar
 </div>
 
 {{-- Modal importación masiva --}}
@@ -156,7 +156,7 @@
                     {{ $teacher->created_at->format('d/m/Y') }}
                 </td>
                 <td>
-                    @hasanyrole('admin|consultor_digital')
+                    @puedeGestionar($school)
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('teachers.edit', $teacher) }}" class="btn btn-secondary btn-sm"
                            style="flex:1; text-align:center; white-space:nowrap">Editar</a>
@@ -174,7 +174,7 @@
                         </form>
                         @endpuedeEliminar
                     </div>
-                    @endhasanyrole
+                    @endpuedeGestionar
                 </td>
             </tr>
             @empty

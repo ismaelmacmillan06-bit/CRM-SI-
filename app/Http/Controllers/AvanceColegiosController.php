@@ -16,10 +16,7 @@ class AvanceColegiosController extends Controller
         // Para consultor_digital: solo sus colegios asignados (igual que el Dashboard)
         $schoolIds = null;
         if ($user->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', $user->id)->first();
-            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')
-                ->pluck('school_id');
+            $schoolIds = \App\Helpers\AccesoColegios::idsTablero($user);
         }
 
         $schoolScopeId = fn($q) => $schoolIds ? $q->whereIn('id', $schoolIds) : $q;

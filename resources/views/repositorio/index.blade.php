@@ -72,7 +72,7 @@
     </div>
 </div>
 
-@hasanyrole('admin|consultor_digital')
+@puedeGestionar($school)
 @if($school->status !== 'inactivo')
 <div class="card" style="margin-bottom:20px">
     <div class="card-header">
@@ -91,7 +91,7 @@
     </div>
 </div>
 @endif
-@endhasanyrole
+@endpuedeGestionar
 
 <div class="card">
     <div class="card-header">

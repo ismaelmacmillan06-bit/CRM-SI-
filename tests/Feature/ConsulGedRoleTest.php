@@ -74,10 +74,12 @@ class ConsulGedRoleTest extends TestCase
         foreach ([
             route('consultants.index'), route('alumnos-docentes.index'), route('ssa.index'),
             route('tareas.index'), route('configuracion.servicios.index'), route('schools.create'),
-            route('schools.edit', $school), route('bitacora.index'),
+            route('schools.edit', $this->colegioCon('frances')), route('bitacora.index'),
         ] as $url) {
             $this->get($url)->assertRedirect();
         }
+        // En colegios con Global Educa es responsable, pero la ficha general tampoco la edita
+        $this->get(route('schools.edit', $school))->assertForbidden();
 
         $menu = $this->get(route('dashboard'))->getContent();
         $this->assertStringNotContainsString(route('configuracion.servicios.index'), $menu);
@@ -132,11 +134,15 @@ class ConsulGedRoleTest extends TestCase
 
     public function test_cannot_modify_schools_bundles_tools_or_weekly_report(): void
     {
-        $school = $this->colegioCon('global-educa');
+        $school = $this->colegioCon('frances');
+        $conGe = $this->colegioCon('global-educa');
         $this->actingAs($this->ged());
 
         $this->delete(route('schools.destroy', $school))->assertSessionHas('error_acceso');
+        $this->delete(route('schools.destroy', $conGe))->assertForbidden();
         $this->assertModelExists($school);
+        $this->assertModelExists($conGe);
+        $this->post(route('schools.tickets.store', $school), ['title' => 'X'])->assertSessionHas('error_acceso');
         $this->post(route('reporte-semanal.store'), ['payload' => '[]', 'week' => today()->toDateString()])
             ->assertSessionHas('error_acceso');
         $this->post(route('bundles.store'), ['serie' => 'X'])->assertSessionHas('error_acceso');
@@ -146,5 +152,29 @@ class ConsulGedRoleTest extends TestCase
         $this->get(route('reporte-semanal.index'))->assertOk()->assertDontSee('Guardar reporte');
         $bundle = \App\Models\Bundle::create(['serie' => 'S1', 'name' => 'Libro', 'grade' => '1', 'level' => 'Primaria', 'role' => 'student', 'type' => 'ELT']);
         $this->get(route('bundles.index'))->assertOk()->assertDontSee('form-eliminar-bundle-' . $bundle->id);
+    }
+
+    public function test_is_automatic_global_educa_responsible_without_deleting(): void
+    {
+        $school = $this->colegioCon('global-educa');
+        $user = $this->ged();
+        $consultor = \App\Models\Consultant::create(['user_id' => $user->id]);
+        $alumno = \App\Models\Student::create(['school_id' => $school->id, 'name' => 'Ana', 'last_name' => 'Ruiz', 'mee_username' => 'ana1', 'mee_password' => 'x', 'level' => 'Primaria', 'grade' => '1°A']);
+        $this->actingAs($user);
+
+        $this->get(route('schools.students.index', $school))->assertOk()
+            ->assertSee(route('students.edit', $alumno))->assertDontSee('form-eliminar-alumno-' . $alumno->id);
+        foreach ([route('students.edit', $alumno), route('schools.tickets.create', $school), route('schools.visits.create', $school)] as $url) {
+            $this->get($url)->assertOk();
+        }
+        $this->post(route('schools.tickets.store', $school), [
+            'title' => 'Ticket GED', 'description' => 'x', 'priority' => 'low', 'consultant_id' => $consultor->id,
+            'medium' => 'whatsapp', 'productos' => ['Global Educa'],
+        ])->assertRedirect();
+        $this->assertTrue(\App\Models\Ticket::where('school_id', $school->id)->where('title', 'Ticket GED')->exists());
+
+        $this->delete(route('students.destroy', $alumno))->assertForbidden();
+        $this->delete(route('schools.students.destroy-all', $school))->assertForbidden();
+        $this->assertModelExists($alumno);
     }
 }

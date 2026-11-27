@@ -13,7 +13,7 @@
 @endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center; flex-wrap:wrap">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($school)
     @if($school->status !== 'inactivo')
     <button onclick="document.getElementById('modal-bundles').style.display='flex'"
             class="btn btn-primary">+ Agregar Bundles</button>
@@ -43,7 +43,7 @@
         </button>
     </form>
     @endif
-    @endhasanyrole
+    @endpuedeGestionar
 </div>
 
 {{-- Modal confirmación eliminar todos --}}
@@ -335,7 +335,7 @@ function cerrarEliminarBundle() {
                     @endif
                 </td>
                 <td style="display:flex; gap:6px; flex-wrap:wrap">
-                    @hasanyrole('admin|consultor_digital')
+                    @puedeGestionar($school)
                     @if($school->status !== 'inactivo')
                     <button onclick="abrirResurtido({{ $bundle->id }}, {{ json_encode($bundle->name) }}, {{ $bundle->pivot->quantity }})"
                             style="padding:5px 10px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;
@@ -350,7 +350,7 @@ function cerrarEliminarBundle() {
                         Eliminar
                     </button>
                     @endpuedeEliminar
-                    @endhasanyrole
+                    @endpuedeGestionar
                 </td>
             </tr>
             @empty
@@ -516,9 +516,9 @@ function backToStep1() {
                     <th>Nueva cantidad</th>
                     <th>Autorizado por</th>
                     <th>Registrado por</th>
-                    @hasanyrole('admin|consultor_digital')
+                    @puedeGestionar($school)
                     <th>Acciones</th>
-                    @endhasanyrole
+                    @endpuedeGestionar
                 </tr>
             </thead>
             <tbody id="historial-tbody"></tbody>
@@ -526,7 +526,7 @@ function backToStep1() {
     </div>
 </div>
 
-@hasanyrole('admin|consultor_digital')
+@puedeGestionar($school)
 {{-- Modal Editar Resurtido --}}
 <div id="modal-editar-resurtido" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
      z-index:1100; align-items:center; justify-content:center; padding:20px">
@@ -597,7 +597,7 @@ function backToStep1() {
         </form>
     </div>
 </div>
-@endhasanyrole
+@endpuedeGestionar
 
 @php
 $resurtidosJson = $resurtidosPorBundle->map(fn($items) => $items->map(fn($r) => [
@@ -615,7 +615,7 @@ $resurtidosJson = $resurtidosPorBundle->map(fn($items) => $items->map(fn($r) => 
 
 <script>
 const resurtidosData = @json(json_decode($resurtidosJson));
-const puedeEditarResurtido = @json(auth()->user()->hasAnyRole(['admin', 'consultor_digital']));
+const puedeEditarResurtido = @json(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school));
 const puedeEliminarResurtido = @json(\App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school));
 
 const baseResurtidoUrl = '{{ url("schools/{$school->id}/bundles") }}';

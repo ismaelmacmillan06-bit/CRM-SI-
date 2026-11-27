@@ -36,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Borrar datos del colegio (y editar su ficha general): admin y el consultor digital asignado.
         // Un responsable de plataforma trabaja en el colegio pero no ve estos botones.
+        \Illuminate\Support\Facades\Blade::if('puedeGestionar', fn ($school) => \App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school));
         \Illuminate\Support\Facades\Blade::if('puedeEliminar', fn ($school) => \App\Helpers\AccesoColegios::puedeEliminar(auth()->user(), $school));
 
         // En producción el SSL se atiende antes de Laravel: la petición llega como http

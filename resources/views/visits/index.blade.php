@@ -13,11 +13,11 @@
 @endif
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('schools.show', $school) }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @hasanyrole('admin|consultor_digital')
+    @puedeGestionar($school)
     @if($school->status !== 'inactivo')
     <a href="{{ route('schools.visits.create', $school) }}" class="btn btn-primary">+ Nueva Sesión</a>
     @endif
-    @endhasanyrole
+    @endpuedeGestionar
 </div>
 
 <div class="card">
@@ -101,7 +101,7 @@
                     @endif
                 </td>
                 <td>
-                    @hasanyrole('admin|consultor_digital')
+                    @puedeGestionar($school)
                     <div class="acciones">
                         <a href="{{ route('visits.edit', $visit) }}" class="btn btn-secondary btn-sm">Editar</a>
                         @puedeEliminar($school)
@@ -112,7 +112,7 @@
                         </form>
                         @endpuedeEliminar
                     </div>
-                    @endhasanyrole
+                    @endpuedeGestionar
                 </td>
             </tr>
             @empty

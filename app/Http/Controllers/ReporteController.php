@@ -28,9 +28,7 @@ class ReporteController extends Controller
         $user = auth()->user();
         $schoolIds = null;
         if ($user->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', $user->id)->first();
-            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')->pluck('school_id');
+            $schoolIds = \App\Helpers\AccesoColegios::idsTablero($user);
         }
 
         $query = School::noInactivos()->with([
@@ -652,9 +650,7 @@ class ReporteController extends Controller
 
         $schoolIds = null;
         if ($user->hasRole('consultor_digital')) {
-            $consultant = Consultant::where('user_id', $user->id)->first();
-            $schoolIds  = SchoolConsultant::where('consultant_id', $consultant?->id)
-                ->where('role', 'digital')->pluck('school_id');
+            $schoolIds = \App\Helpers\AccesoColegios::idsTablero($user);
         }
 
         $query = BundleResurtido::with(['school', 'bundle', 'user'])

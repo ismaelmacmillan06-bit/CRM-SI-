@@ -32,7 +32,7 @@ class SchoolLevelProcessController extends Controller
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school), 403);
 
         // Validador manual para poder re-keying el error de 'evidence' al proceso exacto
         // y mostrarlo en la fila correcta (no en una fila genérica sin contexto)
@@ -116,7 +116,7 @@ class SchoolLevelProcessController extends Controller
         if ($redirect = $this->bloqueadoPorInactivo($school)) {
             return $redirect;
         }
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school), 403);
 
         $request->validate([
             'status' => 'required|in:pending,in_progress,done,reopened',
@@ -169,7 +169,7 @@ class SchoolLevelProcessController extends Controller
     public function destroyEvidence(School $school, SchoolLevelProcess $schoolLevelProcess)
     {
         $this->verificarQueSeaDelColegio($school, $schoolLevelProcess);
-        abort_unless(auth()->user()->hasAnyRole(['admin', 'consultor_digital']), 403);
+        abort_unless(\App\Helpers\AccesoColegios::puedeGestionar(auth()->user(), $school), 403);
 
         if ($schoolLevelProcess->evidence) {
             Storage::disk('public')->delete($schoolLevelProcess->evidence);

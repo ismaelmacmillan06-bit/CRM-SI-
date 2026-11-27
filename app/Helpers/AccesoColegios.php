@@ -13,6 +13,8 @@ use App\Models\User;
  *  - Asignado: el colegio es suyo (school_consultants con rol digital). Puede todo, incluso borrar.
  *  - Responsable de plataforma: en Equipo SI tiene marcada esa plataforma de Seguimiento; en los
  *    colegios que la llevan puede todo MENOS borrar y cambiar los datos generales del colegio.
+ *  - consul_ged (Consultor Global Educa): no tiene colegios asignados; es responsable automático
+ *    de las plataformas de SeguimientoController::PLATAFORMAS_CONSUL_GED (Global Educa).
  * Admin siempre puede todo. Los demás roles se rigen por VerificarAccesoRol.
  */
 class AccesoColegios
@@ -35,9 +37,12 @@ class AccesoColegios
         });
     }
 
-    /** Plataformas de Seguimiento de las que es responsable (solo aplica a consultores digitales). */
+    /** Plataformas de Seguimiento de las que es responsable (consultores digitales por Equipo SI; consul_ged automático). */
     public static function plataformasResponsable(User $user): array
     {
+        if ($user->hasRole('consul_ged')) {
+            return SeguimientoController::PLATAFORMAS_CONSUL_GED;
+        }
         if (!$user->hasRole('consultor_digital')) {
             return [];
         }
@@ -64,6 +69,16 @@ class AccesoColegios
         )->pluck('id')->map(fn ($id) => (int) $id)->all());
     }
 
+    /**
+     * Colegios que cuentan en sus tableros (Dashboard, Avance, Bitácora, reportes): null = todos.
+     * Digital: asignados + los de su responsabilidad (colección, aunque venga vacía: vacía = ninguno).
+     * Los demás roles ven todo.
+     */
+    public static function idsTablero(User $user): ?\Illuminate\Support\Collection
+    {
+        return $user->hasRole('consultor_digital') ? collect(self::idsGestionables($user)) : null;
+    }
+
     /** Asignados + los que gestiona como responsable. */
     public static function idsGestionables(User $user): array
     {
@@ -88,6 +103,10 @@ class AccesoColegios
         }
         if ($user->hasRole('admin')) {
             return true;
+        }
+
+        if ($user->hasRole('consul_ged')) {
+            return self::esResponsable($user, $school);
         }
 
         return $user->hasRole('consultor_digital')

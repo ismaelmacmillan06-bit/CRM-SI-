@@ -74,6 +74,7 @@ class ResponsableSeguimientoTest extends TestCase
         $this->get(route('seguimiento.colegio', ['global-educa', $ajeno]))->assertForbidden();
         $this->get(route('seguimiento.show', 'global-educa'))->assertDontSee('Colegio ajeno');
         $this->get(route('schools.index'))->assertDontSee('Colegio ajeno');
+        $this->get(route('avance-colegios.index'))->assertSee('Colegio propio')->assertDontSee('Colegio ajeno');
     }
 
     public function test_meta_responsible_works_in_every_meta_school_except_deleting(): void
@@ -85,6 +86,9 @@ class ResponsableSeguimientoTest extends TestCase
 
         $this->actingAs($user);
         $this->get(route('schools.index'))->assertSee('Colegio ajeno')->assertDontSee('Colegio sin Meta');
+        // Sus tableros cuentan también los colegios de su responsabilidad
+        $this->get(route('avance-colegios.index'))->assertSee('Colegio ajeno')->assertDontSee('Colegio sin Meta');
+        $this->get(route('dashboard'))->assertOk();
         foreach ([
             route('schools.show', $ajeno), route('schools.students.index', $ajeno), route('schools.teachers.index', $ajeno),
             route('schools.tickets.create', $ajeno), route('schools.visits.create', $ajeno),

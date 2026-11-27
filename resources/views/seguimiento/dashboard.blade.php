@@ -281,8 +281,8 @@
                         <a href="{{ route('schools.visits.index', ['school' => $fila['colegio'], 'producto' => $nombre]) }}" class="btn btn-secondary btn-sm"
                            style="white-space:nowrap" title="Sesiones de {{ $fila['colegio']->name }}">📅 Sesiones</a>
                         @if($tieneAcciones)
-                            <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn btn-secondary btn-sm"
-                               style="white-space:nowrap">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
+                            <a href="{{ route('seguimiento.colegio', [$slug, $fila['colegio']]) }}" class="btn {{ $fila['gestionable'] ? 'btn-primary' : 'btn-secondary' }} btn-sm"
+                               style="white-space:nowrap;{{ $fila['gestionable'] ? ' background:#1f9d55; border-color:#1f9d55; color:#fff; font-weight:600;' : '' }}">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
                         @else
                             <a href="{{ route('schools.show', $fila['colegio']) }}" class="btn btn-secondary btn-sm"
                                style="white-space:nowrap">Ver colegio →</a>

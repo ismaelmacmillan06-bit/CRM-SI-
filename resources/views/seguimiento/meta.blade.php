@@ -496,7 +496,7 @@
                         <a href="{{ route('schools.visits.index', $c) }}" class="btn btn-secondary btn-sm" title="Sesiones de {{ $c->name }}">📅</a>
                         @endif
                         @if($tieneAcciones || !$fila['gestionable'])
-                            <a href="{{ $gestionar }}" class="btn btn-primary btn-sm" style="white-space:nowrap">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
+                            <a href="{{ $gestionar }}" class="btn {{ $fila['gestionable'] ? 'btn-primary' : 'btn-secondary' }} btn-sm" style="white-space:nowrap;{{ $fila['gestionable'] ? ' background:#1f9d55; border-color:#1f9d55; color:#fff; font-weight:600;' : '' }}">{{ $fila['gestionable'] ? 'Gestionar' : 'Ver' }} →</a>
                         @else
                             <a href="{{ route('schools.show', $c) }}" class="btn btn-secondary btn-sm" style="white-space:nowrap">Ver colegio →</a>
                         @endif

@@ -217,10 +217,17 @@
                     </div>
                 </td>
                 <td style="font-size:13px">
+                    {{-- Siguiente acción resaltada: naranja mientras falta, verde al 100% --}}
                     @if($fila['completo'])
-                        <span class="badge badge-success">Implementación completa</span>
-                    @else
-                        {{ $fila['siguiente'] }}
+                        <span style="display:inline-block; padding:5px 10px; border-radius:8px; font-weight:600;
+                                     background:rgba(34,160,90,.14); color:#1b8a4c; border:1px solid rgba(34,160,90,.35)">
+                            ✓ Implementación completa
+                        </span>
+                    @elseif($fila['siguiente'])
+                        <span style="display:inline-block; padding:5px 10px; border-radius:8px; font-weight:600;
+                                     background:rgba(245,130,32,.14); color:#c2610c; border:1px solid rgba(245,130,32,.4)">
+                            {{ $fila['siguiente'] }}
+                        </span>
                     @endif
                 </td>
                 @endif

@@ -175,6 +175,12 @@ class SeguimientoController extends Controller
             'tieneAcciones'      => $tieneAcciones,
             'totalAcciones'      => count($info['acciones']),
             'completos'          => $tieneAcciones ? $filas->where('completo', true)->count() : 0,
+            // Una card por acción del catálogo: colegios cuya siguiente acción es esa
+            'porAccion'          => collect($info['acciones'])->map(fn ($etiqueta, $clave) => [
+                'clave'    => $clave,
+                'etiqueta' => $etiqueta,
+                'filas'    => $filas->filter(fn ($f) => !$f['completo'] && ($f['siguiente_clave'] ?? null) === $clave)->values(),
+            ])->values(),
             'servicioLigado'     => SchoolServiceType::where('plataforma', $plataforma)->exists(),
             'resumenFormato'     => $resumenFormato,
             'categoriasRecursos' => $categoriasRecursos,
@@ -378,6 +384,7 @@ class SeguimientoController extends Controller
                 $completo = $totalColegio > 0 && $hechas === $totalColegio;
 
                 $siguiente = null;
+                $siguienteClave = null;
                 if ($niveles->isEmpty()) {
                     $siguiente = $colegio->levels->isEmpty()
                         ? 'Sin niveles registrados'
@@ -388,6 +395,7 @@ class SeguimientoController extends Controller
                             ->first(fn ($etiqueta, $clave) => ($nr['acciones'][$clave]->status ?? 'pending') !== 'done');
                         if ($pendiente !== null) {
                             $siguiente = $nr['nivel']->name . ': ' . $pendiente;
+                            $siguienteClave = array_search($pendiente, $acciones, true) ?: null;
                             break;
                         }
                     }
@@ -400,6 +408,7 @@ class SeguimientoController extends Controller
                     'pct'       => $pct,
                     'completo'  => $completo,
                     'siguiente' => $siguiente,
+                    'siguiente_clave' => $siguienteClave,
                     'acciones'  => collect(),
                     'niveles'   => $resumenNiveles,
                     'consultor' => $consultor,
@@ -417,6 +426,8 @@ class SeguimientoController extends Controller
                 'completo'             => $hechas === $totalAcciones,
                 'siguiente'            => collect($acciones)
                     ->first(fn ($etiqueta, $clave) => ($hechasPorClave[$clave]->status ?? 'pending') !== 'done'),
+                'siguiente_clave'      => collect($acciones)->keys()
+                    ->first(fn ($clave) => ($hechasPorClave[$clave]->status ?? 'pending') !== 'done'),
                 'acciones'             => $hechasPorClave,
                 'consultor'            => $consultor,
             ];

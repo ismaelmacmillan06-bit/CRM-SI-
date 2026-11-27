@@ -74,6 +74,114 @@
     </div>
 </div>
 
+{{-- Una card chica por acción de arranque (sale del catálogo: si agregan o editan acciones, se actualiza sola) --}}
+@if($tieneAcciones && ($porAccion ?? collect())->isNotEmpty())
+<style>
+    .acc-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin-bottom:20px; }
+    .acc-card { background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:10px 12px;
+                display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .acc-card.con-colegios { border-color:rgba(240,138,36,.45); background:rgba(240,138,36,.06); }
+    .acc-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .acc-card-num { font-size:10.5px; font-weight:700; color:var(--text-muted); letter-spacing:.04em; }
+    .acc-card-total { font-size:20px; font-weight:800; line-height:1; color:var(--text-muted); }
+    .acc-card.con-colegios .acc-card-total { color:#c2610c; }
+    .acc-card-etiqueta { font-size:12px; font-weight:600; color:var(--text); line-height:1.3;
+                         display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .acc-card-ojo { border:1px solid var(--border); background:var(--surface2); border-radius:7px; cursor:pointer;
+                    width:30px; height:26px; display:inline-flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .acc-card-ojo:hover { background:#f08a24; border-color:#f08a24; }
+    .acc-card-ojo:disabled { opacity:.4; cursor:default; background:var(--surface2); border-color:var(--border); }
+    #acc-modal { display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.5);
+                 align-items:center; justify-content:center; padding:16px; }
+    #acc-modal .acc-modal-caja { background:var(--surface); border-radius:14px; width:100%; max-width:620px; max-height:85vh;
+                                 display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3); }
+    .acc-modal-head { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .acc-modal-body { padding:8px 20px 16px; overflow-y:auto; }
+    .acc-fila { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+    .acc-fila:last-child { border-bottom:none; }
+</style>
+<div class="acc-cards">
+    @foreach($porAccion as $i => $acc)
+        @php $n = $acc['filas']->count(); @endphp
+        <div class="acc-card {{ $n ? 'con-colegios' : '' }}" title="{{ $acc['etiqueta'] }}">
+            <div class="acc-card-top">
+                <span class="acc-card-num">ACCIÓN {{ $i + 1 }}</span>
+                <button type="button" class="acc-card-ojo" data-acc-ver="{{ $acc['clave'] }}" @disabled(!$n)
+                        title="Ver colegios en esta acción" aria-label="Ver colegios en {{ $acc['etiqueta'] }}">👁</button>
+            </div>
+            <div style="display:flex; align-items:baseline; gap:8px">
+                <span class="acc-card-total">{{ $n }}</span>
+                <span style="font-size:11px; color:var(--text-muted)">{{ $n === 1 ? 'colegio' : 'colegios' }}</span>
+            </div>
+            <div class="acc-card-etiqueta">{{ $acc['etiqueta'] }}</div>
+        </div>
+    @endforeach
+</div>
+
+{{-- Detalle por acción --}}
+@foreach($porAccion as $i => $acc)
+    @continue($acc['filas']->isEmpty())
+    <template id="acc-detalle-{{ $acc['clave'] }}">
+        <div data-titulo="Acción {{ $i + 1 }}: {{ $acc['etiqueta'] }}"></div>
+        @foreach($acc['filas'] as $f)
+            <div class="acc-fila">
+                <div style="min-width:0">
+                    <div style="font-weight:700; font-size:14px">{{ $f['colegio']->name }}</div>
+                    <div style="font-size:12px; color:var(--text-muted)">
+                        {{ $f['colegio']->state ?? $f['colegio']->city ?? '—' }} · 👤 {{ $f['consultor'] ?? 'Sin asignar' }}
+                        · {{ $f['hechas'] }}/{{ $f['total'] }} ({{ $f['pct'] }}%)
+                    </div>
+                    @if(!empty($f['niveles']) && $f['siguiente'])
+                        <div style="font-size:12px; color:#c2610c; margin-top:2px">{{ $f['siguiente'] }}</div>
+                    @endif
+                </div>
+                <a href="{{ route('seguimiento.colegio', [$slug, $f['colegio']]) }}"
+                   class="btn btn-sm {{ $f['gestionable'] ? 'btn-primary' : 'btn-secondary' }}"
+                   style="white-space:nowrap;{{ $f['gestionable'] ? ' background:#1f9d55; border-color:#1f9d55; color:#fff; font-weight:600;' : '' }}">
+                    {{ $f['gestionable'] ? 'Gestionar' : 'Ver' }} →
+                </a>
+            </div>
+        @endforeach
+    </template>
+@endforeach
+
+<div id="acc-modal" role="dialog" aria-modal="true" aria-labelledby="acc-modal-titulo">
+    <div class="acc-modal-caja">
+        <div class="acc-modal-head">
+            <div>
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted); letter-spacing:.04em">COLEGIOS EN ESTA ACCIÓN · {{ mb_strtoupper($nombre) }}</div>
+                <div id="acc-modal-titulo" style="font-family:'Bricolage Grotesque',sans-serif; font-size:17px; font-weight:700; margin-top:4px"></div>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" data-acc-cerrar aria-label="Cerrar">✕</button>
+        </div>
+        <div class="acc-modal-body" id="acc-modal-body"></div>
+    </div>
+</div>
+<script>
+(function () {
+    var modal = document.getElementById('acc-modal');
+    var body  = document.getElementById('acc-modal-body');
+    var titulo = document.getElementById('acc-modal-titulo');
+    function cerrar() { modal.style.display = 'none'; body.innerHTML = ''; }
+    document.querySelectorAll('[data-acc-ver]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var tpl = document.getElementById('acc-detalle-' + btn.getAttribute('data-acc-ver'));
+            if (!tpl) return;
+            var frag = tpl.content.cloneNode(true);
+            var cab = frag.querySelector('[data-titulo]');
+            titulo.textContent = cab ? cab.getAttribute('data-titulo') : '';
+            if (cab) cab.remove();
+            body.innerHTML = '';
+            body.appendChild(frag);
+            modal.style.display = 'flex';
+        });
+    });
+    modal.addEventListener('click', function (e) { if (e.target === modal || e.target.closest('[data-acc-cerrar]')) cerrar(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.style.display === 'flex') cerrar(); });
+})();
+</script>
+@endif
+
 @if($slug === 'global-educa' || $esPanelConActividad)
 <style>
     .ge-vistas { display:inline-flex; background:var(--surface2); border-radius:10px; padding:4px; gap:4px; margin-bottom:16px; flex-wrap:wrap; }

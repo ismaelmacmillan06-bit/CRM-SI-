@@ -160,7 +160,8 @@
             <span data-btn-seg-count="{{ $slug }}" style="font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(24,19,17,.08); color:var(--text);">{{ $totalAcciones ?? 0 }}</span>
         </button>
     @endif
-    <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-secondary" style="white-space:nowrap">📥 Descargar Excel</a>
+    <a href="{{ route('seguimiento.excel', $slug) }}" class="btn btn-generar-reporte" onclick="generarReporteExcel(event, this.href)">📊 Generar Reporte</a>
+    @include('partials.generar-reporte')
         </div>
     </div>
     <div style="overflow-x:auto">

@@ -77,7 +77,14 @@
 {{-- Una card chica por acción de arranque (sale del catálogo: si agregan o editan acciones, se actualiza sola) --}}
 @if($tieneAcciones && ($porAccion ?? collect())->isNotEmpty())
 <style>
-    .acc-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; margin-bottom:20px; }
+    .acc-panel { background:var(--surface); border:1.5px solid var(--border); border-radius:12px; margin-bottom:20px; }
+    .acc-panel > summary { list-style:none; cursor:pointer; padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; user-select:none; }
+    .acc-panel > summary::-webkit-details-marker { display:none; }
+    .acc-panel > summary:hover { background:var(--surface2); border-radius:12px; }
+    .acc-panel-flecha { margin-left:auto; font-size:12px; color:var(--text-muted); transition:transform .2s; }
+    .acc-panel[open] .acc-panel-flecha { transform:rotate(180deg); }
+    .acc-panel-chip { font-size:11.5px; font-weight:600; padding:2px 9px; border-radius:99px; background:rgba(240,138,36,.14); color:#c2610c; }
+    .acc-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:10px; padding:4px 16px 16px; }
     .acc-card { background:var(--surface); border:1.5px solid var(--border); border-radius:10px; padding:10px 12px;
                 display:flex; flex-direction:column; gap:6px; min-width:0; }
     .acc-card.con-colegios { border-color:rgba(240,138,36,.45); background:rgba(240,138,36,.06); }
@@ -100,6 +107,15 @@
     .acc-fila { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
     .acc-fila:last-child { border-bottom:none; }
 </style>
+@php $enProceso = $porAccion->sum(fn ($a) => $a['filas']->count()); @endphp
+<details class="acc-panel" id="acc-panel">
+    <summary>
+        <span style="font-size:18px">🚀</span>
+        <span style="font-weight:700; font-size:14px">Colegios por acción de arranque</span>
+        <span class="acc-panel-chip">{{ $porAccion->count() }} acciones</span>
+        <span class="acc-panel-chip">{{ $enProceso }} {{ $enProceso === 1 ? 'colegio' : 'colegios' }} en proceso</span>
+        <span class="acc-panel-flecha" aria-hidden="true">▼</span>
+    </summary>
 <div class="acc-cards">
     @foreach($porAccion as $i => $acc)
         @php $n = $acc['filas']->count(); @endphp
@@ -117,6 +133,7 @@
         </div>
     @endforeach
 </div>
+</details>
 
 {{-- Detalle por acción --}}
 @foreach($porAccion as $i => $acc)
@@ -159,6 +176,12 @@
 </div>
 <script>
 (function () {
+    // Recordar si el panel quedó abierto o cerrado
+    var panel = document.getElementById('acc-panel');
+    var clave = 'sic-acc-panel-{{ $slug }}';
+    try { if (localStorage.getItem(clave) === '1') panel.open = true; } catch (e) {}
+    panel.addEventListener('toggle', function () { try { localStorage.setItem(clave, panel.open ? '1' : '0'); } catch (e) {} });
+
     var modal = document.getElementById('acc-modal');
     var body  = document.getElementById('acc-modal-body');
     var titulo = document.getElementById('acc-modal-titulo');

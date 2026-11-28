@@ -698,8 +698,8 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
           <label for="estadoSelect">Estado</label>
           <select id="estadoSelect">
             <option value="">Todos</option>
-            <option value="activo">Activo (≤7 días)</option>
-            <option value="sem1">1 semana sin conexión (8–14 días)</option>
+            <option value="activo">Activo (0–5 días)</option>
+            <option value="sem1">1 semana sin conexión (6–14 días)</option>
             <option value="sem2">2 semanas sin conexión (15–21 días)</option>
             <option value="sem3">3 semanas sin conexión (22–28 días)</option>
             <option value="sem4">4 semanas sin conexión (29–35 días)</option>
@@ -1153,9 +1153,9 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
       if (record.preSso) return { key: 'pre_sso', label: 'Solo antes de SSO', cls: 'status-neutral' };
       return { key: 'nunca', label: 'Nunca conectado', cls: 'status-neutral' };
     }
-    // Por semanas sin conexión: Activo (≤7 días), 1 a 4 semanas, y más de 4 semanas = prolongado
+    // Por semanas sin conexión: Activo (0–5 días), 1 a 4 semanas, y más de 4 semanas = prolongado
     const d = daysSince(record.fecha, today);
-    if (d <= 7) return { key: 'activo', label: 'Activo', cls: 'status-good' };
+    if (d <= 5) return { key: 'activo', label: 'Activo', cls: 'status-good' };
     if (d <= 14) return { key: 'sem1', label: '1 semana sin conexión', cls: 'status-warning' };
     if (d <= 21) return { key: 'sem2', label: '2 semanas sin conexión', cls: 'status-warning' };
     if (d <= 28) return { key: 'sem3', label: '3 semanas sin conexión', cls: 'status-serious' };
@@ -1165,8 +1165,8 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
 
   // Etiquetas con rango de días (gráfica de distribución y filtro de estado)
   const ESTADO_LABELS = {
-    activo: 'Activo (≤7 días)',
-    sem1: '1 semana sin conexión (8–14 días)',
+    activo: 'Activo (0–5 días)',
+    sem1: '1 semana sin conexión (6–14 días)',
     sem2: '2 semanas sin conexión (15–21 días)',
     sem3: '3 semanas sin conexión (22–28 días)',
     sem4: '4 semanas sin conexión (29–35 días)',

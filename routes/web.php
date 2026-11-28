@@ -199,6 +199,11 @@ Route::middleware(['auth', 'verificar.acceso'])->group(function () {
      Route::get('herramientas-si/cambio-password',        [HerramientasController::class, 'cambioPassword'])  ->name('herramientas.cambio-password');
      Route::get('herramientas-si/eliminacion-bundles',    [HerramientasController::class, 'eliminacionBundles'])->name('herramientas.eliminacion-bundles');
      Route::get('herramientas-si/reporte-accesos',        [HerramientasController::class, 'reporteAccesos'])  ->name('herramientas.reporte-accesos');
+     // Script de consola del Reporte de Accesos: lo edita/elimina el admin sin tocar el repo
+     Route::get('herramientas-si/reporte-accesos/script',            [HerramientasController::class, 'editarScriptReporte'])   ->name('herramientas.reporte-accesos.script');
+     Route::put('herramientas-si/reporte-accesos/script',            [HerramientasController::class, 'guardarScriptReporte'])  ->name('herramientas.reporte-accesos.script.update');
+     Route::delete('herramientas-si/reporte-accesos/script',         [HerramientasController::class, 'eliminarScriptReporte']) ->name('herramientas.reporte-accesos.script.destroy');
+     Route::post('herramientas-si/reporte-accesos/script/restaurar', [HerramientasController::class, 'restaurarScriptReporte'])->name('herramientas.reporte-accesos.script.restore');
      Route::get('herramientas-si/vinculacion-sso',        [HerramientasController::class, 'vinculacionSso'])  ->name('herramientas.vinculacion-sso');
      Route::get('herramientas-si/template-bienvenida',    [HerramientasController::class, 'templateBienvenida'])->name('herramientas.template-bienvenida');
      Route::get('herramientas-si/template-confirmacion',  [HerramientasController::class, 'templateConfirmacion'])->name('herramientas.template-confirmacion');

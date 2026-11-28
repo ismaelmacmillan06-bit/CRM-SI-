@@ -312,6 +312,9 @@ input[type="text"]:focus, input[type="date"]:focus { outline: 2px solid var(--ac
 .chart { display: flex; flex-direction: column; gap: 10px; }
 .chart-row { display: grid; grid-template-columns: 150px 1fr 74px; align-items: center; gap: 10px; }
 .chart-row-label { font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Distribución de actividad: etiquetas largas por semana → columna más ancha y, si no caben, en dos líneas */
+#chartEstado .chart-row { grid-template-columns: minmax(150px, 225px) 1fr 64px; }
+#chartEstado .chart-row-label { white-space: normal; line-height: 1.25; }
 .chart-track { position: relative; height: 14px; background: var(--surface-1); border-radius: 4px; overflow: hidden; }
 .chart-fill { position: absolute; inset: 0 auto 0 0; height: 100%; border-radius: 4px; }
 .chart-row-value { font-size: 12px; color: var(--text-muted); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -696,9 +699,11 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
           <select id="estadoSelect">
             <option value="">Todos</option>
             <option value="activo">Activo (≤7 días)</option>
-            <option value="moderado">Moderado (8–30 días)</option>
-            <option value="inactivo">Inactivo (31–60 días)</option>
-            <option value="prolongado">Inactivo prolongado (&gt;60 días)</option>
+            <option value="sem1">1 semana sin conexión (8–14 días)</option>
+            <option value="sem2">2 semanas sin conexión (15–21 días)</option>
+            <option value="sem3">3 semanas sin conexión (22–28 días)</option>
+            <option value="sem4">4 semanas sin conexión (29–35 días)</option>
+            <option value="prolongado">Inactivo prolongado (&gt;35 días)</option>
             <option value="nunca">Nunca conectado</option>
             <option value="pre_sso">Solo antes de SSO (no válida)</option>
           </select>
@@ -1076,7 +1081,9 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
 
     // Si este documento ya era una descarga previa, quita su bloque precargado
     // para no ir acumulando copias del mismo dato en cada nueva descarga.
-    const cleanHtml = ORIGINAL_HTML.replace(/<script>window\.__PRELOADED_REPORT__[\s\S]*?<\/script>\s*/, '');
+    // También quita los controles de admin del CRM (<!--sic-admin-->): el reporte se comparte con el colegio.
+    const cleanHtml = ORIGINAL_HTML.replace(/<script>window\.__PRELOADED_REPORT__[\s\S]*?<\/script>\s*/, '')
+      .replace(/<!--sic-admin-->[\s\S]*?<!--\/sic-admin-->/g, '');
     const scriptIdx = cleanHtml.indexOf('<script>');
     const finalHtml = '<!DOCTYPE html>\n' + cleanHtml.slice(0, scriptIdx) + preloadedTag + cleanHtml.slice(scriptIdx);
 
@@ -1146,15 +1153,30 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
       if (record.preSso) return { key: 'pre_sso', label: 'Solo antes de SSO', cls: 'status-neutral' };
       return { key: 'nunca', label: 'Nunca conectado', cls: 'status-neutral' };
     }
+    // Por semanas sin conexión: Activo (≤7 días), 1 a 4 semanas, y más de 4 semanas = prolongado
     const d = daysSince(record.fecha, today);
     if (d <= 7) return { key: 'activo', label: 'Activo', cls: 'status-good' };
-    if (d <= 30) return { key: 'moderado', label: 'Moderado', cls: 'status-warning' };
-    if (d <= 60) return { key: 'inactivo', label: 'Inactivo', cls: 'status-serious' };
+    if (d <= 14) return { key: 'sem1', label: '1 semana sin conexión', cls: 'status-warning' };
+    if (d <= 21) return { key: 'sem2', label: '2 semanas sin conexión', cls: 'status-warning' };
+    if (d <= 28) return { key: 'sem3', label: '3 semanas sin conexión', cls: 'status-serious' };
+    if (d <= 35) return { key: 'sem4', label: '4 semanas sin conexión', cls: 'status-serious' };
     return { key: 'prolongado', label: 'Inactivo prolongado', cls: 'status-critical' };
   }
 
+  // Etiquetas con rango de días (gráfica de distribución y filtro de estado)
+  const ESTADO_LABELS = {
+    activo: 'Activo (≤7 días)',
+    sem1: '1 semana sin conexión (8–14 días)',
+    sem2: '2 semanas sin conexión (15–21 días)',
+    sem3: '3 semanas sin conexión (22–28 días)',
+    sem4: '4 semanas sin conexión (29–35 días)',
+    prolongado: 'Inactivo prolongado (>35 días)',
+    nunca: 'Nunca conectado',
+    pre_sso: 'Solo antes de SSO (no cuenta)',
+  };
+
   const ESTADO_COLOR_VAR = {
-    activo: '--good', moderado: '--accent', inactivo: '--accent', prolongado: '--accent',
+    activo: '--good', sem1: '--warning', sem2: '--warning', sem3: '--serious', sem4: '--serious', prolongado: '--critical',
     nunca: '--neutral-ink', pre_sso: '--neutral-ink',
   };
 
@@ -1425,12 +1447,9 @@ select:focus, .filters-grid input:focus { outline: 2px solid var(--accent); outl
     renderBarChart(document.getElementById('chartClases'), claseStats.slice(0, 12), { max: 100 });
 
     // distribución de estado
-    const buckets = { activo: 0, moderado: 0, inactivo: 0, prolongado: 0, nunca: 0, pre_sso: 0 };
+    const buckets = { activo: 0, sem1: 0, sem2: 0, sem3: 0, sem4: 0, prolongado: 0, nunca: 0, pre_sso: 0 };
     filtered.forEach((r) => { buckets[estadoInfo(r, today).key]++; });
-    const labels = {
-      activo: 'Activo (≤7 días)', moderado: 'Moderado (8–30 días)', inactivo: 'Inactivo (31–60 días)',
-      prolongado: 'Inactivo prolongado (>60 días)', nunca: 'Nunca conectado', pre_sso: 'Solo antes de SSO (no cuenta)',
-    };
+    const labels = ESTADO_LABELS;
     const total = filtered.length || 1;
     const estadoItems = Object.keys(buckets)
       .filter((k) => k !== 'pre_sso' || buckets[k] > 0)

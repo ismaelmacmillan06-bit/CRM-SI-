@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
 use App\Models\ArchivoSI;
 use App\Services\NotificationService;
+use App\Services\ScriptReporteAccesos;
 use App\Services\SectionNovedadesService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -63,7 +65,51 @@ class HerramientasController extends Controller
 
     public function reporteAccesos()
     {
-        return $this->servirHerramienta('reporte-accesos.html');
+        return $this->servirHerramienta(ScriptReporteAccesos::ARCHIVO_HERRAMIENTA);
+    }
+
+    // ── Script de consola del Reporte de Accesos (solo admin) ─────────────────
+
+    public function editarScriptReporte(ScriptReporteAccesos $script)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        return view('herramientas.script-reporte-accesos', ['actual' => $script->actual()]);
+    }
+
+    public function guardarScriptReporte(Request $request, ScriptReporteAccesos $script)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $data = $request->validate(['script' => 'required|string|max:200000'], [
+            'script.required' => 'El script no puede quedar vacío. Si ya no se usa, elimínalo con el botón Eliminar.',
+            'script.max'      => 'El script es demasiado largo.',
+        ]);
+
+        $script->guardar($data['script'], auth()->user());
+        ActivityLog::log('herramienta', 'Script del Reporte de Accesos actualizado', null, '🛠️');
+
+        return redirect()->route('herramientas.reporte-accesos.script')
+            ->with('success', 'Script actualizado. Ya lo ven todos en la herramienta.');
+    }
+
+    public function eliminarScriptReporte(ScriptReporteAccesos $script)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $script->eliminar(auth()->user());
+        ActivityLog::log('herramienta', 'Script del Reporte de Accesos eliminado', null, '🗑️');
+
+        return redirect()->route('herramientas.reporte-accesos.script')
+            ->with('success', 'Script eliminado. La herramienta mostrará un aviso en su lugar.');
+    }
+
+    public function restaurarScriptReporte(ScriptReporteAccesos $script)
+    {
+        abort_unless(auth()->user()->hasRole('admin'), 403);
+        $script->restaurar();
+        ActivityLog::log('herramienta', 'Script del Reporte de Accesos restaurado al original', null, '↩️');
+
+        return redirect()->route('herramientas.reporte-accesos.script')
+            ->with('success', 'Se restauró el script original.');
     }
 
     public function vinculacionSso()
@@ -89,6 +135,23 @@ class HerramientasController extends Controller
         abort_if(! $path || ! str_starts_with($path, $base . DIRECTORY_SEPARATOR), 404);
 
         $html = file_get_contents($path);
+
+        // Reporte de Accesos: script vigente (editable por el admin) + acceso a editarlo
+        if ($archivo === ScriptReporteAccesos::ARCHIVO_HERRAMIENTA) {
+            $html = app(ScriptReporteAccesos::class)->aplicar($html);
+            if (auth()->user()?->hasRole('admin')) {
+                // Marcado con <!--sic-admin-->: "Descargar HTML" lo quita del reporte que se comparte
+                $boton = '<!--sic-admin--><a href="' . e(route('herramientas.reporte-accesos.script')) . '" target="_blank" '
+                    . 'class="btn btn-ghost" style="margin-top:8px;width:100%;justify-content:center;text-decoration:none">'
+                    . '✏️ Editar script (admin)</a><!--/sic-admin-->';
+                $html = preg_replace_callback(
+                    '#<button type="button" class="btn btn-ghost" id="copyScriptBtn"[^>]*>.*?</button>#s',
+                    fn ($m) => $m[0] . $boton,
+                    $html,
+                    1
+                );
+            }
+        }
         $faviconUrl = asset('favicon.png') . '?v=3';
         $html = str_replace('href="/favicon.png?v=3"', 'href="' . e($faviconUrl) . '"', $html);
 

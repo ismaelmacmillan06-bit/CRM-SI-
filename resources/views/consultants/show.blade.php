@@ -5,7 +5,7 @@
 @section('content')
 <div style="display:flex; gap:10px; margin-bottom:24px; align-items:center">
     <a href="{{ route('consultants.index') }}" class="btn btn-secondary btn-sm">← Regresar</a>
-    @if(auth()->user()->hasRole('admin') || (int) $consultant->user_id === (int) auth()->id())
+    @if(auth()->user()->hasRole('admin') || ((int) $consultant->user_id === (int) auth()->id() && !auth()->user()->hasAnyRole(['coordinador', 'consul_ged'])))
     <a href="{{ route('consultants.edit', $consultant) }}" class="btn btn-primary btn-sm">✏️ Editar</a>
     @endif
 </div>

@@ -713,11 +713,9 @@
         </a>
         @endhasanyrole
         @unlessrole('consultor_eca|consultor_elt')
-        @unlessrole('consul_ged')
         <a href="{{ route('consultants.index') }}" class="nav-item {{ request()->routeIs('consultants.*') ? 'active' : '' }}">
             <span class="nav-icon">👥</span> Equipo SI
         </a>
-        @endunlessrole
         <a href="{{ route('bundles.index') }}" class="nav-item {{ request()->routeIs('bundles.*') ? 'active' : '' }}">
             <span class="nav-icon">📚</span> Bundles SI
         </a>

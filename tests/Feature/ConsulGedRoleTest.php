@@ -72,7 +72,7 @@ class ConsulGedRoleTest extends TestCase
             ->assertDontSee(route('schools.edit', $school));
 
         foreach ([
-            route('consultants.index'), route('alumnos-docentes.index'), route('ssa.index'),
+            route('alumnos-docentes.index'), route('ssa.index'),
             route('tareas.index'), route('configuracion.servicios.index'), route('schools.create'),
             route('schools.edit', $this->colegioCon('frances')), route('bitacora.index'),
         ] as $url) {
@@ -83,7 +83,7 @@ class ConsulGedRoleTest extends TestCase
 
         $menu = $this->get(route('dashboard'))->getContent();
         $this->assertStringNotContainsString(route('configuracion.servicios.index'), $menu);
-        $this->assertStringNotContainsString(route('consultants.index'), $menu);
+        $this->assertStringContainsString(route('consultants.index'), $menu);
         $this->assertStringContainsString(route('herramientas.index'), $menu);
         $this->assertStringContainsString(route('seguimiento-sic.index'), $menu);
     }
@@ -176,5 +176,27 @@ class ConsulGedRoleTest extends TestCase
         $this->delete(route('students.destroy', $alumno))->assertForbidden();
         $this->delete(route('schools.students.destroy-all', $school))->assertForbidden();
         $this->assertModelExists($alumno);
+    }
+
+    public function test_sees_team_but_cannot_edit_or_delete(): void
+    {
+        $user = $this->ged();
+        $propio = \App\Models\Consultant::create(['user_id' => $user->id]);
+        $otroUser = User::factory()->create(['name' => 'Otro Miembro']);
+        $otroUser->assignRole('consultor_digital');
+        $otro = \App\Models\Consultant::create(['user_id' => $otroUser->id]);
+        $this->actingAs($user);
+
+        $this->get(route('consultants.index'))->assertOk()->assertSee('Otro Miembro')
+            ->assertDontSee(route('consultants.edit', $otro))->assertDontSee(route('consultants.edit', $propio))
+            ->assertDontSee(route('consultants.create'))->assertDontSee('form-eliminar-consultor-');
+        $this->get(route('consultants.show', $otro))->assertOk()->assertDontSee(route('consultants.edit', $otro));
+
+        $this->get(route('consultants.edit', $propio))->assertRedirect();
+        $this->get(route('consultants.create'))->assertRedirect();
+        $this->put(route('consultants.update', $otro), ['name' => 'Cambiado'])->assertSessionHas('error_acceso');
+        $this->delete(route('consultants.destroy', $otro))->assertSessionHas('error_acceso');
+        $this->assertSame('Otro Miembro', $otroUser->fresh()->name);
+        $this->assertModelExists($otro);
     }
 }

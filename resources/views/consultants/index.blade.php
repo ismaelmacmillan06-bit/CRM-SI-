@@ -62,7 +62,7 @@
                 <td>
                     <div style="display:flex; gap:6px">
                         <a href="{{ route('consultants.show', $consultant) }}" class="btn btn-secondary btn-sm">Ver</a>
-                        @if(auth()->user()->hasRole('admin') || (int) $consultant->user_id === (int) auth()->id())
+                        @if(auth()->user()->hasRole('admin') || ((int) $consultant->user_id === (int) auth()->id() && !auth()->user()->hasAnyRole(['coordinador', 'consul_ged'])))
                         <a href="{{ route('consultants.edit', $consultant) }}" class="btn btn-secondary btn-sm">Editar</a>
                         @endif
                         @role('admin')

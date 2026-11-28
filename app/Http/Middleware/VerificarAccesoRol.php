@@ -170,7 +170,7 @@ class VerificarAccesoRol
         // Consul GED (Consultor Global Educa): consulta Dashboard, Avance Colegios, Reporte
         // Semanal, Colegios (incl. formatos y reportes), Bundles, Herramientas SI, Producción
         // y Seguimiento SIC; en Seguimiento solo escribe en Global Educa (validado arriba).
-        // Escritura además en Mis Notas SI (permitido arriba). Sin Configuración, Equipo SI,
+        // Escritura además en Mis Notas SI (permitido arriba). Equipo SI solo consulta. Sin Configuración,
         // Alumnos Docentes, Calendario SSA, Tareas, Tablero ni Bitácora.
         if ($user->hasRole('consul_ged')) {
             // Seguimiento ya pasó su filtro de arriba (solo deja escribir en Global Educa)
@@ -208,6 +208,7 @@ class VerificarAccesoRol
                 'schools.formato-entrega', 'schools.formato-entrega.script', 'schools.formato-entrega.accesos',
                 'schools.bundles.index',
                 'schools.repositorio.index', 'schools.repositorio.download',
+                'consultants.index', 'consultants.show',
                 'bundles.index',
                 'herramientas.*',
                 'produccion.index',

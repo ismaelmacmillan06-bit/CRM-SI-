@@ -187,7 +187,8 @@ class ConsulGedRoleTest extends TestCase
         $otro = \App\Models\Consultant::create(['user_id' => $otroUser->id]);
         $this->actingAs($user);
 
-        $this->get(route('consultants.index'))->assertOk()->assertSee('Otro Miembro')
+        // Su responsabilidad automática de Global Educa se ve como etiqueta
+        $this->get(route('consultants.index'))->assertOk()->assertSee('Otro Miembro')->assertSee('Resp. Global Educa')
             ->assertDontSee(route('consultants.edit', $otro))->assertDontSee(route('consultants.edit', $propio))
             ->assertDontSee(route('consultants.create'))->assertDontSee('form-eliminar-consultor-');
         $this->get(route('consultants.show', $otro))->assertOk()->assertDontSee(route('consultants.edit', $otro));

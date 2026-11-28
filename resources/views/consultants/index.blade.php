@@ -54,7 +54,7 @@
                 <td>{{ $consultant->zone ?? '—' }}</td>
                 <td>
                     <span class="badge badge-info">{{ $consultant->user->getRoleNames()->first() }}</span>
-                    @foreach(array_intersect_key(\App\Http\Controllers\SeguimientoController::PLATAFORMAS, array_flip((array) ($consultant->responsable_seguimiento ?? []))) as $respInfo)
+                    @foreach(array_intersect_key(\App\Http\Controllers\SeguimientoController::PLATAFORMAS, array_flip($consultant->plataformasResponsable())) as $respInfo)
                         <span class="badge badge-warning" title="Responsable de {{ $respInfo['nombre'] }} en todos sus colegios">{{ $respInfo['icono'] }} Resp. {{ $respInfo['nombre'] }}</span>
                     @endforeach
                 </td>
